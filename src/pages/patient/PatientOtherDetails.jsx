@@ -5,7 +5,7 @@ const PatientOtherDetails = () => {
     <>
       <div className="left-panel">
         <div className="onboarding-logo text-center">
-          <Link to="/"><img src="/assets/img/onboard-img/onb-logo.png" className="img-fluid" alt="doccure-logo" /></Link>
+          <Link to="/"><img src="/assets/img/onboard-img/onb-logo.png" className="img-fluid" alt="mydoctor-logo" /></Link>
         </div>
         <div className="onboard-img">
           <img src="/assets/img/onboard-img/onb-slide-img.png" className="img-fluid" alt="onboard-slider" />
@@ -15,7 +15,7 @@ const PatientOtherDetails = () => {
             {[1, 2, 3].map((i) => (
               <div key={i} className="onboard-item text-center">
                 <div className="onboard-content">
-                  <h3>Welcome to Doccure</h3>
+                  <h3>Welcome to myDoctor</h3>
                   <p>
                     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
                     incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
@@ -31,7 +31,7 @@ const PatientOtherDetails = () => {
         <div className="row">
           <div className="col-lg-12 p-0">
             <div className="right-panel-title text-center">
-              <Link to="/"><img src="/assets/img/onboard-img/onb-logo.png" alt="doccure-logo" /></Link>
+              <Link to="/"><img src="/assets/img/onboard-img/onb-logo.png" alt="mydoctor-logo" /></Link>
             </div>
           </div>
           <div className="col-lg-4 col-md-12">

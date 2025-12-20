@@ -140,7 +140,19 @@ import PaymentSuccess from './pages/pharmacy/PaymentSuccess'
 import Error404 from './pages/Error404'
 import Error500 from './pages/Error500'
 
-const queryClient = new QueryClient()
+// Configure QueryClient with default options
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+})
 
 function App() {
   return (

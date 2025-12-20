@@ -12,7 +12,7 @@ const DoctorRegisterStep2 = () => {
                 <div className="inner-right-login">
                   <div className="login-header">
                     <div className="logo-icon">
-                      <img src="/assets/img/logo.png" alt="doccure-logo" />
+                      <img src="/assets/img/logo.png" alt="mydoctor-logo" />
                     </div>
                     <div className="step-list">
                       <ul>
@@ -184,7 +184,7 @@ const DoctorRegisterStep2 = () => {
                   </div>
                 </div>
                 <div className="login-bottom-copyright">
-                  <span>© 2024 Doccure. All rights reserved.</span>
+                  <span>© 2024 myDoctor. All rights reserved.</span>
                 </div>
               </div>
             </div>

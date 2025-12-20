@@ -12,7 +12,7 @@ const PharmacyRegisterStep3 = () => {
                 <div className="inner-right-login">
                   <div className="login-header">
                     <div className="logo-icon">
-                      <img src="/assets/img/logo.png" alt="doccure-logo" />
+                      <img src="/assets/img/logo.png" alt="mydoctor-logo" />
                     </div>
                     <div className="step-list">
                       <ul>
@@ -133,7 +133,7 @@ const PharmacyRegisterStep3 = () => {
                   </div>
                 </div>
                 <div className="login-bottom-copyright">
-                  <span>© {new Date().getFullYear()} Doccure. All rights reserved.</span>
+                  <span>© {new Date().getFullYear()} myDoctor. All rights reserved.</span>
                 </div>
               </div>
             </div>

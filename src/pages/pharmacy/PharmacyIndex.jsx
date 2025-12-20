@@ -75,7 +75,7 @@ const PharmacyIndex = () => {
                     <img src="/assets/img/welcome-icon.png" alt="Welcome Icon" />
                   </div>
                   <div className="welcome-content">
-                    <h5>Welcome to Doccure</h5>
+                    <h5>Welcome to myDoctor</h5>
                     <p>Download the app get free medicine & 50% off on your first order</p>
                   </div>
                 </div>

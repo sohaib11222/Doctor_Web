@@ -43,7 +43,7 @@ const PatientRegister = () => {
                       <div className="form-check mb-0">
                         <input className="form-check-input" type="checkbox" id="terms" required />
                         <label className="form-check-label" htmlFor="terms">
-                          I have read and agree to Doccure's <Link to="/terms-condition">Terms of Service</Link> and <Link to="/privacy-policy">Privacy Policy.</Link>
+                          I have read and agree to myDoctor's <Link to="/terms-condition">Terms of Service</Link> and <Link to="/privacy-policy">Privacy Policy.</Link>
                         </label>
                       </div>
                     </div>

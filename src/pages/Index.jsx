@@ -557,7 +557,7 @@ const Index = () => {
         <div className="container">
           <div className="section-header sec-header-one text-center aos" data-aos="fade-up">
             <span className="badge badge-primary">Testimonials</span>
-            <h2>15k Users Trust Doccure Worldwide</h2>
+            <h2>15k Users Trust myDoctor Worldwide</h2>
           </div>
           <div className="owl-carousel testimonials-slider aos" data-aos="fade-up">
             {testimonials.map((testimonial) => (
@@ -731,7 +731,7 @@ const Index = () => {
               <div className="col-lg-6 col-md-12 d-flex">
                 <div className="app-content d-flex flex-column justify-content-center">
                   <div className="app-header aos" data-aos="fade-up">
-                    <h3 className="display-6 text-white">Download the Doccure App today!</h3>
+                    <h3 className="display-6 text-white">Download the myDoctor App today!</h3>
                     <p className="text-light">To download an app related to a doctor or medical services, you can typically visit the app store on your device.</p>
                   </div>
                   <div className="google-imgs aos" data-aos="fade-up">

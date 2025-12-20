@@ -51,7 +51,7 @@ const PendingApprovalStatus = () => {
                 <div className="inner-right-login">
                   <div className="login-header">
                     <div className="logo-icon">
-                      <img src="/assets/img/logo.png" alt="doccure-logo" />
+                      <img src="/assets/img/logo.png" alt="mydoctor-logo" />
                     </div>
 
                     {checkingStatus ? (
@@ -161,7 +161,7 @@ const PendingApprovalStatus = () => {
                   </div>
                 </div>
                 <div className="login-bottom-copyright">
-                  <span>© {new Date().getFullYear()} Doccure. All rights reserved.</span>
+                  <span>© {new Date().getFullYear()} myDoctor. All rights reserved.</span>
                 </div>
               </div>
             </div>

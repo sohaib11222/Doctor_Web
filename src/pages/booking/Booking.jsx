@@ -138,7 +138,7 @@ const Booking = () => {
                 {/* Additional fieldset steps would be added here for the multi-step form */}
               </div>
               <div className="text-center">
-                <p className="mb-0">Copyright © {new Date().getFullYear()}. All Rights Reserved, Doccure</p>
+                <p className="mb-0">Copyright © {new Date().getFullYear()}. All Rights Reserved, myDoctor</p>
               </div>
             </div>
           </div>

@@ -1,6 +1,6 @@
 /*
 Author       : Dreamstechnologies
-Template Name: Doccure - Bootstrap Template
+Template Name: myDoctor - Bootstrap Template
 Version      : 1.3
 */
 
