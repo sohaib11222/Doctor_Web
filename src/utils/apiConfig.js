@@ -3,7 +3,7 @@
  * All API routes and endpoints are defined here
  */
 
-const BASE_URL = 'http://localhost:5000/api'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
 
 export const API_ROUTES = {
   // ==================== Common & Public Routes ====================
