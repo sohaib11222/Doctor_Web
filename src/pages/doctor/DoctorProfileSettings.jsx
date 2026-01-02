@@ -87,7 +87,7 @@ const DoctorProfileSettings = () => {
       const relativeUrl = response.data?.url || response.url
       // Convert relative URL to full URL for validation
       // Base URL from env might include /api, so we need to remove it for image URLs
-      const apiBaseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      const apiBaseURL = import.meta.env.VITE_API_URL || 'http://157.180.108.156:4001/api'
       const baseURL = apiBaseURL.replace('/api', '')
       const imageUrl = relativeUrl.startsWith('http') ? relativeUrl : `${baseURL}${relativeUrl}`
       setUserProfileData(prev => ({ ...prev, profileImage: imageUrl }))
@@ -227,7 +227,7 @@ const DoctorProfileSettings = () => {
       } else if (userProfileData.profileImage.startsWith('/uploads')) {
         // Convert relative path to full URL
         // Base URL from env might include /api, so we need to remove it for image URLs
-        const apiBaseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+        const apiBaseURL = import.meta.env.VITE_API_URL || 'http://157.180.108.156:4001/api'
         const baseURL = apiBaseURL.replace('/api', '')
         userUpdateData.profileImage = `${baseURL}${userProfileData.profileImage}`
       }

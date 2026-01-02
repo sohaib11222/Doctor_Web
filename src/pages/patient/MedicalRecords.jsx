@@ -67,7 +67,7 @@ const MedicalRecords = () => {
         const uploadResponse = await api.post('/upload/general', uploadFormData)
         
         const fileUrl = uploadResponse.data?.url || uploadResponse.url
-        const apiBaseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+        const apiBaseURL = import.meta.env.VITE_API_URL || 'http://157.180.108.156:4001/api'
         const baseURL = apiBaseURL.replace('/api', '')
         const fullFileUrl = fileUrl.startsWith('http') ? fileUrl : `${baseURL}${fileUrl}`
         

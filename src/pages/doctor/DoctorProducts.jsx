@@ -333,7 +333,7 @@ const DoctorProducts = () => {
       }
 
       // Convert relative image URLs to full URLs if needed
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://157.180.108.156:4001/api'
       const serverBaseUrl = apiBaseUrl.replace('/api', '')
       const fullImageUrls = imageUrls.map(url => {
         if (!url || typeof url !== 'string') return null
