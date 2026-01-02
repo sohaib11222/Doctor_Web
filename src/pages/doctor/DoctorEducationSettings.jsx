@@ -1,6 +1,149 @@
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'react-toastify'
+import { useAuth } from '../../contexts/AuthContext'
+import * as profileApi from '../../api/profile'
 
 const DoctorEducationSettings = () => {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const educationCounterRef = useRef(0)
+
+  // Education state: array of {degree, college, year}
+  const [educations, setEducations] = useState([])
+
+  // Fetch doctor profile
+  const { data: doctorProfile, isLoading: profileLoading, error: profileError } = useQuery({
+    queryKey: ['doctorProfile'],
+    queryFn: () => profileApi.getDoctorProfile(),
+    enabled: !!user,
+    retry: 1
+  })
+
+  // Initialize educations from profile
+  useEffect(() => {
+    console.log('DoctorProfile Data:', doctorProfile)
+    if (doctorProfile) {
+      // Axios interceptor returns response.data, so doctorProfile is already { success, message, data }
+      const profileData = doctorProfile.data || doctorProfile
+      console.log('Profile Data:', profileData)
+      console.log('Education Data:', profileData.education)
+      
+      // Handle null or array
+      const educationArray = profileData.education
+      if (educationArray && Array.isArray(educationArray) && educationArray.length > 0) {
+        setEducations(educationArray.map((edu, idx) => ({
+          _id: edu._id || `edu-${Date.now()}-${idx}`,
+          degree: edu.degree || '',
+          college: edu.college || '',
+          year: edu.year || ''
+        })))
+      } else {
+        setEducations([])
+      }
+    }
+  }, [doctorProfile])
+
+  // Update doctor profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: (data) => profileApi.updateDoctorProfile(data),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries(['doctorProfile'])
+      toast.success('Education updated successfully!')
+    },
+    onError: (error) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update education'
+      toast.error(errorMessage)
+    }
+  })
+
+  // Handle add new education
+  const handleAddEducation = (e) => {
+    e.preventDefault()
+    const newId = `edu-${Date.now()}-${educationCounterRef.current++}`
+    setEducations([...educations, {
+      _id: newId,
+      degree: '',
+      college: '',
+      year: ''
+    }])
+  }
+
+  // Handle education change
+  const handleEducationChange = (index, field, value) => {
+    const newEducations = [...educations]
+    if (!newEducations[index]) {
+      newEducations[index] = { degree: '', college: '', year: '' }
+    }
+    newEducations[index][field] = value
+    setEducations(newEducations)
+  }
+
+  // Handle remove education
+  const handleRemoveEducation = (index) => {
+    if (window.confirm('Are you sure you want to remove this education?')) {
+      setEducations(educations.filter((_, i) => i !== index))
+    }
+  }
+
+  // Handle form submit
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    // Filter out empty educations
+    const validEducations = educations.filter(edu => 
+      edu.degree && edu.degree.trim() && edu.college && edu.college.trim()
+    )
+
+    // Prepare update data - only include fields with values
+    const updateData = {
+      education: validEducations.map(edu => {
+        const eduData = {}
+        if (edu.degree?.trim()) eduData.degree = edu.degree.trim()
+        if (edu.college?.trim()) eduData.college = edu.college.trim()
+        if (edu.year?.trim()) eduData.year = edu.year.trim()
+        return eduData
+      })
+    }
+
+    updateProfileMutation.mutate(updateData)
+  }
+
+  // Handle cancel
+  const handleCancel = () => {
+    if (doctorProfile) {
+      const profileData = doctorProfile.data || doctorProfile
+      const educationArray = profileData.education
+      if (educationArray && Array.isArray(educationArray) && educationArray.length > 0) {
+        setEducations(educationArray.map((edu, idx) => ({
+          _id: edu._id || `edu-${Date.now()}-${idx}`,
+          degree: edu.degree || '',
+          college: edu.college || '',
+          year: edu.year || ''
+        })))
+      } else {
+        setEducations([])
+      }
+    } else {
+      setEducations([])
+    }
+  }
+
+  if (profileLoading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (profileError) {
+    console.error('Error loading profile:', profileError)
+  }
+
   return (
     <div className="content doctor-content">
       <div className="container">
@@ -8,7 +151,7 @@ const DoctorEducationSettings = () => {
           <div className="col-lg-4 col-xl-3 theiaStickySidebar">
             {/* DoctorSidebar will be rendered by DashboardLayout */}
           </div>
-          <div className="col-lg-8 col-xl-9">
+          <div className="col-lg-12 col-xl-12">
             {/* Profile Settings */}
             <div className="dashboard-header">
               <h3>Profile Settings</h3>
@@ -48,179 +191,148 @@ const DoctorEducationSettings = () => {
               <h3>Education</h3>
               <ul>
                 <li>
-                  <a href="#" className="btn btn-primary prime-btn add-educations">Add New Education</a>
+                  <a 
+                    href="#" 
+                    className="btn btn-primary prime-btn add-educations"
+                    onClick={handleAddEducation}
+                  >
+                    Add New Education
+                  </a>
                 </li>
               </ul>
             </div>
 
-            <form action="/doctor-education-settings">
+            <form onSubmit={handleSubmit}>
               <div className="accordions education-infos" id="list-accord">
-                {/* Education Item */}
-                <div className="user-accordion-item">
-                  <a href="#" className="accordion-wrap" data-bs-toggle="collapse" data-bs-target="#education1">Education<span>Delete</span></a>
-                  <div className="accordion-collapse collapse show" id="education1" data-bs-parent="#list-accord">
-                    <div className="content-collapse">
-                      <div className="add-service-info">
-                        <div className="add-info">
-                          <div className="row align-items-center">
-                            <div className="col-md-12">
-                              <div className="form-wrap mb-2">
-                                <div className="change-avatar img-upload">
-                                  <div className="profile-img">
-                                    <i className="fa-solid fa-file-image"></i>
-                                  </div>
-                                  <div className="upload-img">
-                                    <h5>Logo</h5>
-                                    <div className="imgs-load d-flex align-items-center">
-                                      <div className="change-photo">
-                                        Upload New 
-                                        <input type="file" className="upload" />
-                                      </div>
-                                      <a href="#" className="upload-remove">Remove</a>
-                                    </div>
-                                    <p className="form-text">Your Image should Below 4 MB, Accepted format jpg,png,svg</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Name of the institution</label>
-                                <input type="text" className="form-control" />
-                              </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Course</label>
-                                <input type="text" className="form-control" />
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Start Date <span className="text-danger">*</span></label>
-                                <div className="form-icon">
-                                  <input type="text" className="form-control datetimepicker" />
-                                  <span className="icon"><i className="fa-regular fa-calendar-days"></i></span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">End Date <span className="text-danger">*</span></label>
-                                <div className="form-icon">
-                                  <input type="text" className="form-control datetimepicker" />
-                                  <span className="icon"><i className="fa-regular fa-calendar-days"></i></span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">No of Years <span className="text-danger">*</span></label>
-                                <input type="text" className="form-control" />
-                              </div>
-                            </div>
-                            <div className="col-lg-12">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Description <span className="text-danger">*</span></label>
-                                <textarea className="form-control" rows="3"></textarea>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-end">
-                          <a href="#" className="reset more-item">Reset</a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* /Education Item */}
+                {educations.length > 0 ? (
+                  educations.map((education, index) => {
+                    const accordionId = `education${index + 1}`
+                    const isFirst = index === 0
+                    const displayText = education.college && education.degree
+                      ? `${education.college} (${education.degree})`
+                      : 'Education'
 
-                {/* Education Item 2 */}
-                <div className="user-accordion-item">
-                  <a href="#" className="collapsed accordion-wrap" data-bs-toggle="collapse" data-bs-target="#education2">Cambridge (MBBS)<span>Delete</span></a>
-                  <div className="accordion-collapse collapse" id="education2" data-bs-parent="#list-accord">
-                    <div className="content-collapse">
-                      <div className="add-service-info">
-                        <div className="add-info">
-                          <div className="row align-items-center">
-                            <div className="col-md-12">
-                              <div className="form-wrap mb-2">
-                                <div className="change-avatar img-upload">
-                                  <div className="profile-img">
-                                    <i className="fa-solid fa-file-image"></i>
-                                  </div>
-                                  <div className="upload-img">
-                                    <h5>Logo</h5>
-                                    <div className="imgs-load d-flex align-items-center">
-                                      <div className="change-photo">
-                                        Upload New 
-                                        <input type="file" className="upload" />
-                                      </div>
-                                      <a href="#" className="upload-remove">Remove</a>
+                    return (
+                      <div key={education._id || index} className="user-accordion-item">
+                        <a 
+                          href="#" 
+                          className={`accordion-wrap ${isFirst ? '' : 'collapsed'}`}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            const target = document.getElementById(accordionId)
+                            if (target) {
+                              const bsCollapse = new window.bootstrap.Collapse(target, { toggle: true })
+                            }
+                          }}
+                        >
+                          {displayText}
+                          <span 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRemoveEducation(index)
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            Delete
+                          </span>
+                        </a>
+                        <div 
+                          className={`accordion-collapse collapse ${isFirst ? 'show' : ''}`} 
+                          id={accordionId} 
+                          data-bs-parent="#list-accord"
+                        >
+                          <div className="content-collapse">
+                            <div className="add-service-info">
+                              <div className="add-info">
+                                <div className="row align-items-center">
+                                  <div className="col-md-6">
+                                    <div className="form-wrap">
+                                      <label className="col-form-label">Name of the institution <span className="text-danger">*</span></label>
+                                      <input 
+                                        type="text" 
+                                        className="form-control"
+                                        value={education.college || ''}
+                                        onChange={(e) => handleEducationChange(index, 'college', e.target.value)}
+                                        placeholder="College/University name"
+                                      />
                                     </div>
-                                    <p className="form-text">Your Image should Below 4 MB, Accepted format jpg,png,svg</p>
+                                  </div>
+                                  <div className="col-md-6">
+                                    <div className="form-wrap">
+                                      <label className="col-form-label">Course/Degree <span className="text-danger">*</span></label>
+                                      <input 
+                                        type="text" 
+                                        className="form-control"
+                                        value={education.degree || ''}
+                                        onChange={(e) => handleEducationChange(index, 'degree', e.target.value)}
+                                        placeholder="e.g., MBBS, MD"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="col-lg-4 col-md-6">
+                                    <div className="form-wrap">
+                                      <label className="col-form-label">Year <span className="text-danger">*</span></label>
+                                      <input 
+                                        type="text" 
+                                        className="form-control"
+                                        value={education.year || ''}
+                                        onChange={(e) => handleEducationChange(index, 'year', e.target.value)}
+                                        placeholder="e.g., 2015"
+                                      />
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Name of the institution</label>
-                                <input type="text" className="form-control" defaultValue="Cambridge" />
-                              </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Course</label>
-                                <input type="text" className="form-control" defaultValue="MBBS" />
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Start Date <span className="text-danger">*</span></label>
-                                <div className="form-icon">
-                                  <input type="text" className="form-control datetimepicker" defaultValue="12-6-2000" />
-                                  <span className="icon"><i className="fa-regular fa-calendar-days"></i></span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">End Date <span className="text-danger">*</span></label>
-                                <div className="form-icon">
-                                  <input type="text" className="form-control datetimepicker" defaultValue="09-05-2005" />
-                                  <span className="icon"><i className="fa-regular fa-calendar-days"></i></span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">No of Years <span className="text-danger">*</span></label>
-                                <input type="text" className="form-control" defaultValue="5" />
-                              </div>
-                            </div>
-                            <div className="col-lg-12">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Description <span className="text-danger">*</span></label>
-                                <textarea className="form-control" rows="3"></textarea>
+                              <div className="text-end">
+                                <a 
+                                  href="#" 
+                                  className="reset more-item"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    handleRemoveEducation(index)
+                                  }}
+                                >
+                                  Remove
+                                </a>
                               </div>
                             </div>
                           </div>
                         </div>
-                        <div className="text-end">
-                          <a href="#" className="reset more-item">Reset</a>
-                        </div>
                       </div>
-                    </div>
+                    )
+                  })
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted">No education added yet. Click "Add New Education" to add one.</p>
                   </div>
-                </div>
-                {/* /Education Item 2 */}
+                )}
               </div>
               
               <div className="modal-btn text-end">
-                <a href="#" className="btn btn-gray">Cancel</a>
-                <button className="btn btn-primary prime-btn">Save Changes</button>
+                <a 
+                  href="#" 
+                  className="btn btn-gray"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleCancel()
+                  }}
+                >
+                  Cancel
+                </a>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary prime-btn"
+                  disabled={updateProfileMutation.isLoading}
+                >
+                  {updateProfileMutation.isLoading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
               </div>
             </form>
             {/* /Profile Settings */}
@@ -232,4 +344,3 @@ const DoctorEducationSettings = () => {
 }
 
 export default DoctorEducationSettings
-

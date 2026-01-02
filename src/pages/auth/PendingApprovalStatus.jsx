@@ -2,26 +2,90 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import AuthLayout from '../../layouts/AuthLayout'
 import { useAuth } from '../../contexts/AuthContext'
+import api from '../../api/axios'
+import { toast } from 'react-toastify'
 
 const PendingApprovalStatus = () => {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const [checkingStatus, setCheckingStatus] = useState(true)
+  const [currentStatus, setCurrentStatus] = useState(null)
 
   useEffect(() => {
     // Check if user is already approved
     const checkApprovalStatus = async () => {
       try {
-        // TODO: Replace with actual API call
-        // const response = await axios.get('/api/doctors/verification-status')
-        // if (response.data.status === 'approved') {
-        //   navigate('/doctor/dashboard')
-        // } else if (response.data.status === 'rejected') {
-        //   navigate('/doctor-verification-upload')
-        // }
+        // Check user status from AuthContext first
+        if (user) {
+          const status = user.status?.toUpperCase()
+          setCurrentStatus(status)
+          
+          if (status === 'APPROVED') {
+            // Doctor is approved, redirect to dashboard
+            toast.success('Your account has been approved! Redirecting to dashboard...')
+            navigate('/doctor/dashboard')
+            return
+          } else if (status === 'REJECTED' || status === 'BLOCKED') {
+            // Doctor is rejected or blocked
+            toast.error('Your account has been rejected or blocked. Please contact support.')
+            setCheckingStatus(false)
+            return
+          }
+        }
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // If user status is not in context, try to get from API
+        // Use /users/:id endpoint to get user status (requires auth token)
+        if (user?._id || user?.id) {
+          try {
+            const userId = user._id || user.id
+            // Get user by ID (requires authentication token)
+            const response = await api.get(`/users/${userId}`)
+            const userData = response.data || response
+            const userStatus = userData.status?.toUpperCase()
+            
+            if (userStatus) {
+              setCurrentStatus(userStatus)
+              
+              if (userStatus === 'APPROVED') {
+                toast.success('Your account has been approved! Redirecting to dashboard...')
+                navigate('/doctor/dashboard')
+                return
+              } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
+                toast.error('Your account has been rejected or blocked. Please contact support.')
+                setCheckingStatus(false)
+                return
+              }
+            }
+          } catch (apiError) {
+            console.error('Error fetching user status:', apiError)
+            // If /users/:id fails, try /doctor/profile/:id (public endpoint) as fallback
+            try {
+              const userId = user._id || user.id
+              const profileResponse = await api.get(`/doctor/profile/${userId}`)
+              const doctorData = profileResponse.data || profileResponse
+              const userStatus = doctorData.userId?.status?.toUpperCase() || doctorData.user?.status?.toUpperCase()
+              
+              if (userStatus) {
+                setCurrentStatus(userStatus)
+                
+                if (userStatus === 'APPROVED') {
+                  toast.success('Your account has been approved! Redirecting to dashboard...')
+                  navigate('/doctor/dashboard')
+                  return
+                } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
+                  toast.error('Your account has been rejected or blocked. Please contact support.')
+                  setCheckingStatus(false)
+                  return
+                }
+              }
+            } catch (profileError) {
+              console.error('Error fetching doctor profile:', profileError)
+              // If both fail, just show pending status (user might not have doctor profile yet)
+              console.log('Using status from AuthContext:', user.status)
+            }
+          }
+        }
+
         setCheckingStatus(false)
       } catch (error) {
         console.error('Error checking approval status:', error)
@@ -34,11 +98,81 @@ const PendingApprovalStatus = () => {
     // Poll for status updates every 30 seconds
     const interval = setInterval(checkApprovalStatus, 30000)
     return () => clearInterval(interval)
-  }, [navigate])
+  }, [navigate, user])
 
   const handleLogout = () => {
-    // TODO: Implement logout
+    logout()
     navigate('/login')
+  }
+
+  const handleCheckStatus = async () => {
+    setCheckingStatus(true)
+    try {
+      if (!user?._id && !user?.id) {
+        toast.error('User information not available. Please login again.')
+        setCheckingStatus(false)
+        return
+      }
+
+      const userId = user._id || user.id
+      
+      // Try to get user by ID first (requires authentication)
+      try {
+        const response = await api.get(`/users/${userId}`)
+        const userData = response.data || response
+        const userStatus = userData.status?.toUpperCase()
+        
+        if (userStatus) {
+          setCurrentStatus(userStatus)
+          
+          if (userStatus === 'APPROVED') {
+            toast.success('Your account has been approved! Redirecting to dashboard...')
+            navigate('/doctor/dashboard')
+            return
+          } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
+            toast.error('Your account has been rejected or blocked.')
+          } else {
+            toast.info('Your account is still pending approval.')
+          }
+          setCheckingStatus(false)
+          return
+        }
+      } catch (userError) {
+        console.error('Error fetching user:', userError)
+        // Fallback to doctor profile endpoint
+      }
+
+      // Fallback: Try doctor profile endpoint (public)
+      try {
+        const profileResponse = await api.get(`/doctor/profile/${userId}`)
+        const doctorData = profileResponse.data || profileResponse
+        const userStatus = doctorData.userId?.status?.toUpperCase() || doctorData.user?.status?.toUpperCase()
+        
+        if (userStatus) {
+          setCurrentStatus(userStatus)
+          
+          if (userStatus === 'APPROVED') {
+            toast.success('Your account has been approved! Redirecting to dashboard...')
+            navigate('/doctor/dashboard')
+            return
+          } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
+            toast.error('Your account has been rejected or blocked.')
+          } else {
+            toast.info('Your account is still pending approval.')
+          }
+        } else {
+          toast.warning('Unable to determine account status.')
+        }
+      } catch (profileError) {
+        console.error('Error fetching doctor profile:', profileError)
+        toast.error('Failed to check status. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error checking status:', error)
+      toast.error('Failed to check status. Please try again.')
+    } finally {
+      setCheckingStatus(false)
+    }
   }
 
   return (
@@ -129,10 +263,11 @@ const PendingApprovalStatus = () => {
                             <button
                               type="button"
                               className="btn btn-primary"
-                              onClick={() => window.location.reload()}
+                              onClick={handleCheckStatus}
+                              disabled={checkingStatus}
                             >
                               <i className="fe fe-refresh-cw me-2"></i>
-                              Check Status Again
+                              {checkingStatus ? 'Checking...' : 'Check Status Again'}
                             </button>
                             <Link
                               to="/doctor-verification-upload"

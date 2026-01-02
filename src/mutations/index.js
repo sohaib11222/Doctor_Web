@@ -69,3 +69,6 @@ export * from './notificationMutations'
 // Upload Mutations
 export * from './uploadMutations'
 
+// Order Mutations
+export * from './orderMutations'
+

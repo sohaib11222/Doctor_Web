@@ -16,6 +16,9 @@ export const API_ROUTES = {
     REFRESH_TOKEN: '/auth/refresh-token',
     CHANGE_PASSWORD: '/auth/change-password',
     APPROVE_DOCTOR: '/auth/approve-doctor',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    VERIFY_RESET_CODE: '/auth/verify-reset-code',
+    RESET_PASSWORD: '/auth/reset-password',
   },
 
   // Specialization Routes
@@ -252,6 +255,19 @@ export const API_ROUTES = {
     PRODUCT: '/upload/product',
     BLOG: '/upload/blog',
     GENERAL: '/upload/general',
+  },
+
+  // Order Routes
+  ORDER: {
+    BASE: '/orders',
+    CREATE: '/orders',
+    GET: (id) => `/orders/${id}`,
+    LIST: '/orders',
+    UPDATE_STATUS: (id) => `/orders/${id}/status`,
+    UPDATE_SHIPPING: (id) => `/orders/${id}/shipping`,
+    CANCEL: (id) => `/orders/${id}/cancel`,
+    PAY: (id) => `/orders/${id}/pay`,
+    ADMIN_LIST: '/admin/orders',
   },
 }
 

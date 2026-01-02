@@ -1,6 +1,154 @@
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'react-toastify'
+import { useAuth } from '../../contexts/AuthContext'
+import * as profileApi from '../../api/profile'
 
 const DoctorExperienceSettings = () => {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const experienceCounterRef = useRef(0)
+
+  // Experience state: array of {hospital, fromYear, toYear, designation}
+  const [experiences, setExperiences] = useState([])
+
+  // Fetch doctor profile
+  const { data: doctorProfile, isLoading: profileLoading, error: profileError } = useQuery({
+    queryKey: ['doctorProfile'],
+    queryFn: () => profileApi.getDoctorProfile(),
+    enabled: !!user,
+    retry: 1
+  })
+
+  // Initialize experiences from profile
+  useEffect(() => {
+    console.log('DoctorProfile Data:', doctorProfile)
+    if (doctorProfile) {
+      // Axios interceptor returns response.data, so doctorProfile is already { success, message, data }
+      const profileData = doctorProfile.data || doctorProfile
+      console.log('Profile Data:', profileData)
+      console.log('Experience Data:', profileData.experience)
+      
+      // Handle null or array
+      const experienceArray = profileData.experience
+      if (experienceArray && Array.isArray(experienceArray) && experienceArray.length > 0) {
+        setExperiences(experienceArray.map((exp, idx) => ({
+          _id: exp._id || `exp-${Date.now()}-${idx}`,
+          hospital: exp.hospital || '',
+          fromYear: exp.fromYear || '',
+          toYear: exp.toYear || '',
+          designation: exp.designation || ''
+        })))
+      } else {
+        setExperiences([])
+      }
+    }
+  }, [doctorProfile])
+
+  // Update doctor profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: (data) => profileApi.updateDoctorProfile(data),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries(['doctorProfile'])
+      toast.success('Experience updated successfully!')
+    },
+    onError: (error) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update experience'
+      toast.error(errorMessage)
+    }
+  })
+
+  // Handle add new experience
+  const handleAddExperience = (e) => {
+    e.preventDefault()
+    const newId = `exp-${Date.now()}-${experienceCounterRef.current++}`
+    setExperiences([...experiences, {
+      _id: newId,
+      hospital: '',
+      fromYear: '',
+      toYear: '',
+      designation: ''
+    }])
+  }
+
+  // Handle experience change
+  const handleExperienceChange = (index, field, value) => {
+    const newExperiences = [...experiences]
+    if (!newExperiences[index]) {
+      newExperiences[index] = { hospital: '', fromYear: '', toYear: '', designation: '' }
+    }
+    newExperiences[index][field] = value
+    setExperiences(newExperiences)
+  }
+
+  // Handle remove experience
+  const handleRemoveExperience = (index) => {
+    if (window.confirm('Are you sure you want to remove this experience?')) {
+      setExperiences(experiences.filter((_, i) => i !== index))
+    }
+  }
+
+  // Handle form submit
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    // Filter out empty experiences
+    const validExperiences = experiences.filter(exp => 
+      exp.hospital && exp.hospital.trim()
+    )
+
+    // Prepare update data - only include fields with values
+    const updateData = {
+      experience: validExperiences.map(exp => {
+        const expData = {}
+        if (exp.hospital?.trim()) expData.hospital = exp.hospital.trim()
+        if (exp.fromYear?.trim()) expData.fromYear = exp.fromYear.trim()
+        if (exp.toYear?.trim()) expData.toYear = exp.toYear.trim()
+        if (exp.designation?.trim()) expData.designation = exp.designation.trim()
+        return expData
+      })
+    }
+
+    updateProfileMutation.mutate(updateData)
+  }
+
+  // Handle cancel
+  const handleCancel = () => {
+    if (doctorProfile) {
+      const profileData = doctorProfile.data || doctorProfile
+      const experienceArray = profileData.experience
+      if (experienceArray && Array.isArray(experienceArray) && experienceArray.length > 0) {
+        setExperiences(experienceArray.map((exp, idx) => ({
+          _id: exp._id || `exp-${Date.now()}-${idx}`,
+          hospital: exp.hospital || '',
+          fromYear: exp.fromYear || '',
+          toYear: exp.toYear || '',
+          designation: exp.designation || ''
+        })))
+      } else {
+        setExperiences([])
+      }
+    } else {
+      setExperiences([])
+    }
+  }
+
+  if (profileLoading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (profileError) {
+    console.error('Error loading profile:', profileError)
+  }
+
   return (
     <div className="content doctor-content">
       <div className="container">
@@ -8,7 +156,7 @@ const DoctorExperienceSettings = () => {
           <div className="col-lg-4 col-xl-3 theiaStickySidebar">
             {/* DoctorSidebar will be rendered by DashboardLayout */}
           </div>
-          <div className="col-lg-8 col-xl-9">
+          <div className="col-lg-12 col-xl-12">
             {/* Profile Settings */}
             <div className="dashboard-header">
               <h3>Profile Settings</h3>
@@ -48,229 +196,160 @@ const DoctorExperienceSettings = () => {
               <h3>Experience</h3>
               <ul>
                 <li>
-                  <a href="#" className="btn btn-primary prime-btn add-experiences">Add New Experience</a>
+                  <a 
+                    href="#" 
+                    className="btn btn-primary prime-btn add-experiences"
+                    onClick={handleAddExperience}
+                  >
+                    Add New Experience
+                  </a>
                 </li>
               </ul>
             </div>
 
-            <form action="/doctor-experience-settings">
+            <form onSubmit={handleSubmit}>
               <div className="accordions experience-infos" id="list-accord">
-                {/* Experience1 Item */}
-                <div className="user-accordion-item">
-                  <a href="#" className="accordion-wrap" data-bs-toggle="collapse" data-bs-target="#experience1">Experience<span>Delete</span></a>
-                  <div className="accordion-collapse collapse show" id="experience1" data-bs-parent="#list-accord">
-                    <div className="content-collapse">
-                      <div className="add-service-info">
-                        <div className="add-info">
-                          <div className="row align-items-center">
-                            <div className="col-md-12">
-                              <div className="form-wrap mb-2">
-                                <div className="change-avatar img-upload">
-                                  <div className="profile-img">
-                                    <i className="fa-solid fa-file-image"></i>
-                                  </div>
-                                  <div className="upload-img">
-                                    <h5>Hospital Logo</h5>
-                                    <div className="imgs-load d-flex align-items-center">
-                                      <div className="change-photo">
-                                        Upload New 
-                                        <input type="file" className="upload" />
-                                      </div>
-                                      <a href="#" className="upload-remove">Remove</a>
-                                    </div>
-                                    <p className="form-text">Your Image should Below 4 MB, Accepted format jpg,png,svg</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Title</label>
-                                <input type="text" className="form-control" />
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Hospital <span className="text-danger">*</span></label>
-                                <input type="text" className="form-control" />
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Year of Experience <span className="text-danger">*</span></label>
-                                <input type="text" className="form-control" />
-                              </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Location <span className="text-danger">*</span></label>
-                                <input type="text" className="form-control" />
-                              </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Employement</label>
-                                <select className="select">
-                                  <option>Full Time</option>
-                                  <option>Part Time</option>
-                                </select>
-                              </div>
-                            </div>
-                            <div className="col-lg-12">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Job Description <span className="text-danger">*</span></label>
-                                <textarea className="form-control" rows="3"></textarea>
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Start Date <span className="text-danger">*</span></label>
-                                <div className="form-icon">
-                                  <input type="text" className="form-control datetimepicker" />
-                                  <span className="icon"><i className="fa-regular fa-calendar-days"></i></span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">End Date <span className="text-danger">*</span></label>
-                                <div className="form-icon">
-                                  <input type="text" className="form-control datetimepicker" />
-                                  <span className="icon"><i className="fa-regular fa-calendar-days"></i></span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">&nbsp;</label>
-                                <div className="form-check">
-                                  <label className="form-check-label">
-                                    <input className="form-check-input" type="checkbox" /> I Currently Working Here
-                                  </label>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-end">
-                          <a href="#" className="reset more-item">Reset</a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* /Experience1 Item */}
+                {experiences.length > 0 ? (
+                  experiences.map((experience, index) => {
+                    const accordionId = `experience${index + 1}`
+                    const isFirst = index === 0
+                    const displayText = experience.hospital 
+                      ? `${experience.hospital}${experience.fromYear && experience.toYear ? ` (${experience.fromYear} - ${experience.toYear})` : ''}`
+                      : 'Experience'
 
-                {/* Experience2 Item */}
-                <div className="user-accordion-item">
-                  <a href="#" className="collapsed accordion-wrap" data-bs-toggle="collapse" data-bs-target="#experience2">Hill Medical Hospital, Newcastle (15  Mar 2021 - 24 Jan 2023 )<span>Delete</span></a>
-                  <div className="accordion-collapse collapse" id="experience2" data-bs-parent="#list-accord">
-                    <div className="content-collapse">
-                      <div className="add-service-info">
-                        <div className="add-info">
-                          <div className="row align-items-center">
-                            <div className="col-md-12">
-                              <div className="form-wrap mb-2">
-                                <div className="change-avatar img-upload">
-                                  <div className="profile-img">
-                                    <i className="fa-solid fa-file-image"></i>
-                                  </div>
-                                  <div className="upload-img">
-                                    <h5>Hospital Logo</h5>
-                                    <div className="imgs-load d-flex align-items-center">
-                                      <div className="change-photo">
-                                        Upload New 
-                                        <input type="file" className="upload" />
-                                      </div>
-                                      <a href="#" className="upload-remove">Remove</a>
+                    return (
+                      <div key={experience._id || index} className="user-accordion-item">
+                        <a 
+                          href="#" 
+                          className={`accordion-wrap ${isFirst ? '' : 'collapsed'}`}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            const target = document.getElementById(accordionId)
+                            if (target) {
+                              const bsCollapse = new window.bootstrap.Collapse(target, { toggle: true })
+                            }
+                          }}
+                        >
+                          {displayText}
+                          <span 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRemoveExperience(index)
+                            }}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            Delete
+                          </span>
+                        </a>
+                        <div 
+                          className={`accordion-collapse collapse ${isFirst ? 'show' : ''}`} 
+                          id={accordionId} 
+                          data-bs-parent="#list-accord"
+                        >
+                          <div className="content-collapse">
+                            <div className="add-service-info">
+                              <div className="add-info">
+                                <div className="row align-items-center">
+                                  <div className="col-lg-4 col-md-6">
+                                    <div className="form-wrap">
+                                      <label className="col-form-label">Designation/Title</label>
+                                      <input 
+                                        type="text" 
+                                        className="form-control"
+                                        value={experience.designation || ''}
+                                        onChange={(e) => handleExperienceChange(index, 'designation', e.target.value)}
+                                        placeholder="e.g., Senior Surgeon"
+                                      />
                                     </div>
-                                    <p className="form-text">Your Image should Below 4 MB, Accepted format jpg,png,svg</p>
+                                  </div>
+                                  <div className="col-lg-4 col-md-6">
+                                    <div className="form-wrap">
+                                      <label className="col-form-label">Hospital <span className="text-danger">*</span></label>
+                                      <input 
+                                        type="text" 
+                                        className="form-control"
+                                        value={experience.hospital || ''}
+                                        onChange={(e) => handleExperienceChange(index, 'hospital', e.target.value)}
+                                        placeholder="Hospital name"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="col-lg-4 col-md-6">
+                                    <div className="form-wrap">
+                                      <label className="col-form-label">From Year <span className="text-danger">*</span></label>
+                                      <input 
+                                        type="text" 
+                                        className="form-control"
+                                        value={experience.fromYear || ''}
+                                        onChange={(e) => handleExperienceChange(index, 'fromYear', e.target.value)}
+                                        placeholder="e.g., 2020"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="col-lg-4 col-md-6">
+                                    <div className="form-wrap">
+                                      <label className="col-form-label">To Year <span className="text-danger">*</span></label>
+                                      <input 
+                                        type="text" 
+                                        className="form-control"
+                                        value={experience.toYear || ''}
+                                        onChange={(e) => handleExperienceChange(index, 'toYear', e.target.value)}
+                                        placeholder="e.g., 2023 or Present"
+                                      />
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Title</label>
-                                <input type="text" className="form-control" />
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Hospital <span className="text-danger">*</span></label>
-                                <input type="text" className="form-control" />
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Year of Experience <span className="text-danger">*</span></label>
-                                <input type="text" className="form-control" />
-                              </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Location <span className="text-danger">*</span></label>
-                                <input type="text" className="form-control" />
-                              </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Employement</label>
-                                <select className="select">
-                                  <option>Full Time</option>
-                                  <option>Part Time</option>
-                                </select>
-                              </div>
-                            </div>
-                            <div className="col-lg-12">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Job Description <span className="text-danger">*</span></label>
-                                <textarea className="form-control" rows="3"></textarea>
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">Start Date <span className="text-danger">*</span></label>
-                                <div className="form-icon">
-                                  <input type="text" className="form-control datetimepicker" />
-                                  <span className="icon"><i className="fa-regular fa-calendar-days"></i></span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">End Date <span className="text-danger">*</span></label>
-                                <div className="form-icon">
-                                  <input type="text" className="form-control datetimepicker" />
-                                  <span className="icon"><i className="fa-regular fa-calendar-days"></i></span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="col-lg-4 col-md-6">
-                              <div className="form-wrap">
-                                <label className="col-form-label">&nbsp;</label>
-                                <div className="form-check">
-                                  <label className="form-check-label">
-                                    <input className="form-check-input" type="checkbox" /> I Currently Working Here
-                                  </label>
-                                </div>
+                              <div className="text-end">
+                                <a 
+                                  href="#" 
+                                  className="reset more-item"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    handleRemoveExperience(index)
+                                  }}
+                                >
+                                  Remove
+                                </a>
                               </div>
                             </div>
                           </div>
                         </div>
-                        <div className="text-end">
-                          <a href="#" className="reset more-item">Reset</a>
-                        </div>
                       </div>
-                    </div>
+                    )
+                  })
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted">No experiences added yet. Click "Add New Experience" to add one.</p>
                   </div>
-                </div>
-                {/* /Experience2 Item */}
+                )}
               </div>
               
               <div className="modal-btn text-end">
-                <a href="#" className="btn btn-gray">Cancel</a>
-                <button type="submit" className="btn btn-primary prime-btn">Save Changes</button>
+                <a 
+                  href="#" 
+                  className="btn btn-gray"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleCancel()
+                  }}
+                >
+                  Cancel
+                </a>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary prime-btn"
+                  disabled={updateProfileMutation.isLoading}
+                >
+                  {updateProfileMutation.isLoading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
               </div>
             </form>
             {/* /Profile Settings */}
@@ -282,4 +361,3 @@ const DoctorExperienceSettings = () => {
 }
 
 export default DoctorExperienceSettings
-

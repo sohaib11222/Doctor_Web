@@ -16,7 +16,7 @@ const DoctorAppointmentStart = () => {
             <li>
               <div className="patinet-information">
                 <Link to="/patient-profile">
-                  <img src="/public/assets/img/doctors-dashboard/profile-02.jpg" alt="User Image" />
+                  <img src="/assets/img/doctors-dashboard/profile-02.jpg" alt="User Image" />
                 </Link>
                 <div className="patient-info">
                   <p>#Apt0001</p>

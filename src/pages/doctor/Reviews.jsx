@@ -1,4 +1,121 @@
+import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '../../contexts/AuthContext'
+import * as reviewsApi from '../../api/reviews'
+import * as profileApi from '../../api/profile'
+
 const Reviews = () => {
+  const { user } = useAuth()
+  const [page, setPage] = useState(1)
+  const limit = 10
+
+  // Fetch doctor profile for overall rating
+  const { data: doctorProfile } = useQuery({
+    queryKey: ['doctorProfile'],
+    queryFn: () => profileApi.getDoctorProfile(),
+    enabled: !!user
+  })
+
+  // Fetch reviews
+  const { data: reviewsData, isLoading: reviewsLoading, error: reviewsError } = useQuery({
+    queryKey: ['doctorReviews', page],
+    queryFn: () => reviewsApi.getDoctorReviews({ page, limit }),
+    enabled: !!user
+  })
+
+  // Extract reviews and pagination from response
+  // API function returns: { reviews: [...], pagination: {...} }
+  // Handle both structures in case response format differs
+  const reviews = reviewsData?.reviews || reviewsData?.data?.reviews || []
+  const pagination = reviewsData?.pagination || reviewsData?.data?.pagination || { page: 1, limit: 10, total: 0, pages: 1 }
+
+  // Debug logging
+  useEffect(() => {
+    if (reviewsData) {
+      console.log('Reviews Data:', reviewsData)
+      console.log('Reviews:', reviews)
+      console.log('Pagination:', pagination)
+    }
+    if (reviewsError) {
+      console.error('Reviews Error:', reviewsError)
+    }
+  }, [reviewsData, reviewsError, reviews, pagination])
+  const overallRating = doctorProfile?.data?.ratingAvg || 0
+  const ratingCount = doctorProfile?.data?.ratingCount || 0
+
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    })
+  }
+
+  // Render stars
+  const renderStars = (rating) => {
+    const stars = []
+    const fullStars = Math.floor(rating)
+    const hasHalfStar = rating % 1 !== 0
+
+    for (let i = 0; i < 5; i++) {
+      if (i < fullStars) {
+        stars.push(<i key={i} className="fa-solid fa-star filled"></i>)
+      } else if (i === fullStars && hasHalfStar) {
+        stars.push(<i key={i} className="fa-solid fa-star-half filled"></i>)
+      } else {
+        stars.push(<i key={i} className="fa-solid fa-star"></i>)
+      }
+    }
+    return stars
+  }
+
+  // Handle pagination
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.pages) {
+      setPage(newPage)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = []
+    const totalPages = pagination.pages
+    const currentPage = pagination.page
+
+    if (totalPages <= 7) {
+      // Show all pages if 7 or fewer
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      // Show first page, last page, current page, and pages around current
+      pages.push(1)
+      
+      if (currentPage > 3) {
+        pages.push('...')
+      }
+      
+      const start = Math.max(2, currentPage - 1)
+      const end = Math.min(totalPages - 1, currentPage + 1)
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i)
+      }
+      
+      if (currentPage < totalPages - 2) {
+        pages.push('...')
+      }
+      
+      pages.push(totalPages)
+    }
+    
+    return pages
+  }
+
   return (
     <>
       <div className="doc-review">
@@ -15,176 +132,134 @@ const Reviews = () => {
               <div className="review-rate">
                 <h5>Overall Rating</h5>
                 <div className="star-rated">
-                  <span>4.0</span>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star"></i>
-                </div>
-              </div>
-              <div className="position-relative daterange-wraper">
-                <div className="input-groupicon calender-input">
-                  <input type="text" className="form-control date-range bookingrange" placeholder="From Date - To Date " />
-                </div>
-                <i className="fa-solid fa-calendar-days"></i>
-              </div>
-            </div>
-          </li>
-          <li>
-            <div className="comments">
-              <div className="comment-head">
-                <div className="patinet-information">
-                  <a href="javascript:void(0);">
-                    <img src="/public/assets/img/doctors-dashboard/profile-01.jpg" alt="User Image" />
-                  </a>
-                  <div className="patient-info">
-                    <h6><a href="javascript:void(0);">Adrian</a></h6>
-                    <span>15 Mar 2024</span>
-                  </div>
-                </div>
-                <div className="star-rated">
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star"></i>
-                </div>
-              </div>
-              <div className="review-info">
-                <p>Dr. Edalin Hendry has been my family's trusted doctor for years. 
-                  Their genuine care and thorough approach to our health concerns make every visit reassuring. 
-                  Dr. Edalin Hendry's ability to listen and explain complex health issues in understandable terms
-                  is exceptional. We are grateful to have such a dedicated physician by our side
-                </p>
-                <div className="comment-reply">
-                  <a href="#" className="d-inline-flex align-items-center"><i className="fa-solid fa-reply me-2"></i> Reply</a>
+                  <span>{overallRating.toFixed(1)}</span>
+                  {renderStars(overallRating)}
+                  <span className="ms-2 text-muted">({ratingCount} {ratingCount === 1 ? 'review' : 'reviews'})</span>
                 </div>
               </div>
             </div>
           </li>
-          <li>
-            <div className="comments">
-              <div className="comment-head">
-                <div className="patinet-information">
-                  <a href="javascript:void(0);">
-                    <img src="/public/assets/img/doctors-dashboard/profile-02.jpg" alt="User Image" />
-                  </a>
-                  <div className="patient-info">
-                    <h6><a href="javascript:void(0);">Kelly</a></h6>
-                    <span>11 Mar 2024</span>
-                  </div>
-                </div>
-                <div className="star-rated">
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star"></i>
+
+          {reviewsLoading ? (
+            <li>
+              <div className="text-center py-5">
+                <div className="spinner-border" role="status">
+                  <span className="visually-hidden">Loading reviews...</span>
                 </div>
               </div>
-              <div className="review-info">
-                <p>
-                  I recently completed a series of dental treatments with Dr.Edalin Hendry, 
-                  and I couldn't be more pleased with the results. From my very first appointment, Dr. 
-                  Edalin Hendry and their team made me feel completely at ease, addressing all of my concerns 
-                  with patience and understanding. 
-                  Their state-of-the-art office and the staff's attention to comfort and cleanliness were beyond impressive.
-                </p>
-                <div className="comment-reply">
-                  <a href="#" className="d-inline-flex align-items-center replied-text"><i className="fa-solid fa-reply me-2"></i> Reply</a>
-                </div>
+            </li>
+          ) : reviewsError ? (
+            <li>
+              <div className="text-center py-5 text-danger">
+                <p>Error loading reviews</p>
+                <small>{reviewsError.response?.data?.message || reviewsError.message || 'Failed to load reviews'}</small>
               </div>
-            </div>
-            <ul>
-              <li>
-                <div className="replied-comment">
-                  <div className="patinet-information">
-                    <a href="javascript:void(0);">
-                      <img src="/public/assets/img/doctors-dashboard/doctor-profile-img.jpg" alt="User Image" />
-                    </a>
-                    <div className="patient-info">
-                      <h6><a href="javascript:void(0);">Dr Edalin Hendry</a></h6>
-                      <span>2 days ago</span>
+            </li>
+          ) : reviews.length === 0 ? (
+            <li>
+              <div className="text-center py-5 text-muted">
+                <p>No reviews yet</p>
+                <small>Reviews from patients will appear here</small>
+              </div>
+            </li>
+          ) : (
+            reviews.map((review) => (
+              <li key={review._id}>
+                <div className="comments">
+                  <div className="comment-head">
+                    <div className="patinet-information">
+                      <a href="javascript:void(0);">
+                        <img 
+                          src={review.patientId?.profileImage || '/assets/img/doctors-dashboard/profile-01.jpg'} 
+                          alt={review.patientId?.fullName || 'Patient'} 
+                          onError={(e) => {
+                            e.target.src = '/assets/img/doctors-dashboard/profile-01.jpg'
+                          }}
+                        />
+                      </a>
+                      <div className="patient-info">
+                        <h6>
+                          <a href="javascript:void(0);">
+                            {review.patientId?.fullName || 'Anonymous'}
+                          </a>
+                        </h6>
+                        <span>{formatDate(review.createdAt)}</span>
+                        {review.reviewType === 'APPOINTMENT' && (
+                          <small className="d-block text-muted">Appointment Review</small>
+                        )}
+                      </div>
+                    </div>
+                    <div className="star-rated">
+                      {renderStars(review.rating)}
                     </div>
                   </div>
                   <div className="review-info">
-                    <p>
-                      Thank you so much for taking the time to share your experience at 
-                      our dental clinic. We are deeply touched by your kind words and thrilled to hear about 
-                      the positive impact of your treatment. Our team strives to provide a comfortable, 
-                      welcoming environment for all our patients, and it's heartening to know we achieved this for you.
-                    </p>
-                    <div className="comment-reply">
-                      <a href="#" className="d-inline-flex align-items-center"><i className="fa-solid fa-reply me-2"></i> Reply</a>
-                    </div>
+                    {review.reviewText ? (
+                      <p>{review.reviewText}</p>
+                    ) : (
+                      <p className="text-muted fst-italic">No comment provided</p>
+                    )}
                   </div>
                 </div>
               </li>
-            </ul>
-          </li>
-          <li>
-            <div className="comments">
-              <div className="comment-head">
-                <div className="patinet-information">
-                  <a href="javascript:void(0);">
-                    <img src="/public/assets/img/doctors-dashboard/profile-03.jpg" alt="User Image" />
-                  </a>
-                  <div className="patient-info">
-                    <h6><a href="javascript:void(0);">Samuel</a></h6>
-                    <span>05 Mar 2024</span>
-                  </div>
-                </div>
-                <div className="star-rated">
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star filled"></i>
-                  <i className="fa-solid fa-star"></i>
-                </div>
-              </div>
-              <div className="review-info">
-                <p>
-                  From my first consultation through to the completion of my treatment, 
-                  Dr. Edalin Hendry, my dentist, has been nothing short of extraordinary. 
-                  Dental visits have always been a source of anxiety for me, but Dr. Edalin Hendry's office provided an 
-                  atmosphere of calm and reassurance that I had not experienced elsewhere. Highly Recommended!
-                </p>
-                <div className="comment-reply">
-                  <a href="#" className="d-inline-flex align-items-center"><i className="fa-solid fa-reply me-2"></i> Reply</a>
-                </div>
-              </div>
-            </div>
-          </li>
+            ))
+          )}
         </ul>
         {/* /Comment List */}
 
         {/* Pagination */}
-        <div className="pagination dashboard-pagination">
-          <ul>
-            <li>
-              <a href="#" className="page-link"><i className="fa-solid fa-chevron-left"></i></a>
-            </li>
-            <li>
-              <a href="#" className="page-link">1</a>
-            </li>
-            <li>
-              <a href="#" className="page-link active">2</a>
-            </li>
-            <li>
-              <a href="#" className="page-link">3</a>
-            </li>
-            <li>
-              <a href="#" className="page-link">4</a>
-            </li>
-            <li>
-              <a href="#" className="page-link">...</a>
-            </li>
-            <li>
-              <a href="#" className="page-link"><i className="fa-solid fa-chevron-right"></i></a>
-            </li>
-          </ul>
-        </div>
+        {pagination.pages > 1 && (
+          <div className="pagination dashboard-pagination">
+            <ul>
+              <li>
+                <a 
+                  href="#" 
+                  className={`page-link ${pagination.page === 1 ? 'disabled' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (pagination.page > 1) {
+                      handlePageChange(pagination.page - 1)
+                    }
+                  }}
+                >
+                  <i className="fa-solid fa-chevron-left"></i>
+                </a>
+              </li>
+              {getPageNumbers().map((pageNum, index) => (
+                <li key={index}>
+                  {pageNum === '...' ? (
+                    <a href="#" className="page-link">...</a>
+                  ) : (
+                    <a
+                      href="#"
+                      className={`page-link ${pagination.page === pageNum ? 'active' : ''}`}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        handlePageChange(pageNum)
+                      }}
+                    >
+                      {pageNum}
+                    </a>
+                  )}
+                </li>
+              ))}
+              <li>
+                <a
+                  href="#"
+                  className={`page-link ${pagination.page === pagination.pages ? 'disabled' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (pagination.page < pagination.pages) {
+                      handlePageChange(pagination.page + 1)
+                    }
+                  }}
+                >
+                  <i className="fa-solid fa-chevron-right"></i>
+                </a>
+              </li>
+            </ul>
+          </div>
+        )}
         {/* /Pagination */}
       </div>
     </>
@@ -192,4 +267,3 @@ const Reviews = () => {
 }
 
 export default Reviews
-

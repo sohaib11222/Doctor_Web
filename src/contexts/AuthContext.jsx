@@ -15,9 +15,12 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token')
     if (token) {
       try {
+        // Try to get user - this will automatically refresh token if expired
         const userData = await authApi.getUser()
         setUser(userData)
       } catch (error) {
+        // If refresh also fails, clear token and user
+        console.error('Auth check failed:', error)
         localStorage.removeItem('token')
         setUser(null)
       }
@@ -25,9 +28,9 @@ export const AuthProvider = ({ children }) => {
     setLoading(false)
   }
 
-  const login = async (email, password, userType = 'patient') => {
+  const login = async (email, password) => {
     try {
-      const response = await authApi.login(email, password, userType)
+      const response = await authApi.login(email, password)
       localStorage.setItem('token', response.token)
       setUser(response.user)
       return response

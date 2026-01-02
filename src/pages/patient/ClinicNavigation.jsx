@@ -1,140 +1,81 @@
 import { useState, useEffect } from 'react'
-import { useLocation, Link } from 'react-router-dom'
+import { useLocation, Link, useSearchParams } from 'react-router-dom'
+import { useClinicLocation, useRoute } from '../../queries/mappingQueries'
+import RouteMap from '../../components/maps/RouteMap'
 
 const ClinicNavigation = () => {
   const location = useLocation()
-  const [mapLoaded, setMapLoaded] = useState(false)
+  const [searchParams] = useSearchParams()
+  const clinicId = searchParams.get('clinicId') || location.state?.clinicId
+  
+  // Fetch clinic location from backend
+  const { data: clinicData, isLoading: clinicLoading } = useClinicLocation(clinicId, {
+    enabled: !!clinicId
+  })
+  
+  const [userLocation, setUserLocation] = useState(null)
+  const [routeInfo, setRouteInfo] = useState(null)
 
-  // Get clinic info from location state or use defaults
-  const clinicInfo = location.state?.clinic || {
+  // Get clinic info from API or fallback to location state
+  const clinicInfo = clinicData?.data || location.state?.clinic || {
     name: 'Bright Smiles Dental Clinic',
     address: '123 Main Street, New York, NY 10001',
     phone: '+1 234 567 8900',
-    lat: 40.7128,
-    lng: -74.0060
+    coordinates: { lat: 40.7128, lng: -74.0060 }
   }
 
+  // Get user's current location
   useEffect(() => {
-    // Load Google Maps script
-    const loadGoogleMaps = () => {
-      if (window.google && window.google.maps) {
-        initMap()
-        return
-      }
-
-      const script = document.createElement('script')
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY'}&libraries=places`
-      script.async = true
-      script.defer = true
-      script.onload = () => {
-        setMapLoaded(true)
-        initMap()
-      }
-      document.head.appendChild(script)
-    }
-
-    const initMap = () => {
-      if (!window.google || !window.google.maps) return
-
-      const mapElement = document.getElementById('clinic-map')
-      if (!mapElement) return
-
-      const clinicLocation = { lat: clinicInfo.lat, lng: clinicInfo.lng }
-
-      const map = new window.google.maps.Map(mapElement, {
-        center: clinicLocation,
-        zoom: 15,
-        mapTypeControl: true,
-        streetViewControl: true,
-        fullscreenControl: true
-      })
-
-      // Add marker for clinic
-      const marker = new window.google.maps.Marker({
-        position: clinicLocation,
-        map: map,
-        title: clinicInfo.name,
-        icon: {
-          url: '/assets/img/icons/map-marker.png',
-          scaledSize: new window.google.maps.Size(40, 40)
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          })
+        },
+        (error) => {
+          console.log('Error getting user location:', error)
         }
-      })
-
-      // Add info window
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `
-          <div style="padding: 10px;">
-            <h6 style="margin: 0 0 5px 0; font-weight: 600;">${clinicInfo.name}</h6>
-            <p style="margin: 0; font-size: 14px; color: #666;">${clinicInfo.address}</p>
-            <p style="margin: 5px 0 0 0; font-size: 14px; color: #666;">${clinicInfo.phone}</p>
-            <a href="https://www.google.com/maps/dir/?api=1&destination=${clinicInfo.lat},${clinicInfo.lng}" 
-               target="_blank" 
-               style="display: inline-block; margin-top: 10px; padding: 5px 10px; background: #0d6efd; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">
-              Get Directions
-            </a>
-          </div>
-        `
-      })
-
-      marker.addListener('click', () => {
-        infoWindow.open(map, marker)
-      })
-
-      // Try to get user's current location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const userLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            }
-
-            // Add user location marker
-            new window.google.maps.Marker({
-              position: userLocation,
-              map: map,
-              title: 'Your Location',
-              icon: {
-                path: window.google.maps.SymbolPath.CIRCLE,
-                scale: 8,
-                fillColor: '#4285F4',
-                fillOpacity: 1,
-                strokeColor: '#ffffff',
-                strokeWeight: 2
-              }
-            })
-
-            // Draw route
-            const directionsService = new window.google.maps.DirectionsService()
-            const directionsRenderer = new window.google.maps.DirectionsRenderer()
-            directionsRenderer.setMap(map)
-
-            directionsService.route(
-              {
-                origin: userLocation,
-                destination: clinicLocation,
-                travelMode: window.google.maps.TravelMode.DRIVING
-              },
-              (result, status) => {
-                if (status === 'OK') {
-                  directionsRenderer.setDirections(result)
-                }
-              }
-            )
-          },
-          (error) => {
-            console.log('Error getting user location:', error)
-          }
-        )
-      }
+      )
     }
+  }, [])
 
-    loadGoogleMaps()
-  }, [clinicInfo])
+  // Fetch route information when both locations are available
+  const clinicCoords = clinicInfo.coordinates || { lat: clinicInfo.lat, lng: clinicInfo.lng }
+  const { data: routeData } = useRoute(
+    userLocation,
+    clinicCoords,
+    { enabled: !!(userLocation?.lat && userLocation?.lng && clinicCoords?.lat && clinicCoords?.lng) }
+  )
+
+  useEffect(() => {
+    if (routeData?.data) {
+      setRouteInfo(routeData.data)
+    }
+  }, [routeData])
+
+  const clinicCoordsForMap = clinicInfo.coordinates || { lat: clinicInfo.lat, lng: clinicInfo.lng }
 
   const handleGetDirections = () => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${clinicInfo.lat},${clinicInfo.lng}`
+    const coords = clinicInfo.coordinates || { lat: clinicInfo.lat, lng: clinicInfo.lng }
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`
     window.open(url, '_blank')
+  }
+
+  if (clinicLoading) {
+    return (
+      <div className="content">
+        <div className="container">
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="mt-3">Loading clinic information...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -158,56 +99,62 @@ const ClinicNavigation = () => {
               <div className="card-body">
                 {/* Clinic Information */}
                 <div className="clinic-info mb-4">
-                  <h4 className="mb-3">{clinicInfo.name}</h4>
+                  <h4 className="mb-3">{clinicInfo.clinicName || clinicInfo.name}</h4>
+                  {clinicInfo.doctorName && (
+                    <p className="text-muted mb-3">Dr. {clinicInfo.doctorName}</p>
+                  )}
                   <div className="clinic-details">
                     <div className="d-flex align-items-start mb-3">
                       <i className="fe fe-map-pin me-2 mt-1" style={{ color: '#0d6efd' }}></i>
                       <div>
                         <h6 className="mb-1">Address</h6>
-                        <p className="text-muted mb-0">{clinicInfo.address}</p>
-                      </div>
-                    </div>
-                    <div className="d-flex align-items-start mb-3">
-                      <i className="fe fe-phone me-2 mt-1" style={{ color: '#0d6efd' }}></i>
-                      <div>
-                        <h6 className="mb-1">Phone</h6>
                         <p className="text-muted mb-0">
-                          <a href={`tel:${clinicInfo.phone}`}>{clinicInfo.phone}</a>
+                          {clinicInfo.address || 'Address not available'}
+                          {clinicInfo.city && `, ${clinicInfo.city}`}
+                          {clinicInfo.state && `, ${clinicInfo.state}`}
                         </p>
                       </div>
                     </div>
+                    {clinicInfo.phone && (
+                      <div className="d-flex align-items-start mb-3">
+                        <i className="fe fe-phone me-2 mt-1" style={{ color: '#0d6efd' }}></i>
+                        <div>
+                          <h6 className="mb-1">Phone</h6>
+                          <p className="text-muted mb-0">
+                            <a href={`tel:${clinicInfo.phone}`}>{clinicInfo.phone}</a>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {routeInfo && (
+                      <div className="d-flex align-items-start mb-3">
+                        <i className="fe fe-navigation me-2 mt-1" style={{ color: '#0d6efd' }}></i>
+                        <div>
+                          <h6 className="mb-1">Route Information</h6>
+                          <p className="text-muted mb-0">
+                            Distance: <strong>{routeInfo.distance} {routeInfo.distanceUnit}</strong>
+                            <br />
+                            Estimated Time: <strong>{routeInfo.estimatedTime} {routeInfo.estimatedTimeUnit}</strong>
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Google Maps */}
+                {/* Google Maps with Route */}
                 <div className="map-container mb-4">
-                  <div
-                    id="clinic-map"
-                    style={{
-                      width: '100%',
-                      height: '400px',
-                      borderRadius: '8px',
-                      overflow: 'hidden'
-                    }}
-                  ></div>
-                  {!mapLoaded && (
-                    <div className="map-loading" style={{
-                      width: '100%',
-                      height: '400px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: '#f8f9fa',
-                      borderRadius: '8px'
-                    }}>
-                      <div className="text-center">
-                        <div className="spinner-border text-primary mb-2" role="status">
-                          <span className="visually-hidden">Loading...</span>
-                        </div>
-                        <p className="text-muted">Loading map...</p>
-                      </div>
-                    </div>
-                  )}
+                  <div style={{ height: '500px' }}>
+                    <RouteMap
+                      from={userLocation}
+                      to={clinicCoordsForMap}
+                      clinicInfo={{
+                        name: clinicInfo.clinicName || clinicInfo.name,
+                        address: clinicInfo.address,
+                        phone: clinicInfo.phone
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Action Buttons */}

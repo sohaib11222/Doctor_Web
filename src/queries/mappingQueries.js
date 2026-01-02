@@ -4,33 +4,50 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { api } from '../utils/api'
-import { API_ROUTES } from '../utils/apiConfig'
+import * as mappingApi from '../api/mapping'
 
-// Get route from patient to clinic (public)
-export const useRoute = (params = {}) => {
+/**
+ * Get route from patient to clinic
+ * @param {Object} from - { lat: number, lng: number }
+ * @param {Object} to - { lat: number, lng: number }
+ * @param {Object} options - React Query options
+ */
+export const useRoute = (from, to, options = {}) => {
   return useQuery({
-    queryKey: ['mapping', 'route', params],
-    queryFn: () => api.get(API_ROUTES.MAPPING.ROUTE, { params }),
-    enabled: !!params.from && !!params.to,
+    queryKey: ['mapping', 'route', from, to],
+    queryFn: () => mappingApi.getRoute(from, to),
+    enabled: !!(from?.lat && from?.lng && to?.lat && to?.lng) && (options.enabled !== false),
+    ...options
   })
 }
 
-// Get nearby clinics (public)
-export const useNearbyClinics = (params = {}) => {
+/**
+ * Get nearby clinics
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @param {number} radius - Radius in kilometers (optional, default: 10)
+ * @param {Object} options - React Query options
+ */
+export const useNearbyClinics = (lat, lng, radius = 10, options = {}) => {
   return useQuery({
-    queryKey: ['mapping', 'nearby', params],
-    queryFn: () => api.get(API_ROUTES.MAPPING.NEARBY, { params }),
-    enabled: !!params.lat && !!params.lng,
+    queryKey: ['mapping', 'nearby', lat, lng, radius],
+    queryFn: () => mappingApi.getNearbyClinics(lat, lng, radius),
+    enabled: !!(lat && lng) && (options.enabled !== false),
+    ...options
   })
 }
 
-// Get clinic location by ID (public)
-export const useClinicLocation = (clinicId) => {
+/**
+ * Get clinic location by ID
+ * @param {string} clinicId - Clinic ID
+ * @param {Object} options - React Query options
+ */
+export const useClinicLocation = (clinicId, options = {}) => {
   return useQuery({
     queryKey: ['mapping', 'clinic', clinicId],
-    queryFn: () => api.get(API_ROUTES.MAPPING.CLINIC(clinicId)),
-    enabled: !!clinicId,
+    queryFn: () => mappingApi.getClinicLocation(clinicId),
+    enabled: !!clinicId && (options.enabled !== false),
+    ...options
   })
 }
 

@@ -1,6 +1,367 @@
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'react-toastify'
+import { useAuth } from '../../contexts/AuthContext'
+import * as chatApi from '../../api/chat'
 
 const DoctorChat = () => {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const messagesEndRef = useRef(null)
+  const [selectedConversation, setSelectedConversation] = useState(null)
+  const [newMessage, setNewMessage] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [error, setError] = useState(null)
+
+  // Catch any errors
+  useEffect(() => {
+    const errorHandler = (event) => {
+      console.error('Error in DoctorChat:', event.error)
+      setError(event.error?.message || 'An error occurred')
+    }
+    window.addEventListener('error', errorHandler)
+    return () => window.removeEventListener('error', errorHandler)
+  }, [])
+
+  // Get patientId from URL params (if coming from appointments page)
+  const patientIdFromUrl = searchParams.get('patientId')
+  const appointmentIdFromUrl = searchParams.get('appointmentId')
+
+  // Fetch all conversations
+  const { data: conversationsData, isLoading: conversationsLoading, refetch: refetchConversations } = useQuery({
+    queryKey: ['doctorPatientConversations'],
+    queryFn: () => chatApi.getConversations(),
+    enabled: !!user
+  })
+
+  // Fetch messages for selected conversation
+  const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = useQuery({
+    queryKey: ['conversationMessages', selectedConversation?._id],
+    queryFn: async () => {
+      if (!selectedConversation?._id) return null
+      const response = await chatApi.getMessages(selectedConversation._id, { page: 1, limit: 100 })
+      console.log('Fetched messages:', response)
+      return response
+    },
+    enabled: !!selectedConversation?._id
+  })
+
+  // Fetch unread count
+  const { data: unreadData } = useQuery({
+    queryKey: ['unreadCount'],
+    queryFn: () => chatApi.getUnreadCount(),
+    enabled: !!user,
+    refetchInterval: 30000 // Poll every 30 seconds
+  })
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async ({ message }) => {
+      if (!selectedConversation || !user) {
+        throw new Error('Conversation or user not found')
+      }
+      
+      console.log('Sending message to conversation:', selectedConversation)
+      
+      // For doctor-patient conversation
+      if (selectedConversation.conversationType === 'DOCTOR_PATIENT') {
+        const appointmentId = selectedConversation.appointmentId?._id || selectedConversation.appointmentId
+        const patientId = selectedConversation.patientId?._id || selectedConversation.patientId
+        
+        console.log('Message data:', { doctorId: user._id, patientId, appointmentId, message })
+        
+        if (!appointmentId) {
+          throw new Error('Appointment ID is required for patient conversations')
+        }
+        
+        if (!patientId) {
+          throw new Error('Patient ID is required for patient conversations')
+        }
+        
+        const response = await chatApi.sendMessageToPatient(
+          user._id,
+          patientId,
+          appointmentId,
+          message
+        )
+        console.log('Message sent successfully:', response)
+        return response
+      } else {
+        throw new Error('Invalid conversation type')
+      }
+    },
+    onSuccess: async () => {
+      // Invalidate queries to refetch updated data
+      await queryClient.invalidateQueries(['conversationMessages', selectedConversation?._id])
+      await queryClient.invalidateQueries(['doctorPatientConversations'])
+      await queryClient.invalidateQueries(['unreadCount'])
+      
+      // Refetch messages to show the new message
+      await refetchMessages()
+      // Refetch conversations to update the list (in case conversation was just created)
+      await refetchConversations()
+      
+      setNewMessage('')
+      setTimeout(() => scrollToBottom(), 100)
+    },
+    onError: (error) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send message'
+      toast.error(errorMessage)
+    }
+  })
+
+  // Mark as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: (conversationId) => chatApi.markMessagesAsRead(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['doctorPatientConversations'])
+      queryClient.invalidateQueries(['unreadCount'])
+    }
+  })
+
+  // Start conversation mutation (if coming from appointments page)
+  const startConversationMutation = useMutation({
+    mutationFn: async ({ patientId, appointmentId }) => {
+      if (!user) throw new Error('User not found')
+      const response = await chatApi.startConversationWithPatient(user._id, patientId, appointmentId)
+      return response
+    },
+    onSuccess: async (response) => {
+      // Extract conversation from response
+      const conversation = response?.data || response
+      console.log('Created conversation:', conversation)
+      
+      // Invalidate and refetch conversations to get the new one in the list
+      await queryClient.invalidateQueries(['doctorPatientConversations'])
+      
+      // Wait a bit for the refetch to complete
+      setTimeout(async () => {
+        // Refetch conversations to get updated list
+        const refetchResult = await queryClient.refetchQueries(['doctorPatientConversations'])
+        console.log('Refetched conversations:', refetchResult)
+        
+        // Find the newly created conversation in the updated list
+        const conversations = refetchResult[0]?.data?.data?.conversations || refetchResult[0]?.data?.conversations || []
+        const newConversation = conversations.find(
+          conv => conv._id === conversation._id || conv._id?.toString() === conversation._id?.toString()
+        ) || conversation
+        
+        console.log('Selected conversation:', newConversation)
+        setSelectedConversation(newConversation)
+      }, 500)
+      
+      // Also set it immediately in case refetch takes time
+      setSelectedConversation(conversation)
+      
+      // Clear URL params
+      navigate('/chat-doctor', { replace: true })
+      toast.success('Conversation started successfully')
+    },
+    onError: (error) => {
+      console.error('Start conversation error:', error)
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to start conversation'
+      toast.error(errorMessage)
+    }
+  })
+
+  // Extract conversations from response (handle both direct data and nested data structure)
+  const allConversations = useMemo(() => {
+    return conversationsData?.data?.conversations || conversationsData?.conversations || []
+  }, [conversationsData])
+  
+  // Filter conversations by search
+  const filteredConversations = useMemo(() => {
+    return allConversations.filter(conv => {
+      if (!searchQuery) return true
+      const query = searchQuery.toLowerCase()
+      const patientName = conv.patientId?.fullName?.toLowerCase() || ''
+      return patientName.includes(query)
+    })
+  }, [allConversations, searchQuery])
+
+  // Filter only doctor-patient conversations
+  const patientConversations = useMemo(() => {
+    return filteredConversations.filter(
+      conv => conv.conversationType === 'DOCTOR_PATIENT'
+    )
+  }, [filteredConversations])
+  
+  // If we have a selected conversation that's not in the list, add it temporarily
+  const conversationsToShow = useMemo(() => {
+    const list = [...patientConversations]
+    if (selectedConversation && !patientConversations.find(c => c._id === selectedConversation._id)) {
+      list.unshift(selectedConversation)
+    }
+    return list
+  }, [patientConversations, selectedConversation])
+  
+  // Extract messages from response
+  const messages = useMemo(() => {
+    return messagesData?.data?.messages || messagesData?.messages || []
+  }, [messagesData])
+  
+  // Debug logging (remove in production)
+  useEffect(() => {
+    if (conversationsData) {
+      console.log('Conversations Data:', conversationsData)
+      console.log('All Conversations:', allConversations)
+      console.log('Patient Conversations:', patientConversations)
+      console.log('Selected Conversation:', selectedConversation)
+    }
+  }, [conversationsData, allConversations, patientConversations, selectedConversation])
+
+  // Handle URL params - start conversation if patientId and appointmentId are provided
+  useEffect(() => {
+    if (patientIdFromUrl && appointmentIdFromUrl && user && !startConversationMutation.isLoading && conversationsData) {
+      // Check if conversation already exists in the list
+      const existingConv = patientConversations.find(
+        conv => {
+          const convPatientId = conv.patientId?._id || conv.patientId
+          const convAppointmentId = conv.appointmentId?._id || conv.appointmentId
+          return convPatientId === patientIdFromUrl && convAppointmentId === appointmentIdFromUrl
+        }
+      )
+      
+      if (existingConv) {
+        // Conversation exists, just select it
+        setSelectedConversation(existingConv)
+        navigate('/chat-doctor', { replace: true })
+      } else if (!startConversationMutation.isLoading) {
+        // Conversation doesn't exist, create it
+        startConversationMutation.mutate({
+          patientId: patientIdFromUrl,
+          appointmentId: appointmentIdFromUrl
+        })
+      }
+    }
+  }, [patientIdFromUrl, appointmentIdFromUrl, user, conversationsData, patientConversations, startConversationMutation])
+
+  // Select first conversation on load if none selected and no URL params
+  useEffect(() => {
+    if (!selectedConversation && conversationsToShow.length > 0 && !patientIdFromUrl) {
+      handleSelectConversation(conversationsToShow[0])
+    }
+  }, [conversationsToShow, patientIdFromUrl, selectedConversation])
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messages && messages.length > 0) {
+      scrollToBottom()
+    }
+  }, [messages])
+
+  // Mark as read when conversation is selected
+  useEffect(() => {
+    if (selectedConversation && selectedConversation.unreadCount > 0) {
+      markAsReadMutation.mutate(selectedConversation._id)
+    }
+  }, [selectedConversation?._id])
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const handleSelectConversation = (conversation) => {
+    setSelectedConversation(conversation)
+    // Mark as read
+    if (conversation.unreadCount > 0) {
+      markAsReadMutation.mutate(conversation._id)
+    }
+  }
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault()
+    if (!newMessage.trim() || !selectedConversation) return
+
+    sendMessageMutation.mutate({ message: newMessage.trim() })
+  }
+
+  // Format time
+  const formatTime = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now - date
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays < 7) return `${diffDays}d ago`
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  // Format message time
+  const formatMessageTime = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  // Get last message preview
+  const getLastMessagePreview = (conversation) => {
+    // This would ideally come from the conversation's last message
+    // For now, we'll show a placeholder
+    return 'Click to view messages'
+  }
+  
+  // Group messages by date
+  const groupMessagesByDate = (messages) => {
+    if (!messages || !Array.isArray(messages)) return {}
+    const groups = {}
+    messages.forEach(msg => {
+      const date = new Date(msg.createdAt).toDateString()
+      if (!groups[date]) {
+        groups[date] = []
+      }
+      groups[date].push(msg)
+    })
+    return groups
+  }
+
+  // Format date for separator
+  const formatDateSeparator = (dateString) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today'
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday'
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    }
+  }
+
+  const groupedMessages = useMemo(() => groupMessagesByDate(messages), [messages])
+
+  // Show error if any
+  if (error) {
+    return (
+      <div className="page-wrapper chat-page-wrapper doctor-chat-wrapper">
+        <div className="container">
+          <div className="content doctor-content">
+            <div className="alert alert-danger">
+              <h4>Error</h4>
+              <p>{error}</p>
+              <button className="btn btn-primary" onClick={() => setError(null)}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       <style>{`
@@ -62,9 +423,8 @@ const DoctorChat = () => {
           overflow-x: hidden;
           padding: 0 12px;
         }
-        .online-now-section {
+        .recent-chat-section {
           padding: 16px 0;
-          border-bottom: 1px solid #f0f0f0;
         }
         .section-header {
           display: flex;
@@ -77,41 +437,6 @@ const DoctorChat = () => {
           font-weight: 600;
           color: #0A0A0A;
           margin: 0;
-        }
-        .section-header a {
-          font-size: 12px;
-          color: #0A0A0A;
-          text-decoration: none;
-        }
-        .online-contacts {
-          display: flex;
-          gap: 12px;
-          overflow-x: auto;
-        }
-        .online-contact-item {
-          flex-shrink: 0;
-          width: 50px;
-          height: 50px;
-          position: relative;
-        }
-        .online-contact-item img {
-          width: 100%;
-          height: 100%;
-          border-radius: 50%;
-          object-fit: cover;
-        }
-        .online-contact-item .online-dot {
-          position: absolute;
-          bottom: 2px;
-          right: 2px;
-          width: 12px;
-          height: 12px;
-          background: #4CAF50;
-          border: 2px solid #fff;
-          border-radius: 50%;
-        }
-        .pinned-chat-section, .recent-chat-section {
-          padding: 16px 0;
         }
         .chat-item {
           display: flex;
@@ -126,6 +451,9 @@ const DoctorChat = () => {
         .chat-item:hover {
           background: #f5f5f5;
         }
+        .chat-item.active {
+          background: #e3f2fd;
+        }
         .chat-item-avatar {
           width: 48px;
           height: 48px;
@@ -139,16 +467,6 @@ const DoctorChat = () => {
           height: 100%;
           border-radius: 50%;
           object-fit: cover;
-        }
-        .chat-item-avatar .online-dot {
-          position: absolute;
-          bottom: 2px;
-          right: 2px;
-          width: 12px;
-          height: 12px;
-          background: #4CAF50;
-          border: 2px solid #fff;
-          border-radius: 50%;
         }
         .chat-item-content {
           flex: 1;
@@ -186,12 +504,17 @@ const DoctorChat = () => {
           align-items: center;
           gap: 4px;
         }
-        .chat-item-icons i {
-          font-size: 12px;
-          color: #999;
-        }
-        .chat-item-icons .green-check {
-          color: #4CAF50;
+        .chat-item-icons .unread-badge {
+          background: #2196F3;
+          color: #fff;
+          border-radius: 50%;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          font-weight: 600;
         }
         .chat-details-area {
           flex: 1;
@@ -228,16 +551,6 @@ const DoctorChat = () => {
           border-radius: 50%;
           object-fit: cover;
         }
-        .chat-details-avatar .online-dot {
-          position: absolute;
-          bottom: 2px;
-          right: 2px;
-          width: 10px;
-          height: 10px;
-          background: #4CAF50;
-          border: 2px solid #fff;
-          border-radius: 50%;
-        }
         .chat-details-user-info h5 {
           font-size: 18px;
           font-weight: 600;
@@ -247,24 +560,6 @@ const DoctorChat = () => {
         .chat-details-user-info small {
           font-size: 12px;
           color: #4CAF50;
-        }
-        .chat-details-actions {
-          display: flex;
-          gap: 8px;
-        }
-        .chat-details-actions button {
-          width: 30px;
-          height: 30px;
-          border: none;
-          background: transparent;
-          border-radius: 4px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .chat-details-actions button:hover {
-          background: #f5f5f5;
         }
         .chat-messages-area {
           flex: 1;
@@ -351,38 +646,6 @@ const DoctorChat = () => {
           border-radius: 15px 0 15px 15px;
           background: #e3f2fd;
         }
-        .chat-message-bubble a {
-          color: #666;
-          word-wrap: break-word;
-        }
-        .chat-message-bubble img {
-          max-width: 100%;
-          border-radius: 10px;
-          margin-top: 8px;
-        }
-        .audio-message {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .audio-message button {
-          width: 32px;
-          height: 32px;
-          border: none;
-          background: #2196F3;
-          border-radius: 50%;
-          color: #fff;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .audio-waveform {
-          flex: 1;
-          height: 20px;
-          background: #e0e0e0;
-          border-radius: 10px;
-        }
         .chat-input-area {
           padding: 15px;
           border-top: 1px solid #e5e5e5;
@@ -433,6 +696,10 @@ const DoctorChat = () => {
         .chat-send-button:hover {
           background: #1976D2;
         }
+        .chat-send-button:disabled {
+          background: #ccc;
+          cursor: not-allowed;
+        }
         @media (max-width: 991px) {
           .doctor-chat-container {
             flex-direction: column;
@@ -462,326 +729,213 @@ const DoctorChat = () => {
                     <span className="form-control-feedback">
                       <i className="fa-solid fa-magnifying-glass"></i>
                     </span>
-                    <input type="text" placeholder="Search" className="form-control" />
+                    <input
+                      type="text"
+                      placeholder="Search"
+                      className="form-control"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                   </div>
                 </div>
                 <div className="chat-list-content">
-                  {/* Online Now Section */}
-                  <div className="online-now-section">
-                    <div className="section-header">
-                      <h6>Online Now</h6>
-                      <a href="javascript:void(0);">View All</a>
-                    </div>
-                    <div className="online-contacts">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="online-contact-item">
-                          <img src={`/assets/img/doctors-dashboard/profile-0${i === 1 ? '1' : i === 2 ? '4' : i === 3 ? '3' : '8'}.jpg`} alt="Contact" />
-                          <span className="online-dot"></span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Pinned Chat Section */}
-                  <div className="pinned-chat-section">
-                    <div className="section-header">
-                      <h6>Pinned Chat</h6>
-                    </div>
-                    <a href="javascript:void(0);" className="chat-item">
-                      <div className="chat-item-avatar">
-                        <img src="/assets/img/doctors-dashboard/profile-01.jpg" alt="Avatar" />
-                        <span className="online-dot"></span>
-                      </div>
-                      <div className="chat-item-content">
-                        <div className="chat-item-header">
-                          <h5 className="chat-item-name">Adrian Marshall</h5>
-                          <div className="chat-item-time">
-                            <small>Just Now</small>
-                            <div className="chat-item-icons">
-                              <i className="fa-solid fa-thumbtack"></i>
-                              <i className="fa-solid fa-check-double green-check"></i>
-                            </div>
-                          </div>
-                        </div>
-                        <p className="chat-item-message">Have you called them?</p>
-                      </div>
-                    </a>
-                    <a href="javascript:void(0);" className="chat-item">
-                      <div className="chat-item-avatar">
-                        <img src="/assets/img/doctors-dashboard/doctor-profile-img.jpg" alt="Avatar" />
-                      </div>
-                      <div className="chat-item-content">
-                        <div className="chat-item-header">
-                          <h5 className="chat-item-name">Dr Joseph Boyd</h5>
-                          <div className="chat-item-time">
-                            <small>Yesterday</small>
-                            <div className="chat-item-icons">
-                              <i className="fa-solid fa-thumbtack"></i>
-                            </div>
-                          </div>
-                        </div>
-                        <p className="chat-item-message">
-                          <i className="fa-solid fa-video" style={{ marginRight: '4px' }}></i>Video
-                        </p>
-                      </div>
-                    </a>
-                    <a href="javascript:void(0);" className="chat-item">
-                      <div className="chat-item-avatar">
-                        <img src="/assets/img/doctors-dashboard/profile-04.jpg" alt="Avatar" />
-                        <span className="online-dot"></span>
-                      </div>
-                      <div className="chat-item-content">
-                        <div className="chat-item-header">
-                          <h5 className="chat-item-name">Catherine Gracey</h5>
-                          <div className="chat-item-time">
-                            <small>10:20 PM</small>
-                            <div className="chat-item-icons">
-                              <i className="fa-solid fa-thumbtack"></i>
-                              <i className="fa-solid fa-check-double green-check"></i>
-                            </div>
-                          </div>
-                        </div>
-                        <p className="chat-item-message">
-                          <i className="fa-solid fa-file-lines" style={{ marginRight: '4px' }}></i>Prescription.doc
-                        </p>
-                      </div>
-                    </a>
-                  </div>
-
                   {/* Recent Chat Section */}
                   <div className="recent-chat-section">
                     <div className="section-header">
                       <h6>Recent Chat</h6>
                     </div>
-                    <a href="javascript:void(0);" className="chat-item">
-                      <div className="chat-item-avatar">
-                        <img src="/assets/img/doctors-dashboard/profile-02.jpg" alt="Avatar" />
-                        <span className="online-dot"></span>
-                      </div>
-                      <div className="chat-item-content">
-                        <div className="chat-item-header">
-                          <h5 className="chat-item-name">Kelly Stevens</h5>
-                          <div className="chat-item-time">
-                            <small>Just Now</small>
-                            <div className="chat-item-icons" style={{ 
-                              background: '#2196F3', 
-                              color: '#fff', 
-                              borderRadius: '50%', 
-                              width: '20px', 
-                              height: '20px', 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              justifyContent: 'center',
-                              fontSize: '10px'
-                            }}>2</div>
-                          </div>
+                    {conversationsLoading ? (
+                      <div className="text-center py-3">
+                        <div className="spinner-border spinner-border-sm" role="status">
+                          <span className="visually-hidden">Loading...</span>
                         </div>
-                        <p className="chat-item-message">Have you called them?</p>
                       </div>
-                    </a>
-                    <a href="javascript:void(0);" className="chat-item">
-                      <div className="chat-item-avatar">
-                        <img src="/assets/img/doctors-dashboard/profile-05.jpg" alt="Avatar" />
-                        <span className="online-dot"></span>
+                    ) : conversationsToShow.length === 0 ? (
+                      <div className="text-center py-3 text-muted">
+                        <p>No patient conversations found</p>
+                        <small>Start chatting with patients from your appointments</small>
                       </div>
-                      <div className="chat-item-content">
-                        <div className="chat-item-header">
-                          <h5 className="chat-item-name">Robert Miller</h5>
-                          <div className="chat-item-time">
-                            <small>Yesterday</small>
-                            <div className="chat-item-icons">
-                              <i className="fa-solid fa-check"></i>
+                    ) : (
+                      conversationsToShow.map((conversation) => {
+                        const patient = conversation.patientId
+                        const isSelected = selectedConversation?._id === conversation._id
+                        return (
+                          <div
+                            key={conversation._id}
+                            className={`chat-item ${isSelected ? 'active' : ''}`}
+                            onClick={() => handleSelectConversation(conversation)}
+                          >
+                            <div className="chat-item-avatar">
+                              <img
+                                src={patient?.profileImage || '/assets/img/doctors-dashboard/profile-01.jpg'}
+                                alt={patient?.fullName || 'Patient'}
+                                onError={(e) => {
+                                  e.target.src = '/assets/img/doctors-dashboard/profile-01.jpg'
+                                }}
+                              />
+                            </div>
+                            <div className="chat-item-content">
+                              <div className="chat-item-header">
+                                <h5 className="chat-item-name">{patient?.fullName || 'Patient'}</h5>
+                                <div className="chat-item-time">
+                                  <small>{formatTime(conversation.lastMessageAt)}</small>
+                                  {conversation.unreadCount > 0 && (
+                                    <div className="chat-item-icons">
+                                      <span className="unread-badge">{conversation.unreadCount}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <p className="chat-item-message">{getLastMessagePreview(conversation)}</p>
                             </div>
                           </div>
-                        </div>
-                        <p className="chat-item-message">
-                          <i className="fa-solid fa-video" style={{ marginRight: '4px' }}></i>Video
-                        </p>
-                      </div>
-                    </a>
-                    <a href="javascript:void(0);" className="chat-item">
-                      <div className="chat-item-avatar">
-                        <img src="/assets/img/doctors-dashboard/profile-08.jpg" alt="Avatar" />
-                      </div>
-                      <div className="chat-item-content">
-                        <div className="chat-item-header">
-                          <h5 className="chat-item-name">Emily Musick</h5>
-                          <div className="chat-item-time">
-                            <small>10:20 PM</small>
-                          </div>
-                        </div>
-                        <p className="chat-item-message">
-                          <i className="fa-solid fa-file-lines" style={{ marginRight: '4px' }}></i>Project Tools.doc
-                        </p>
-                      </div>
-                    </a>
-                    <a href="javascript:void(0);" className="chat-item">
-                      <div className="chat-item-avatar">
-                        <img src="/assets/img/doctors-dashboard/profile-03.jpg" alt="Avatar" />
-                        <span className="online-dot"></span>
-                      </div>
-                      <div className="chat-item-content">
-                        <div className="chat-item-header">
-                          <h5 className="chat-item-name">Samuel James</h5>
-                          <div className="chat-item-time">
-                            <small>12:30 PM</small>
-                            <div className="chat-item-icons">
-                              <i className="fa-solid fa-check-double green-check"></i>
-                            </div>
-                          </div>
-                        </div>
-                        <p className="chat-item-message">
-                          <i className="fa-solid fa-microphone" style={{ marginRight: '4px' }}></i>Audio
-                        </p>
-                      </div>
-                    </a>
-                    <a href="javascript:void(0);" className="chat-item">
-                      <div className="chat-item-avatar">
-                        <img src="/assets/img/doctors-dashboard/profile-02.jpg" alt="Avatar" />
-                      </div>
-                      <div className="chat-item-content">
-                        <div className="chat-item-header">
-                          <h5 className="chat-item-name">Dr Shanta Neill</h5>
-                          <div className="chat-item-time">
-                            <small>Yesterday</small>
-                          </div>
-                        </div>
-                        <p className="chat-item-message" style={{ color: '#f44336' }}>
-                          <i className="fa-solid fa-phone-flip" style={{ marginRight: '4px' }}></i>Missed Call
-                        </p>
-                      </div>
-                    </a>
-                    <a href="javascript:void(0);" className="chat-item">
-                      <div className="chat-item-avatar">
-                        <img src="/assets/img/doctors-dashboard/profile-07.jpg" alt="Avatar" />
-                        <span className="online-dot"></span>
-                      </div>
-                      <div className="chat-item-content">
-                        <div className="chat-item-header">
-                          <h5 className="chat-item-name">Peter Anderson</h5>
-                          <div className="chat-item-time">
-                            <small>23/03/24</small>
-                            <div className="chat-item-icons">
-                              <i className="fa-solid fa-check"></i>
-                            </div>
-                          </div>
-                        </div>
-                        <p className="chat-item-message">Have you called them?</p>
-                      </div>
-                    </a>
-                    <a href="javascript:void(0);" className="chat-item">
-                      <div className="chat-item-avatar">
-                        <img src="/assets/img/doctors-dashboard/profile-06.jpg" alt="Avatar" />
-                      </div>
-                      <div className="chat-item-content">
-                        <div className="chat-item-header">
-                          <h5 className="chat-item-name">Anderea Kearns</h5>
-                          <div className="chat-item-time">
-                            <small>20/03/24</small>
-                            <div className="chat-item-icons">
-                              <i className="fa-solid fa-check-double"></i>
-                            </div>
-                          </div>
-                        </div>
-                        <p className="chat-item-message">
-                          <i className="fa-solid fa-image" style={{ marginRight: '4px' }}></i>Photo
-                        </p>
-                      </div>
-                    </a>
+                        )
+                      })
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* Right Area - Chat Details */}
               <div className="chat-details-area">
-                <div className="chat-details-header">
-                  <div className="chat-details-user">
-                    <div className="chat-details-avatar">
-                      <img src="/assets/img/doctors-dashboard/profile-06.jpg" alt="User" />
-                      <span className="online-dot"></span>
-                    </div>
-                    <div className="chat-details-user-info">
-                      <h5>Anderea Kearns</h5>
-                      <small>Online</small>
-                    </div>
-                  </div>
-                  <div className="chat-details-actions">
-                    <button type="button" title="Search">
-                      <i className="fa-solid fa-magnifying-glass"></i>
-                    </button>
-                    <button type="button" title="More options">
-                      <i className="fa-solid fa-ellipsis-vertical"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="chat-messages-area">
-                  {/* Date Separator */}
-                  <div className="chat-date-separator">
-                    <span>Today, March 25</span>
-                  </div>
-
-                  {/* Incoming Message */}
-                  <div className="chat-message incoming">
-                    <div className="chat-message-avatar">
-                      <img src="/assets/img/doctors-dashboard/doctor-profile-img.jpg" alt="Avatar" />
-                    </div>
-                    <div className="chat-message-content">
-                      <div className="chat-message-header">
-                        <h6>Edalin Hendry</h6>
-                        <span>9:45 AM</span>
-                        <i className="fa-solid fa-check-double green-check"></i>
-                      </div>
-                      <div className="chat-message-bubble">
-                        <div className="audio-message">
-                          <button>
-                            <i className="fa-solid fa-play" style={{ fontSize: '10px' }}></i>
-                          </button>
-                          <div className="audio-waveform"></div>
-                          <span style={{ fontSize: '12px', color: '#666' }}>0:05</span>
+                {selectedConversation ? (
+                  <>
+                    <div className="chat-details-header">
+                      <div className="chat-details-user">
+                        <div className="chat-details-avatar">
+                          <img
+                            src={
+                              selectedConversation.patientId?.profileImage ||
+                              '/assets/img/doctors-dashboard/profile-01.jpg'
+                            }
+                            alt={selectedConversation.patientId?.fullName || 'Patient'}
+                            onError={(e) => {
+                              e.target.src = '/assets/img/doctors-dashboard/profile-01.jpg'
+                            }}
+                          />
+                        </div>
+                        <div className="chat-details-user-info">
+                          <h5>{selectedConversation.patientId?.fullName || 'Patient'}</h5>
+                          <small>Patient</small>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Outgoing Message */}
-                  <div className="chat-message outgoing">
-                    <div className="chat-message-avatar">
-                      <img src="/assets/img/doctors-dashboard/profile-06.jpg" alt="Avatar" />
+                    <div className="chat-messages-area">
+                      {messagesLoading ? (
+                        <div className="text-center py-5">
+                          <div className="spinner-border" role="status">
+                            <span className="visually-hidden">Loading messages...</span>
+                          </div>
+                        </div>
+                      ) : messages.length === 0 ? (
+                        <div className="text-center py-5 text-muted">
+                          <p>No messages yet</p>
+                          <small>Start the conversation by sending a message</small>
+                        </div>
+                      ) : (
+                        Object.keys(groupedMessages).map((date) => (
+                          <div key={date}>
+                            <div className="chat-date-separator">
+                              <span>{formatDateSeparator(date)}</span>
+                            </div>
+                            {groupedMessages[date].map((msg) => {
+                              const isDoctor =
+                                msg.senderId?._id === user?._id || msg.senderId === user?._id
+                              return (
+                                <div
+                                  key={msg._id}
+                                  className={`chat-message ${isDoctor ? 'outgoing' : 'incoming'}`}
+                                >
+                                  <div className="chat-message-avatar">
+                                    <img
+                                      src={
+                                        isDoctor
+                                          ? user?.profileImage || '/assets/img/doctors-dashboard/profile-01.jpg'
+                                          : selectedConversation.patientId?.profileImage ||
+                                            '/assets/img/doctors-dashboard/profile-01.jpg'
+                                      }
+                                      alt={isDoctor ? user?.fullName : selectedConversation.patientId?.fullName}
+                                      onError={(e) => {
+                                        e.target.src = '/assets/img/doctors-dashboard/profile-01.jpg'
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="chat-message-content">
+                                    <div className="chat-message-header">
+                                      <h6>
+                                        {isDoctor
+                                          ? user?.fullName || 'You'
+                                          : selectedConversation.patientId?.fullName || 'Patient'}
+                                      </h6>
+                                      <span>{formatMessageTime(msg.createdAt)}</span>
+                                    </div>
+                                    <div className="chat-message-bubble">{msg.message}</div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        ))
+                      )}
+                      <div ref={messagesEndRef} />
                     </div>
-                    <div className="chat-message-content">
-                      <div className="chat-message-header" style={{ justifyContent: 'flex-end' }}>
-                        <h6>Andrea Kearns</h6>
-                        <span>9:47 AM</span>
-                      </div>
-                      <div className="chat-message-bubble">
-                        <a href="javascript:void(0);" style={{ display: 'block', marginBottom: '8px' }}>
-                          https://www.youtube.com/watch?v=GCmL3mS0Psk
-                        </a>
-                        <img src="/assets/img/sending-img.jpg" alt="Shared image" style={{ width: '345px', height: '126px', objectFit: 'cover' }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Chat Input Area */}
-                <div className="chat-input-area">
-                  <div className="chat-input-actions">
-                    <button type="button" title="More options">
-                      <i className="fa-solid fa-ellipsis-vertical"></i>
-                    </button>
-                    <button type="button" title="Emoji">
-                      <i className="fa-regular fa-face-smile"></i>
-                    </button>
-                    <button type="button" title="Voice message">
-                      <i className="fa-solid fa-microphone"></i>
-                    </button>
+                    {/* Chat Input Area */}
+                    <div className="chat-input-area">
+                      <div className="chat-input-actions">
+                        <button type="button" title="More options">
+                          <i className="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <button type="button" title="Emoji">
+                          <i className="fa-regular fa-face-smile"></i>
+                        </button>
+                        <button type="button" title="Voice message">
+                          <i className="fa-solid fa-microphone"></i>
+                        </button>
+                      </div>
+                      <form onSubmit={handleSendMessage} style={{ flex: 1, display: 'flex', gap: '12px' }}>
+                        <input
+                          type="text"
+                          className="chat-input-field"
+                          placeholder="Type your message here..."
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          disabled={sendMessageMutation.isLoading}
+                        />
+                        <button
+                          type="submit"
+                          className="chat-send-button"
+                          title="Send"
+                          disabled={!newMessage.trim() || sendMessageMutation.isLoading}
+                        >
+                          {sendMessageMutation.isLoading ? (
+                            <span className="spinner-border spinner-border-sm" role="status">
+                              <span className="visually-hidden">Sending...</span>
+                            </span>
+                          ) : (
+                            <i className="fa-solid fa-paper-plane"></i>
+                          )}
+                        </button>
+                      </form>
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '100%',
+                      flexDirection: 'column',
+                      color: '#999'
+                    }}
+                  >
+                    <i className="fa-solid fa-comments" style={{ fontSize: '64px', marginBottom: '16px' }}></i>
+                    <h5>Select a conversation</h5>
+                    <p>Choose a patient from the list to start chatting</p>
                   </div>
-                  <input type="text" className="chat-input-field" placeholder="Type your message here..." />
-                  <button type="button" className="chat-send-button" title="Send">
-                    <i className="fa-solid fa-paper-plane"></i>
-                  </button>
-                </div>
+                )}
               </div>
             </div>
           </div>

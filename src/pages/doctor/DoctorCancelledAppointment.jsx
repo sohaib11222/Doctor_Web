@@ -16,7 +16,7 @@ const DoctorCancelledAppointment = () => {
             <li>
               <div className="patinet-information">
                 <a href="#">
-                  <img src="/public/assets/img/doctors-dashboard/profile-02.jpg" alt="User Image" />
+                  <img src="/assets/img/doctors-dashboard/profile-02.jpg" alt="User Image" />
                 </a>
                 <div className="patient-info">
                   <p>#Apt0001</p>
@@ -89,7 +89,7 @@ const DoctorCancelledAppointment = () => {
               <li>
                 <div className="patinet-information">
                   <a href="#">
-                    <img src="/public/assets/img/doctors-dashboard/profile-01.jpg" alt="User Image" />
+                    <img src="/assets/img/doctors-dashboard/profile-01.jpg" alt="User Image" />
                   </a>
                   <div className="patient-info">
                     <p>#Apt0001</p>
@@ -126,7 +126,7 @@ const DoctorCancelledAppointment = () => {
               <li>
                 <div className="patinet-information">
                   <a href="#">
-                    <img src="/public/assets/img/doctors-dashboard/profile-03.jpg" alt="User Image" />
+                    <img src="/assets/img/doctors-dashboard/profile-03.jpg" alt="User Image" />
                   </a>
                   <div className="patient-info">
                     <p>#Apt0003</p>

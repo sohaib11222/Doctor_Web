@@ -28,10 +28,10 @@ const Breadcrumb = ({ title, li1, li2 }) => {
         </div>
       </div>
       <div className="breadcrumb-bg">
-        <img src="/public/assets/img/bg/breadcrumb-bg-01.png" alt="img" className="breadcrumb-bg-01" />
-        <img src="/public/assets/img/bg/breadcrumb-bg-02.png" alt="img" className="breadcrumb-bg-02" />
-        <img src="/public/assets/img/bg/breadcrumb-icon.png" alt="img" className="breadcrumb-bg-03" />
-        <img src="/public/assets/img/bg/breadcrumb-icon.png" alt="img" className="breadcrumb-bg-04" />
+        <img src="/assets/img/bg/breadcrumb-bg-01.png" alt="img" className="breadcrumb-bg-01" />
+        <img src="/assets/img/bg/breadcrumb-bg-02.png" alt="img" className="breadcrumb-bg-02" />
+        <img src="/assets/img/bg/breadcrumb-icon.png" alt="img" className="breadcrumb-bg-03" />
+        <img src="/assets/img/bg/breadcrumb-icon.png" alt="img" className="breadcrumb-bg-04" />
       </div>
     </div>
   )

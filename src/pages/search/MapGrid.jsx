@@ -1,6 +1,32 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import NearbyClinicsMap from '../../components/maps/NearbyClinicsMap'
 
 const MapGrid = () => {
+  const [userLocation, setUserLocation] = useState(null)
+  const [radius, setRadius] = useState(10)
+
+  useEffect(() => {
+    // Get user's current location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          })
+        },
+        (error) => {
+          console.log('Error getting user location:', error)
+          // Use default location if geolocation fails
+          setUserLocation({ lat: 40.7128, lng: -74.0060 })
+        }
+      )
+    } else {
+      // Fallback to default location
+      setUserLocation({ lat: 40.7128, lng: -74.0060 })
+    }
+  }, [])
   return (
     <>
       {/* Breadcrumb */}
@@ -131,12 +157,48 @@ const MapGrid = () => {
               </div>
               <div className="card">
                 <div className="card-body">
-                  <div id="map" style={{ height: '600px' }}>
-                    {/* Map would be rendered here */}
-                    <div className="text-center p-5">
-                      <i className="isax isax-location text-primary" style={{ fontSize: '48px' }}></i>
-                      <p className="mt-3">Map View - Interactive map would be displayed here</p>
+                  <div className="mb-3 d-flex align-items-center justify-content-between">
+                    <div>
+                      <label className="form-label me-2">Search Radius:</label>
+                      <select 
+                        className="form-select form-select-sm d-inline-block" 
+                        style={{ width: 'auto' }}
+                        value={radius}
+                        onChange={(e) => setRadius(Number(e.target.value))}
+                      >
+                        <option value={5}>5 km</option>
+                        <option value={10}>10 km</option>
+                        <option value={20}>20 km</option>
+                        <option value={50}>50 km</option>
+                      </select>
                     </div>
+                    {!userLocation && (
+                      <div className="alert alert-warning mb-0 py-2 px-3">
+                        <small>
+                          <i className="fas fa-info-circle me-1"></i>
+                          Allow location access to see nearby clinics
+                        </small>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ height: '600px' }}>
+                    {userLocation ? (
+                      <NearbyClinicsMap 
+                        lat={userLocation.lat} 
+                        lng={userLocation.lng} 
+                        radius={radius}
+                        onClinicClick={(clinic) => {
+                          console.log('Clinic clicked:', clinic)
+                        }}
+                      />
+                    ) : (
+                      <div className="text-center p-5">
+                        <div className="spinner-border text-primary mb-3" role="status">
+                          <span className="visually-hidden">Loading...</span>
+                        </div>
+                        <p className="text-muted">Getting your location...</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

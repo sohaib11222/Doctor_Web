@@ -23,11 +23,46 @@ const Login = () => {
   const onSubmit = async (data) => {
     setLoading(true)
     try {
-      await login(data.email, data.password, 'patient')
+      const response = await login(data.email, data.password)
       toast.success('Login successful!')
-      navigate('/patient-dashboard')
+      
+      // Navigate based on user role
+      if (response.user) {
+        const role = response.user.role?.toUpperCase()
+        const status = response.user.status?.toUpperCase()
+        
+        if (role === 'DOCTOR') {
+          // Check doctor status
+          if (status === 'PENDING') {
+            // Doctor is pending approval
+            navigate('/pending-approval')
+          } else if (status === 'APPROVED') {
+            // Doctor is approved, go to dashboard
+            navigate('/doctor/dashboard')
+          } else if (status === 'REJECTED' || status === 'BLOCKED') {
+            // Doctor is rejected or blocked
+            toast.error('Your account has been rejected or blocked. Please contact support.')
+            navigate('/login')
+          } else {
+            // Unknown status, default to dashboard
+            navigate('/doctor/dashboard')
+          }
+        } else if (role === 'PATIENT') {
+          navigate('/patient/dashboard')
+        } else if (role === 'ADMIN') {
+          // Admin panel is in separate app (react-conversion-admin)
+          // For now, redirect to home or show message
+          toast.info('Admin panel is in separate application')
+          navigate('/')
+        } else {
+          navigate('/patient/dashboard') // Default fallback
+        }
+      } else {
+        navigate('/patient/dashboard')
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed')
+      const errorMessage = error.response?.data?.message || error.message || 'Login failed'
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }

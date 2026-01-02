@@ -4,9 +4,11 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
 import { AuthProvider } from './contexts/AuthContext'
+import { CartProvider } from './contexts/CartContext'
 import MainLayout from './layouts/MainLayout'
 import AuthLayout from './layouts/AuthLayout'
 import DashboardLayout from './layouts/DashboardLayout'
+import ProtectedRoute from './components/common/ProtectedRoute'
 
 // Public Pages - Home
 import Index from './pages/Index'
@@ -18,6 +20,8 @@ import Pricing from './pages/Pricing'
 import FAQ from './pages/FAQ'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsCondition from './pages/TermsCondition'
+import BlogList from './pages/BlogList'
+import BlogDetails from './pages/BlogDetails'
 
 // Auth Pages
 import Login from './pages/auth/Login'
@@ -67,6 +71,12 @@ import DoctorAnnouncements from './pages/doctor/DoctorAnnouncements'
 import AdminDoctorChat from './pages/doctor/AdminDoctorChat'
 import DoctorChat from './pages/doctor/DoctorChat'
 import DoctorVideoCallRoom from './pages/doctor/DoctorVideoCallRoom'
+import DoctorBlogList from './pages/doctor/BlogList'
+import DoctorProducts from './pages/doctor/DoctorProducts'
+import DoctorBlogDetails from './pages/doctor/BlogDetails'
+import BlogCreateEdit from './pages/doctor/BlogCreateEdit'
+import PharmacyOrders from './pages/doctor/PharmacyOrders'
+import PharmacyOrderDetails from './pages/doctor/PharmacyOrderDetails'
 
 // Patient Pages
 import PatientDashboard from './pages/patient/PatientDashboard'
@@ -107,7 +117,9 @@ import TwoFactorAuthentication from './pages/patient/TwoFactorAuthentication'
 import PatientInvoices from './pages/patient/PatientInvoices'
 import VideoCallRoom from './pages/patient/VideoCallRoom'
 import ClinicNavigation from './pages/patient/ClinicNavigation'
+import MapView from './pages/patient/MapView'
 import OrderHistory from './pages/patient/OrderHistory'
+import OrderDetails from './pages/patient/OrderDetails'
 import DocumentsDownload from './pages/patient/DocumentsDownload'
 
 // Pharmacy Admin Pages
@@ -158,7 +170,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
+        <CartProvider>
+          <BrowserRouter>
           <Routes>
             {/* Public Home Pages */}
             <Route path="/" element={<MainLayout><Index /></MainLayout>} />
@@ -171,6 +184,11 @@ function App() {
             <Route path="/faq" element={<MainLayout><FAQ /></MainLayout>} />
             <Route path="/privacy-policy" element={<MainLayout><PrivacyPolicy /></MainLayout>} />
             <Route path="/terms-condition" element={<MainLayout><TermsCondition /></MainLayout>} />
+            
+            {/* Public Blog Pages */}
+            <Route path="/blog-list" element={<MainLayout><BlogList /></MainLayout>} />
+            <Route path="/blog-details" element={<MainLayout><BlogDetails /></MainLayout>} />
+            
             <Route path="/doctor-profile" element={<MainLayout><DoctorProfile /></MainLayout>} />
 
                 {/* Auth Pages */}
@@ -182,68 +200,329 @@ function App() {
                 <Route path="/doctor-register-step1" element={<AuthLayout><DoctorRegisterStep1 /></AuthLayout>} />
                 <Route path="/doctor-register-step2" element={<AuthLayout><DoctorRegisterStep2 /></AuthLayout>} />
                 <Route path="/doctor-register-step3" element={<AuthLayout><DoctorRegisterStep3 /></AuthLayout>} />
-                <Route path="/doctor-verification-upload" element={<AuthLayout><DoctorVerificationUpload /></AuthLayout>} />
-                <Route path="/pending-approval" element={<AuthLayout><PendingApprovalStatus /></AuthLayout>} />
+                <Route path="/doctor-verification-upload" element={
+                  <ProtectedRoute role="DOCTOR" allowPending={true}>
+                    <AuthLayout><DoctorVerificationUpload /></AuthLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/pending-approval" element={
+                  <ProtectedRoute role="DOCTOR" allowPending={true}>
+                    <AuthLayout><PendingApprovalStatus /></AuthLayout>
+                  </ProtectedRoute>
+                } />
                 <Route path="/pharmacy-register" element={<AuthLayout><PharmacyRegister /></AuthLayout>} />
                 <Route path="/pharmacy-register-step1" element={<AuthLayout><PharmacyRegisterStep1 /></AuthLayout>} />
                 <Route path="/pharmacy-register-step2" element={<AuthLayout><PharmacyRegisterStep2 /></AuthLayout>} />
                 <Route path="/pharmacy-register-step3" element={<AuthLayout><PharmacyRegisterStep3 /></AuthLayout>} />
 
-            {/* Doctor Routes - Public */}
-            <Route path="/doctor/dashboard" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Dashboard", li2: "Dashboard" }}><DoctorDashboard /></DashboardLayout>} />
-            <Route path="/doctor-request" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Requests", li2: "Requests" }}><DoctorRequest /></DashboardLayout>} />
-            <Route path="/appointments" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointments", li2: "Appointments" }}><DoctorAppointments /></DashboardLayout>} />
-            <Route path="/doctor-appointments-grid" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointments", li2: "Appointments" }}><DoctorAppointmentsGrid /></DashboardLayout>} />
-            <Route path="/doctor-upcoming-appointment" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointment Details", li2: "Appointment Details" }}><DoctorUpcomingAppointment /></DashboardLayout>} />
-            <Route path="/doctor-completed-appointment" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointment Details", li2: "Appointment Details" }}><DoctorCompletedAppointment /></DashboardLayout>} />
-            <Route path="/doctor-cancelled-appointment" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointment Details", li2: "Appointment Details" }}><DoctorCancelledAppointment /></DashboardLayout>} />
-            <Route path="/doctor-appointment-details" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointment Details", li2: "Appointment Details" }}><DoctorAppointmentDetails /></DashboardLayout>} />
-            <Route path="/doctor-appointment-start" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointment Details", li2: "Appointment Details" }}><DoctorAppointmentStart /></DashboardLayout>} />
-            <Route path="/available-timings" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Available Timings", li2: "Available Timings" }}><AvailableTimings /></DashboardLayout>} />
-            <Route path="/my-patients" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "My Patients", li2: "My Patients" }}><MyPatients /></DashboardLayout>} />
-            <Route path="/doctor-specialities" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Speciality & Services", li2: "Speciality & Services" }}><DoctorSpecialities /></DashboardLayout>} />
-            <Route path="/reviews" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Reviews", li2: "Reviews" }}><Reviews /></DashboardLayout>} />
-            <Route path="/invoices" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Invoices", li2: "Invoices" }}><Invoices /></DashboardLayout>} />
-            <Route path="/doctor-profile-settings" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorProfileSettings /></DashboardLayout>} />
-            <Route path="/doctor-payment" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Payout Settings", li2: "Payout Settings" }}><DoctorPayment /></DashboardLayout>} />
-            <Route path="/invoice-view" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Invoice View", li2: "Invoice View" }}><InvoiceView /></DashboardLayout>} />
-            <Route path="/doctor-change-password" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Change Password", li2: "Change Password" }}><DoctorChangePassword /></DashboardLayout>} />
-            <Route path="/doctor-experience-settings" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorExperienceSettings /></DashboardLayout>} />
-            <Route path="/doctor-education-settings" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorEducationSettings /></DashboardLayout>} />
-            <Route path="/doctor-awards-settings" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorAwardsSettings /></DashboardLayout>} />
-            <Route path="/doctor-insurance-settings" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorInsuranceSettings /></DashboardLayout>} />
-            <Route path="/doctor-clinics-settings" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorClinicsSettings /></DashboardLayout>} />
-            <Route path="/doctor-business-settings" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorBusinessSettings /></DashboardLayout>} />
-            <Route path="/social-media" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Social Media", li2: "Social Media" }}><SocialMedia /></DashboardLayout>} />
-            <Route path="/doctor/subscription-plans" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Subscription Plans", li2: "Subscription Plans" }}><SubscriptionPlans /></DashboardLayout>} />
-            <Route path="/doctor/announcements" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Announcements", li2: "Announcements" }}><DoctorAnnouncements /></DashboardLayout>} />
-            <Route path="/chat-doctor" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Message", li2: "Message" }}><DoctorChat /></DashboardLayout>} />
-            <Route path="/doctor/admin-chat" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Admin Messages", li2: "Admin Messages" }}><AdminDoctorChat /></DashboardLayout>} />
-            <Route path="/doctor/video-call" element={<DoctorVideoCallRoom />} />
+            {/* Doctor Routes - Protected (Require DOCTOR role + APPROVED status) */}
+            <Route path="/doctor/dashboard" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Dashboard", li2: "Dashboard" }}><DoctorDashboard /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-request" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Requests", li2: "Requests" }}><DoctorRequest /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/appointments" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointments", li2: "Appointments" }}><DoctorAppointments /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-appointments-grid" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointments", li2: "Appointments" }}><DoctorAppointmentsGrid /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-upcoming-appointment" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointment Details", li2: "Appointment Details" }}><DoctorUpcomingAppointment /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-completed-appointment" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointment Details", li2: "Appointment Details" }}><DoctorCompletedAppointment /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-cancelled-appointment" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointment Details", li2: "Appointment Details" }}><DoctorCancelledAppointment /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-appointment-details" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointment Details", li2: "Appointment Details" }}><DoctorAppointmentDetails /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-appointment-start" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointment Details", li2: "Appointment Details" }}><DoctorAppointmentStart /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/available-timings" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Available Timings", li2: "Available Timings" }}><AvailableTimings /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/my-patients" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "My Patients", li2: "My Patients" }}><MyPatients /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-specialities" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Speciality & Services", li2: "Speciality & Services" }}><DoctorSpecialities /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/reviews" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Reviews", li2: "Reviews" }}><Reviews /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/invoices" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Invoices", li2: "Invoices" }}><Invoices /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-profile-settings" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorProfileSettings /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-payment" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Payout Settings", li2: "Payout Settings" }}><DoctorPayment /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/invoice-view" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Invoice View", li2: "Invoice View" }}><InvoiceView /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-change-password" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Change Password", li2: "Change Password" }}><DoctorChangePassword /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-experience-settings" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorExperienceSettings /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-education-settings" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorEducationSettings /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-awards-settings" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorAwardsSettings /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-insurance-settings" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorInsuranceSettings /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-clinics-settings" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorClinicsSettings /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-business-settings" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorBusinessSettings /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/social-media" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Social Media", li2: "Social Media" }}><SocialMedia /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor/subscription-plans" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Subscription Plans", li2: "Subscription Plans" }}><SubscriptionPlans /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor/announcements" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Announcements", li2: "Announcements" }}><DoctorAnnouncements /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/blog" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Blog Posts", li2: "Blog Posts" }}><DoctorBlogList /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/blog/create" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Blog Posts", li2: "Create Blog Post" }}><BlogCreateEdit /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/blog/edit/:id" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Blog Posts", li2: "Edit Blog Post" }}><BlogCreateEdit /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/blog/:id" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Blog Posts", li2: "Blog Details" }}><DoctorBlogDetails /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor/products" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Products", li2: "My Products" }}><DoctorProducts /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/pharmacy-orders" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Pharmacy Orders", li2: "Pharmacy Orders" }}><PharmacyOrders /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/pharmacy-order-details/:orderId" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Pharmacy Orders", li2: "Order Details" }}><PharmacyOrderDetails /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/chat-doctor" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Message", li2: "Message" }}><DoctorChat /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor/admin-chat" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Admin Messages", li2: "Admin Messages" }}><AdminDoctorChat /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor/video-call" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DoctorVideoCallRoom />
+              </ProtectedRoute>
+            } />
 
-                {/* Patient Routes - Public */}
-                <Route path="/patient/dashboard" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Patient Dashboard", li2: "Patient Dashboard" }}><PatientDashboard /></DashboardLayout>} />
-                <Route path="/patient-profile" element={<DashboardLayout breadcrumb={{ title: "Doctor", li1: "Patients Profile", li2: "Patients Profile" }}><PatientProfile /></DashboardLayout>} />
-                <Route path="/patient-appointments" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Patient Appointments", li2: "Patient Appointments" }}><PatientAppointments /></DashboardLayout>} />
-                <Route path="/patient-appointments-grid" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Appointments", li2: "Appointments" }}><PatientAppointmentsGrid /></DashboardLayout>} />
-                <Route path="/patient-upcoming-appointment" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Appointments", li2: "Appointments" }}><PatientUpcomingAppointment /></DashboardLayout>} />
-                <Route path="/patient-completed-appointment" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Appointments", li2: "Appointments" }}><PatientCompletedAppointment /></DashboardLayout>} />
-                <Route path="/patient-cancelled-appointment" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Appointments", li2: "Appointments" }}><PatientCancelledAppointment /></DashboardLayout>} />
-                <Route path="/patient-appointment-details" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Patient Appointments", li2: "Patient Appointments" }}><PatientAppointmentDetails /></DashboardLayout>} />
-                <Route path="/patient-accounts" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Wallet", li2: "Wallet" }}><PatientAccounts /></DashboardLayout>} />
-                <Route path="/profile-settings" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Settings", li2: "Settings" }}><ProfileSettings /></DashboardLayout>} />
-                <Route path="/change-password" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Settings", li2: "Settings" }}><ChangePassword /></DashboardLayout>} />
-                <Route path="/favourites" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Favourites", li2: "Favourites" }}><Favourites /></DashboardLayout>} />
-                <Route path="/chat" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Message", li2: "Message" }}><Chat /></DashboardLayout>} />
-                <Route path="/dependent" element={<DashboardLayout breadcrumb={{ title: "Dependants", li1: "Patient", li2: "Dependants" }}><Dependent /></DashboardLayout>} />
-                <Route path="/medical-records" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Medical Records", li2: "Medical Records" }}><MedicalRecords /></DashboardLayout>} />
-                <Route path="/medical-details" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Vitals", li2: "Vitals" }}><MedicalDetails /></DashboardLayout>} />
-                <Route path="/patient-invoices" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Invoices", li2: "Invoices" }}><PatientInvoices /></DashboardLayout>} />
-                <Route path="/video-call" element={<VideoCallRoom />} />
-                <Route path="/voice-call" element={<VideoCallRoom />} />
-                <Route path="/clinic-navigation" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Clinic Navigation", li2: "Clinic Navigation" }}><ClinicNavigation /></DashboardLayout>} />
-                <Route path="/order-history" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Order History", li2: "Order History" }}><OrderHistory /></DashboardLayout>} />
-                <Route path="/documents-download" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Documents", li2: "Documents & Receipts" }}><DocumentsDownload /></DashboardLayout>} />
+                {/* Patient Routes - Protected (Require PATIENT role) */}
+                <Route path="/patient/dashboard" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Patient Dashboard", li2: "Patient Dashboard" }}><PatientDashboard /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient-profile" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Patients Profile", li2: "Patients Profile" }}><PatientProfile /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient-appointments" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Patient Appointments", li2: "Patient Appointments" }}><PatientAppointments /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient-appointments-grid" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Appointments", li2: "Appointments" }}><PatientAppointmentsGrid /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient-upcoming-appointment" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Appointments", li2: "Appointments" }}><PatientUpcomingAppointment /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient-completed-appointment" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Appointments", li2: "Appointments" }}><PatientCompletedAppointment /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient-cancelled-appointment" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Appointments", li2: "Appointments" }}><PatientCancelledAppointment /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient-appointment-details" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Patient Appointments", li2: "Patient Appointments" }}><PatientAppointmentDetails /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient-accounts" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Wallet", li2: "Wallet" }}><PatientAccounts /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile-settings" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Settings", li2: "Settings" }}><ProfileSettings /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/change-password" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Settings", li2: "Settings" }}><ChangePassword /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/favourites" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Favourites", li2: "Favourites" }}><Favourites /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/chat" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Message", li2: "Message" }}><Chat /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/dependent" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Dependants", li1: "Patient", li2: "Dependants" }}><Dependent /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/medical-records" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Medical Records", li2: "Medical Records" }}><MedicalRecords /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/medical-details" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Vitals", li2: "Vitals" }}><MedicalDetails /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient-invoices" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Invoices", li2: "Invoices" }}><PatientInvoices /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/video-call" element={
+                  <ProtectedRoute role="PATIENT">
+                    <VideoCallRoom />
+                  </ProtectedRoute>
+                } />
+                <Route path="/voice-call" element={
+                  <ProtectedRoute role="PATIENT">
+                    <VideoCallRoom />
+                  </ProtectedRoute>
+                } />
+                <Route path="/clinic-navigation" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Clinic Navigation", li2: "Clinic Navigation" }}><ClinicNavigation /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/map-view" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Map View", li2: "Nearby Clinics" }}><MapView /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/order-history" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Order History", li2: "Order History" }}><OrderHistory /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/order-details/:orderId" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Order History", li2: "Order Details" }}><OrderDetails /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/documents-download" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Documents", li2: "Documents & Receipts" }}><DocumentsDownload /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
 
                 {/* Patient Onboarding Pages (Special Layout - No DashboardLayout) */}
                 <Route path="/patient-email" element={<PatientEmail />} />
@@ -261,17 +540,45 @@ function App() {
                 <Route path="/patient-register-step5" element={<AuthLayout><PatientRegisterStep5 /></AuthLayout>} />
                 <Route path="/patient-register" element={<AuthLayout><PatientRegister /></AuthLayout>} />
                 <Route path="/paitent-details" element={<MainLayout><PaitentDetails /></MainLayout>} />
-                <Route path="/add-dependent" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Dependants", li2: "Add Dependant" }}><AddDependent /></DashboardLayout>} />
-                <Route path="/edit-dependent" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Dependants", li2: "Edit Dependant" }}><EditDependent /></DashboardLayout>} />
-                <Route path="/patient-billing" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Billing", li2: "Billing Information" }}><PatientBilling /></DashboardLayout>} />
-                <Route path="/patient-notifications" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Notifications", li2: "Notifications" }}><PatientNotifications /></DashboardLayout>} />
-                <Route path="/patient-reports" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Reports", li2: "Medical Reports" }}><PatientReports /></DashboardLayout>} />
-                <Route path="/two-factor-authentication" element={<DashboardLayout breadcrumb={{ title: "Patient", li1: "Settings", li2: "2 Factor Authentication" }}><TwoFactorAuthentication /></DashboardLayout>} />
+                <Route path="/add-dependent" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Dependants", li2: "Add Dependant" }}><AddDependent /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/edit-dependent" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Dependants", li2: "Edit Dependant" }}><EditDependent /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient-billing" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Billing", li2: "Billing Information" }}><PatientBilling /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient-notifications" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Notifications", li2: "Notifications" }}><PatientNotifications /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient-reports" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Reports", li2: "Medical Reports" }}><PatientReports /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/two-factor-authentication" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Settings", li2: "2 Factor Authentication" }}><TwoFactorAuthentication /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
 
-            {/* Pharmacy Admin Routes - Public */}
-            <Route path="/pharmacy-admin/dashboard" element={<DashboardLayout><PharmacyAdminDashboard /></DashboardLayout>} />
+            {/* Pharmacy Admin Routes - Protected (Require PHARMACY or PHARMACY_ADMIN role) */}
+            <Route path="/pharmacy-admin/dashboard" element={
+              <ProtectedRoute role={["PHARMACY", "PHARMACY_ADMIN"]}>
+                <DashboardLayout><PharmacyAdminDashboard /></DashboardLayout>
+              </ProtectedRoute>
+            } />
 
-            {/* Search & Booking Routes - Public */}
+            {/* Search & Booking Routes - Public (Browse) */}
             <Route path="/search" element={<MainLayout><Search /></MainLayout>} />
             <Route path="/search-2" element={<MainLayout><Search2 /></MainLayout>} />
             <Route path="/doctor-grid" element={<MainLayout><DoctorGrid /></MainLayout>} />
@@ -279,20 +586,52 @@ function App() {
             <Route path="/map-grid" element={<MainLayout><MapGrid /></MainLayout>} />
             <Route path="/map-list" element={<MainLayout><MapList /></MainLayout>} />
             <Route path="/map-list-availability" element={<MainLayout><MapListAvailability /></MainLayout>} />
-            <Route path="/booking" element={<MainLayout><Booking /></MainLayout>} />
-            <Route path="/booking-success" element={<MainLayout><BookingSuccess /></MainLayout>} />
-            <Route path="/checkout" element={<MainLayout><Checkout /></MainLayout>} />
-            <Route path="/consultation" element={<MainLayout><Consultation /></MainLayout>} />
+            
+            {/* Booking Routes - Protected (Require PATIENT role) */}
+            <Route path="/booking" element={
+              <ProtectedRoute role="PATIENT">
+                <MainLayout><Booking /></MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/booking-success" element={
+              <ProtectedRoute role="PATIENT">
+                <MainLayout><BookingSuccess /></MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/checkout" element={
+              <ProtectedRoute role="PATIENT">
+                <MainLayout><Checkout /></MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/consultation" element={
+              <ProtectedRoute role="PATIENT">
+                <MainLayout><Consultation /></MainLayout>
+              </ProtectedRoute>
+            } />
 
-            {/* Pharmacy Routes - Public */}
+            {/* Pharmacy Routes - Public (Browse) */}
             <Route path="/pharmacy-index" element={<MainLayout><PharmacyIndex /></MainLayout>} />
             <Route path="/pharmacy-details" element={<MainLayout><PharmacyDetails /></MainLayout>} />
             <Route path="/pharmacy-search" element={<MainLayout><PharmacySearch /></MainLayout>} />
             <Route path="/product-all" element={<MainLayout><ProductAll /></MainLayout>} />
             <Route path="/product-description" element={<MainLayout><ProductDescription /></MainLayout>} />
-            <Route path="/cart" element={<MainLayout><Cart /></MainLayout>} />
-            <Route path="/product-checkout" element={<MainLayout><ProductCheckout /></MainLayout>} />
-            <Route path="/payment-success" element={<MainLayout><PaymentSuccess /></MainLayout>} />
+            
+            {/* Pharmacy Cart & Checkout - Protected (Require PATIENT role) */}
+            <Route path="/cart" element={
+              <ProtectedRoute role="PATIENT">
+                <MainLayout><Cart /></MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/product-checkout" element={
+              <ProtectedRoute role="PATIENT">
+                <MainLayout><ProductCheckout /></MainLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/payment-success" element={
+              <ProtectedRoute role="PATIENT">
+                <MainLayout><PaymentSuccess /></MainLayout>
+              </ProtectedRoute>
+            } />
 
             {/* Error Pages */}
             <Route path="/error-404" element={<Error404 />} />
@@ -301,6 +640,7 @@ function App() {
           </Routes>
           <ToastContainer position="top-right" autoClose={3000} />
         </BrowserRouter>
+        </CartProvider>
       </AuthProvider>
     </QueryClientProvider>
   )

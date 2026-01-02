@@ -1,7 +1,64 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as yup from 'yup'
+import { useAuth } from '../../contexts/AuthContext'
+import { toast } from 'react-toastify'
 import AuthLayout from '../../layouts/AuthLayout'
 
+const schema = yup.object({
+  fullName: yup.string().min(2, 'Full name must be at least 2 characters').required('Full name is required'),
+  email: yup.string().email('Invalid email').required('Email is required'),
+  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+  password_confirmation: yup.string().oneOf([yup.ref('password')], 'Passwords must match').required('Confirm password is required'),
+  phone: yup.string().required('Phone is required'),
+  gender: yup.string().oneOf(['MALE', 'FEMALE', 'OTHER'], 'Invalid gender').required('Gender is required'),
+})
+
 const DoctorRegister = () => {
+  const navigate = useNavigate()
+  const { register: registerUser } = useAuth()
+  const [loading, setLoading] = useState(false)
+  
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: yupResolver(schema)
+  })
+
+  const onSubmit = async (data) => {
+    setLoading(true)
+    try {
+      // Prepare registration data matching backend structure - only mandatory fields
+      const registrationData = {
+        fullName: data.fullName,
+        email: data.email,
+        password: data.password,
+        role: 'DOCTOR', // Doctor registration
+        phone: data.phone,
+        gender: data.gender,
+      }
+      
+      const response = await registerUser(registrationData, 'doctor')
+      toast.success('Registration successful! Please upload verification documents.')
+      
+      // Navigate to verification upload
+      if (response.user) {
+        if (response.user.status === 'PENDING') {
+          navigate('/doctor-verification-upload')
+        } else {
+          navigate('/doctor/dashboard')
+        }
+      } else {
+        navigate('/doctor-verification-upload')
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Registration failed'
+      toast.error(errorMessage)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <AuthLayout>
       <div className="content">
@@ -17,42 +74,79 @@ const DoctorRegister = () => {
                     <div className="login-header">
                       <h3>Doctor Register</h3>
                     </div>
-                    <form action="/doctor-register-step1">
+                    <form onSubmit={handleSubmit(onSubmit)}>
                       <div className="mb-3">
-                        <label className="form-label">Name</label>
-                        <input type="text" className="form-control" />
+                        <label className="form-label">Full Name</label>
+                        <input
+                          type="text"
+                          className={`form-control ${errors.fullName ? 'is-invalid' : ''}`}
+                          {...register('fullName')}
+                          placeholder="Enter your full name"
+                        />
+                        {errors.fullName && <div className="invalid-feedback">{errors.fullName.message}</div>}
                       </div>
                       <div className="mb-3">
-                        <label className="form-label">Phone</label>
-                        <input className="form-control group_formcontrol form-control-phone" id="phone" name="phone" type="text" />
+                        <label className="form-label">Email</label>
+                        <input
+                          type="email"
+                          className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                          {...register('email')}
+                          placeholder="Enter your email"
+                        />
+                        {errors.email && <div className="invalid-feedback">{errors.email.message}</div>}
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label">Phone *</label>
+                        <input
+                          type="tel"
+                          className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
+                          {...register('phone')}
+                          placeholder="Enter your phone number"
+                        />
+                        {errors.phone && <div className="invalid-feedback">{errors.phone.message}</div>}
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label">Gender *</label>
+                        <select
+                          className={`form-control ${errors.gender ? 'is-invalid' : ''}`}
+                          {...register('gender')}
+                        >
+                          <option value="">Select Gender</option>
+                          <option value="MALE">Male</option>
+                          <option value="FEMALE">Female</option>
+                          <option value="OTHER">Other</option>
+                        </select>
+                        {errors.gender && <div className="invalid-feedback">{errors.gender.message}</div>}
                       </div>
                       <div className="mb-3">
                         <div className="form-group-flex">
                           <label className="form-label">Create Password</label>
                         </div>
                         <div className="pass-group">
-                          <input type="password" className="form-control pass-input" />
+                          <input
+                            type="password"
+                            className={`form-control pass-input ${errors.password ? 'is-invalid' : ''}`}
+                            {...register('password')}
+                            placeholder="Enter password"
+                          />
                           <span className="feather-eye-off toggle-password"></span>
                         </div>
+                        {errors.password && <div className="invalid-feedback">{errors.password.message}</div>}
                       </div>
                       <div className="mb-3">
-                        <button className="btn btn-primary-gradient w-100" type="submit">
-                          Sign Up
+                        <label className="form-label">Confirm Password</label>
+                        <input
+                          type="password"
+                          className={`form-control ${errors.password_confirmation ? 'is-invalid' : ''}`}
+                          {...register('password_confirmation')}
+                          placeholder="Confirm your password"
+                        />
+                        {errors.password_confirmation && <div className="invalid-feedback">{errors.password_confirmation.message}</div>}
+                      </div>
+                      <div className="mb-3">
+                        <button className="btn btn-primary-gradient w-100" type="submit" disabled={loading}>
+                          {loading ? 'Registering...' : 'Sign Up as Doctor'}
                         </button>
-                      </div>
-                      <div className="login-or">
-                        <span className="or-line"></span>
-                        <span className="span-or">or</span>
-                      </div>
-                      <div className="social-login-btn">
-                        <a href="javascript:void(0);" className="btn w-100">
-                          <img src="/assets/img/icons/google-icon.svg" alt="google-icon" />
-                          Sign in With Google
-                        </a>
-                        <a href="javascript:void(0);" className="btn w-100">
-                          <img src="/assets/img/icons/facebook-icon.svg" alt="fb-icon" />
-                          Sign in With Facebook
-                        </a>
                       </div>
                       <div className="login-or">
                         <span className="or-line"></span>

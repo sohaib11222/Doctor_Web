@@ -1,7 +1,142 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '../../contexts/AuthContext'
+import * as patientApi from '../../api/patient'
+import * as favoriteApi from '../../api/favorite'
+import * as medicalRecordsApi from '../../api/medicalRecords'
+import * as paymentApi from '../../api/payment'
 
 const PatientDashboard = () => {
+  const { user } = useAuth()
+
+  // Fetch dashboard data
+  const { data: dashboardResponse, isLoading: dashboardLoading, refetch: refetchDashboard } = useQuery({
+    queryKey: ['patientDashboard'],
+    queryFn: () => patientApi.getPatientDashboard(),
+    enabled: !!user,
+    refetchInterval: 30000 // Refresh every 30 seconds
+  })
+
+  // Fetch favorites for favorites section
+  const { data: favoritesData } = useQuery({
+    queryKey: ['favorites', user?._id, 'dashboard'],
+    queryFn: () => favoriteApi.listFavorites(user?._id, { page: 1, limit: 4 }),
+    enabled: !!user
+  })
+
+  // Fetch medical records for reports section
+  const { data: medicalRecordsData } = useQuery({
+    queryKey: ['medicalRecords', 'dashboard'],
+    queryFn: () => medicalRecordsApi.getMedicalRecords({ page: 1, limit: 5 }),
+    enabled: !!user
+  })
+
+  // Fetch prescriptions (medical records with type PRESCRIPTION)
+  const { data: prescriptionsData } = useQuery({
+    queryKey: ['medicalRecords', 'PRESCRIPTION', 'dashboard'],
+    queryFn: () => medicalRecordsApi.getMedicalRecords({ recordType: 'PRESCRIPTION', page: 1, limit: 5 }),
+    enabled: !!user
+  })
+
+  // Fetch payment history for invoices section
+  const { data: paymentHistoryData } = useQuery({
+    queryKey: ['patientPaymentHistory', 'dashboard'],
+    queryFn: () => paymentApi.getPatientPaymentHistory({ page: 1, limit: 5 }),
+    enabled: !!user
+  })
+
+  // Extract dashboard data
+  const dashboard = useMemo(() => {
+    if (!dashboardResponse) return null
+    const responseData = dashboardResponse.data || dashboardResponse
+    return responseData
+  }, [dashboardResponse])
+
+  // Extract favorites
+  const favorites = useMemo(() => {
+    if (!favoritesData) return []
+    const responseData = favoritesData.data || favoritesData
+    return Array.isArray(responseData) ? responseData : (responseData.favorites || [])
+  }, [favoritesData])
+
+  // Extract medical records
+  const medicalRecords = useMemo(() => {
+    if (!medicalRecordsData) return []
+    const responseData = medicalRecordsData.data || medicalRecordsData
+    return responseData.records || []
+  }, [medicalRecordsData])
+
+  // Extract prescriptions
+  const prescriptions = useMemo(() => {
+    if (!prescriptionsData) return []
+    const responseData = prescriptionsData.data || prescriptionsData
+    return responseData.records || []
+  }, [prescriptionsData])
+
+  // Extract transactions
+  const transactions = useMemo(() => {
+    if (!paymentHistoryData) return []
+    const responseData = paymentHistoryData.data || paymentHistoryData
+    return responseData.transactions || []
+  }, [paymentHistoryData])
+
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A'
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-GB', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric'
+    })
+  }
+
+  // Format date and time
+  const formatDateTime = (dateString, timeString) => {
+    if (!dateString) return 'N/A'
+    const date = new Date(dateString)
+    const dateStr = date.toLocaleDateString('en-GB', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric'
+    })
+    return timeString ? `${dateStr}, ${timeString}` : dateStr
+  }
+
+  // Format currency
+  const formatCurrency = (amount, currency = 'USD') => {
+    if (!amount) return '$0.00'
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency || 'USD'
+    }).format(amount)
+  }
+
+  // Get status badge
+  const getStatusBadge = (status) => {
+    const statusUpper = (status || '').toUpperCase()
+    if (statusUpper === 'COMPLETED' || statusUpper === 'CONFIRMED') {
+      return <span className="badge badge-xs p-2 badge-soft-success inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>{status}</span>
+    }
+    if (statusUpper === 'PENDING') {
+      return <span className="badge badge-xs p-2 badge-soft-purple inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>{status}</span>
+    }
+    if (statusUpper === 'CANCELLED' || statusUpper === 'REJECTED') {
+      return <span className="badge badge-xs p-2 badge-soft-danger inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>{status}</span>
+    }
+    return <span className="badge badge-xs p-2 badge-soft-secondary inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>{status || 'N/A'}</span>
+  }
+
+  // Get appointment type display
+  const getAppointmentType = (bookingType) => {
+    if (!bookingType) return 'N/A'
+    const type = bookingType.toUpperCase()
+    if (type === 'ONLINE') return 'Video call'
+    if (type === 'VISIT') return 'Clinic Visit'
+    return bookingType
+  }
+
   useEffect(() => {
     // Initialize carousels if needed
     if (typeof window !== 'undefined' && window.$) {
@@ -37,7 +172,29 @@ const PatientDashboard = () => {
         })
       }
     }
-  }, [])
+  }, [dashboard])
+
+  if (dashboardLoading && !dashboard) {
+    return (
+      <div className="content">
+        <div className="container">
+          <div className="row">
+            <div className="col-lg-4 col-xl-3 theiaStickySidebar">
+              {/* Sidebar is handled by DashboardLayout */}
+            </div>
+            <div className="col-lg-12 col-xl-12">
+              <div className="text-center py-5">
+                <div className="spinner-border" role="status">
+                  <span className="visually-hidden">Loading dashboard...</span>
+                </div>
+                <p className="text-muted mt-2">Loading dashboard data...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="content">
@@ -49,30 +206,29 @@ const PatientDashboard = () => {
           <div className="col-lg-12 col-xl-12">
             <div className="dashboard-header">
               <h3>Dashboard</h3>
-              <ul className="header-list-btns">
-                <li>
-                  <div className="dropdown header-dropdown">
-                    <a className="dropdown-toggle" data-bs-toggle="dropdown" href="javascript:void(0);">
-                      <img src="/assets/img/doctors-dashboard/profile-06.jpg" className="avatar dropdown-avatar" alt="Img" />
-                      Hendrita
-                    </a>
-                    <div className="dropdown-menu dropdown-menu-end">
-                      <a href="javascript:void(0);" className="dropdown-item">
-                        <img src="/assets/img/doctors-dashboard/profile-06.jpg" className="avatar dropdown-avatar" alt="Img" />
-                        Hendrita
-                      </a>
-                      <a href="javascript:void(0);" className="dropdown-item">
-                        <img src="/assets/img/doctors-dashboard/profile-08.jpg" className="avatar dropdown-avatar" alt="Img" />
-                        Laura
-                      </a>
-                      <a href="javascript:void(0);" className="dropdown-item">
-                        <img src="/assets/img/doctors-dashboard/profile-07.jpg" className="avatar dropdown-avatar" alt="Img" />
-                        Mathew
+              {dashboardLoading ? (
+                <div className="spinner-border spinner-border-sm" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+              ) : dashboard && (
+                <ul className="header-list-btns">
+                  <li>
+                    <div className="dropdown header-dropdown">
+                      <a className="dropdown-toggle" data-bs-toggle="dropdown" href="javascript:void(0);">
+                        <img 
+                          src={dashboard.patient?.profileImage || '/assets/img/doctors-dashboard/profile-06.jpg'} 
+                          className="avatar dropdown-avatar" 
+                          alt="Patient" 
+                          onError={(e) => {
+                            e.target.src = '/assets/img/doctors-dashboard/profile-06.jpg'
+                          }}
+                        />
+                        {dashboard.patient?.fullName || 'Patient'}
                       </a>
                     </div>
-                  </div>
-                </li>
-              </ul>
+                  </li>
+                </ul>
+              )}
             </div>
             <div className="row">
               <div className="col-xl-8 d-flex">
@@ -161,54 +317,45 @@ const PatientDashboard = () => {
                       </div>
                     </div>
                     <div className="dashboard-card-body">
-                      <div className="doctor-fav-list">
-                        <div className="doctor-info-profile">
-                          <a href="#" className="table-avatar">
-                            <img src="/assets/img/doctors-dashboard/doctor-profile-img.jpg" alt="Img" />
-                          </a>
-                          <div className="doctor-name-info">
-                            <h5><a href="#">Dr. Edalin</a></h5>
-                            <span>Endodontists</span>
-                          </div>
+                      {favorites.length === 0 ? (
+                        <div className="text-center py-3">
+                          <p className="text-muted">No favorite doctors yet</p>
+                          <Link to="/search" className="btn btn-sm btn-primary mt-2">Find Doctors</Link>
                         </div>
-                        <a href="#" className="cal-plus-icon"><i className="isax isax-calendar5"></i></a>
-                      </div>
-                      <div className="doctor-fav-list">
-                        <div className="doctor-info-profile">
-                          <a href="#" className="table-avatar">
-                            <img src="/assets/img/doctors/doctor-thumb-11.jpg" alt="Img" />
-                          </a>
-                          <div className="doctor-name-info">
-                            <h5><a href="#">Dr. Maloney</a></h5>
-                            <span>Cardiologist</span>
-                          </div>
-                        </div>
-                        <a href="#" className="cal-plus-icon"><i className="isax isax-calendar5"></i></a>
-                      </div>
-                      <div className="doctor-fav-list">
-                        <div className="doctor-info-profile">
-                          <a href="#" className="table-avatar">
-                            <img src="/assets/img/doctors/doctor-14.jpg" alt="Img" />
-                          </a>
-                          <div className="doctor-name-info">
-                            <h5><a href="#">Dr. Wayne </a></h5>
-                            <span>Dental Specialist</span>
-                          </div>
-                        </div>
-                        <a href="#" className="cal-plus-icon"><i className="isax isax-calendar5"></i></a>
-                      </div>
-                      <div className="doctor-fav-list">
-                        <div className="doctor-info-profile">
-                          <a href="#" className="table-avatar">
-                            <img src="/assets/img/doctors/doctor-15.jpg" alt="Img" />
-                          </a>
-                          <div className="doctor-name-info">
-                            <h5><a href="#">Dr. Marla</a></h5>
-                            <span>Endodontists</span>
-                          </div>
-                        </div>
-                        <a href="#" className="cal-plus-icon"><i className="isax isax-calendar5"></i></a>
-                      </div>
+                      ) : (
+                        favorites.slice(0, 4).map((favorite) => {
+                          const doctor = favorite.doctorId
+                          const doctorName = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor.fullName : 'Unknown Doctor'
+                          const doctorImage = (doctor && typeof doctor === 'object' && doctor !== null) ? (doctor.profileImage || '/assets/img/doctors-dashboard/doctor-profile-img.jpg') : '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                          const specialization = (doctor && typeof doctor === 'object' && doctor !== null) && doctor.doctorProfile?.specialization 
+                            ? (typeof doctor.doctorProfile.specialization === 'object' 
+                                ? doctor.doctorProfile.specialization.name 
+                                : 'Specialist')
+                            : 'Specialist'
+                          const doctorId = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor._id : favorite.doctorId
+                          
+                          return (
+                            <div key={favorite._id} className="doctor-fav-list">
+                              <div className="doctor-info-profile">
+                                <Link to={`/booking?doctorId=${doctorId}`} className="table-avatar">
+                                  <img 
+                                    src={doctorImage} 
+                                    alt="Doctor" 
+                                    onError={(e) => {
+                                      e.target.src = '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                                    }}
+                                  />
+                                </Link>
+                                <div className="doctor-name-info">
+                                  <h5><Link to={`/booking?doctorId=${doctorId}`}>Dr. {doctorName}</Link></h5>
+                                  <span>{specialization}</span>
+                                </div>
+                              </div>
+                              <Link to={`/booking?doctorId=${doctorId}`} className="cal-plus-icon"><i className="isax isax-calendar5"></i></Link>
+                            </div>
+                          )
+                        })
+                      )}
                     </div>
                   </div>
                 </div>
@@ -264,48 +411,72 @@ const PatientDashboard = () => {
                           </a>
                         </li>
                       </ul>
-                      <div className="appointment-dash-card">
-                        <div className="doctor-fav-list">
-                          <div className="doctor-info-profile">
-                            <a href="#" className="table-avatar">
-                              <img src="/assets/img/doctors-dashboard/doctor-profile-img.jpg" alt="Img" />
-                            </a>
-                            <div className="doctor-name-info">
-                              <h5><a href="#">Dr.Edalin Hendry</a></h5>
-                              <span className="fs-12 fw-medium">Dentist</span>
-                            </div>
+                      {dashboardLoading ? (
+                        <div className="text-center py-3">
+                          <div className="spinner-border spinner-border-sm" role="status">
+                            <span className="visually-hidden">Loading...</span>
                           </div>
-                          <a href="#" className="cal-plus-icon"><i className="isax isax-hospital5"></i></a>
                         </div>
-                        <div className="date-time">
-                          <p><i className="isax isax-clock5"></i>21 Mar 2024 - 10:30 PM </p>
+                      ) : dashboard?.upcomingAppointments?.appointments?.length === 0 ? (
+                        <div className="text-center py-3">
+                          <p className="text-muted">No upcoming appointments</p>
+                          <Link to="/search" className="btn btn-sm btn-primary mt-2">Book Appointment</Link>
                         </div>
-                        <div className="card-btns gap-3">
-                          <Link to="/chat" className="btn btn-md btn-light rounded-pill"><i className="isax isax-messages-25"></i>Chat Now</Link>
-                          <Link to="/patient-appointments" className="btn  btn-md btn-primary-gradient rounded-pill"><i className="isax isax-calendar-tick5"></i>Attend</Link>
-                        </div>
-                      </div>
-                      <div className="appointment-dash-card">
-                        <div className="doctor-fav-list">
-                          <div className="doctor-info-profile">
-                            <a href="#" className="table-avatar">
-                              <img src="/assets/img/doctors/doctor-17.jpg" alt="Img" />
-                            </a>
-                            <div className="doctor-name-info">
-                              <h5><a href="#">Dr.Juliet Gabriel</a></h5>
-                              <span className="fs-12 fw-medium">Cardiologist</span>
+                      ) : (
+                        dashboard?.upcomingAppointments?.appointments?.slice(0, 2).map((appointment) => {
+                          const doctor = appointment.doctorId
+                          const doctorName = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor.fullName : 'Unknown Doctor'
+                          const doctorImage = (doctor && typeof doctor === 'object' && doctor !== null) ? (doctor.profileImage || '/assets/img/doctors-dashboard/doctor-profile-img.jpg') : '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                          const specialization = (doctor && typeof doctor === 'object' && doctor !== null) && doctor.doctorProfile?.specialization 
+                            ? (typeof doctor.doctorProfile.specialization === 'object' 
+                                ? doctor.doctorProfile.specialization.name 
+                                : 'Specialist')
+                            : 'Specialist'
+                          const doctorId = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor._id : appointment.doctorId
+                          
+                          return (
+                            <div key={appointment._id} className="appointment-dash-card">
+                              <div className="doctor-fav-list">
+                                <div className="doctor-info-profile">
+                                  <Link to={`/doctor-profile?id=${doctorId}`} className="table-avatar">
+                                    <img 
+                                      src={doctorImage} 
+                                      alt="Doctor" 
+                                      onError={(e) => {
+                                        e.target.src = '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                                      }}
+                                    />
+                                  </Link>
+                                  <div className="doctor-name-info">
+                                    <h5><Link to={`/doctor-profile?id=${doctorId}`}>Dr. {doctorName}</Link></h5>
+                                    <span className="fs-12 fw-medium">{specialization}</span>
+                                  </div>
+                                </div>
+                                <Link to={`/chat?doctorId=${doctorId}&appointmentId=${appointment._id}`} className="cal-plus-icon">
+                                  <i className={appointment.bookingType === 'ONLINE' ? 'isax isax-video5' : 'isax isax-hospital5'}></i>
+                                </Link>
+                              </div>
+                              <div className="date-time">
+                                <p><i className="isax isax-clock5"></i>{formatDateTime(appointment.appointmentDate, appointment.appointmentTime)}</p>
+                              </div>
+                              <div className="card-btns gap-3">
+                                <Link 
+                                  to={`/chat?doctorId=${doctorId}&appointmentId=${appointment._id}`} 
+                                  className="btn btn-md btn-light rounded-pill"
+                                >
+                                  <i className="isax isax-messages-25"></i>Chat Now
+                                </Link>
+                                <Link 
+                                  to={`/patient-appointment-details?id=${appointment._id}`} 
+                                  className="btn btn-md btn-primary-gradient rounded-pill"
+                                >
+                                  <i className="isax isax-calendar-tick5"></i>View Details
+                                </Link>
+                              </div>
                             </div>
-                          </div>
-                          <a href="#" className="cal-plus-icon"><i className="isax isax-video5"></i></a>
-                        </div>
-                        <div className="date-time">
-                          <p><i className="isax isax-clock5"></i>22 Mar 2024 - 10:30 PM  </p>
-                        </div>
-                        <div className="card-btns gap-3">
-                          <Link to="/chat" className="btn btn-md btn-light rounded-pill"><i className="isax isax-messages-25"></i>Chat Now</Link>
-                          <Link to="/patient-appointments" className="btn  btn-md btn-primary-gradient rounded-pill"><i className="isax isax-calendar-tick5"></i>Attend</Link>
-                        </div>
-                      </div>
+                          )
+                        })
+                      )}
                     </div>
                   </div>
                 </div>
@@ -444,64 +615,81 @@ const PatientDashboard = () => {
                   </div>
                   <div className="dashboard-card-body">
                     <div className="past-appointments-slider owl-carousel">
-                      <div className="appointment-dash-card past-appointment mt-0">
-                        <div className="doctor-fav-list">
-                          <div className="doctor-info-profile">
-                            <a href="#" className="table-avatar">
-                              <img src="/assets/img/doctors-dashboard/doctor-profile-img.jpg" alt="Img" />
-                            </a>
-                            <div className="doctor-name-info">
-                              <h5><a href="#">Dr.Edalin Hendry</a></h5>
-                              <span>Dental Specialist</span>
-                            </div>
+                      {dashboardLoading ? (
+                        <div className="text-center py-3">
+                          <div className="spinner-border spinner-border-sm" role="status">
+                            <span className="visually-hidden">Loading...</span>
                           </div>
-                          <span className="bg-orange badge"><i className="isax isax-video5 me-1"></i>30 Min</span>
                         </div>
-                        <div className="appointment-date-info">
-                          <h6>Thursday, Mar 2024</h6>
-                          <ul>
-                            <li>
-                              <span><i className="isax isax-clock5"></i></span>Time : 04:00 PM - 04:30 PM (30 Min)
-                            </li>
-                            <li>
-                              <span><i className="isax isax-location5"></i></span>Newyork, United States
-                            </li>
-                          </ul>
+                      ) : dashboard?.completedAppointments?.appointments?.length === 0 ? (
+                        <div className="text-center py-3">
+                          <p className="text-muted">No past appointments</p>
                         </div>
-                        <div className="card-btns">
-                          <Link to="/patient-appointments" className="btn btn-md btn-outline-primary ms-0 me-3 rounded-pill">Reschedule</Link>
-                          <Link to="/patient-appointment-details" className="btn btn-md btn-primary-gradient rounded-pill">View Details</Link>
-                        </div>
-                      </div>
-                      <div className="appointment-dash-card past-appointment mt-0">
-                        <div className="doctor-fav-list">
-                          <div className="doctor-info-profile">
-                            <a href="#" className="table-avatar">
-                              <img src="/assets/img/doctors/doctor-17.jpg" alt="Img" />
-                            </a>
-                            <div className="doctor-name-info">
-                              <h5><a href="#">Dr.Juliet Gabriel</a></h5>
-                              <span>Cardiologist</span>
+                      ) : (
+                        dashboard?.completedAppointments?.appointments?.slice(0, 2).map((appointment) => {
+                          const doctor = appointment.doctorId
+                          const doctorName = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor.fullName : 'Unknown Doctor'
+                          const doctorImage = (doctor && typeof doctor === 'object' && doctor !== null) ? (doctor.profileImage || '/assets/img/doctors-dashboard/doctor-profile-img.jpg') : '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                          const specialization = (doctor && typeof doctor === 'object' && doctor !== null) && doctor.doctorProfile?.specialization 
+                            ? (typeof doctor.doctorProfile.specialization === 'object' 
+                                ? doctor.doctorProfile.specialization.name 
+                                : 'Specialist')
+                            : 'Specialist'
+                          const doctorId = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor._id : appointment.doctorId
+                          const appointmentDate = new Date(appointment.appointmentDate)
+                          const dayName = appointmentDate.toLocaleDateString('en-GB', { weekday: 'long' })
+                          const dateStr = appointmentDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                          
+                          return (
+                            <div key={appointment._id} className="appointment-dash-card past-appointment mt-0">
+                              <div className="doctor-fav-list">
+                                <div className="doctor-info-profile">
+                                  <Link to={`/doctor-profile?id=${doctorId}`} className="table-avatar">
+                                    <img 
+                                      src={doctorImage} 
+                                      alt="Doctor" 
+                                      onError={(e) => {
+                                        e.target.src = '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                                      }}
+                                    />
+                                  </Link>
+                                  <div className="doctor-name-info">
+                                    <h5><Link to={`/doctor-profile?id=${doctorId}`}>Dr. {doctorName}</Link></h5>
+                                    <span>{specialization}</span>
+                                  </div>
+                                </div>
+                                <span className="bg-orange badge">
+                                  <i className={appointment.bookingType === 'ONLINE' ? 'isax isax-video5' : 'isax isax-hospital5'} me-1></i>
+                                  {appointment.appointmentTime || 'N/A'}
+                                </span>
+                              </div>
+                              <div className="appointment-date-info">
+                                <h6>{dayName}, {dateStr}</h6>
+                                <ul>
+                                  <li>
+                                    <span><i className="isax isax-clock5"></i></span>
+                                    Time : {appointment.appointmentTime || 'N/A'}
+                                  </li>
+                                  {appointment.clinicName && (
+                                    <li>
+                                      <span><i className="isax isax-location5"></i></span>
+                                      {appointment.clinicName}
+                                    </li>
+                                  )}
+                                </ul>
+                              </div>
+                              <div className="card-btns">
+                                <Link 
+                                  to={`/patient-appointment-details?id=${appointment._id}`} 
+                                  className="btn btn-md btn-primary-gradient rounded-pill"
+                                >
+                                  View Details
+                                </Link>
+                              </div>
                             </div>
-                          </div>
-                          <span className="bg-orange badge"><i className="isax isax-video5 me-1"></i>30 Min</span>
-                        </div>
-                        <div className="appointment-date-info">
-                          <h6>Friday, Mar 2024</h6>
-                          <ul>
-                            <li>
-                              <span><i className="isax isax-clock5"></i></span>Time : 03:00 PM - 03:30 PM (30 Min)
-                            </li>
-                            <li>
-                              <span><i className="isax isax-location5"></i></span>Newyork, United States
-                            </li>
-                          </ul>
-                        </div>
-                        <div className="card-btns">
-                          <Link to="/patient-appointments" className="btn btn-md btn-outline-primary ms-0 me-3 rounded-pill">Reschedule</Link>
-                          <Link to="/medical-details" className="btn btn-md btn-primary-gradient rounded-pill">View Details</Link>
-                        </div>
-                      </div>
+                          )
+                        })
+                      )}
                     </div>
                   </div>
                 </div>
@@ -591,96 +779,65 @@ const PatientDashboard = () => {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  <tr>
-                                    <td>
-                                      <a href="javascript:void(0);"><span className="link-primary">#AP1236</span></a>
-                                    </td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-24.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Dr. Robert Womack</Link>
-                                      </h2>
-                                    </td>
-                                    <td>21 Mar 2024, 10:30 AM</td>
-                                    <td>Video call</td>
-                                    <td>
-                                      <span className="badge badge-xs p-2 badge-soft-purple inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>Upcoming</span>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td>
-                                      <a href="javascript:void(0);"><span className="link-primary">#AP3656</span></a>
-                                    </td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-23.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Dr. Patricia Cassidy</Link>
-                                      </h2>
-                                    </td>
-                                    <td>28 Mar 2024, 11:40 AM</td>
-                                    <td>Clinic Visit</td>
-                                    <td>
-                                      <span className="badge badge-xs p-2 badge-soft-purple inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>Completed</span>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td>
-                                      <a href="javascript:void(0);"><span className="link-primary">#AP1246</span></a>
-                                    </td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-22.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Dr. Kevin Evans</Link>
-                                      </h2>
-                                    </td>
-                                    <td>02 Apr 2024, 09:20 AM</td>
-                                    <td>Audio Call</td>
-                                    <td>
-                                      <span className="badge badge-xs p-2 badge-soft-success inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>Completed</span>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td>
-                                      <a href="javascript:void(0);"><span className="link-primary">#AP6985</span></a>
-                                    </td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-25.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Dr. Lisa Keating</Link>
-                                      </h2>
-                                    </td>
-                                    <td>15 Apr 2024, 04:10 PM</td>
-                                    <td>Clinic Visit</td>
-                                    <td>
-                                      <span className="badge badge-xs p-2 badge-soft-danger inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>Cancelled</span>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td>
-                                      <a href="javascript:void(0);"><span className="link-primary">#AP3659</span></a>
-                                    </td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-26.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Dr. John Hammer</Link>
-                                      </h2>
-                                    </td>
-                                    <td>10 May 2024, 06:00 PM</td>
-                                    <td>Video Call</td>
-                                    <td>
-                                      <span className="badge badge-xs p-2 badge-soft-purple inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>Upcoming</span>
-                                    </td>
-                                  </tr>
+                                  {dashboardLoading ? (
+                                    <tr>
+                                      <td colSpan="5" className="text-center py-3">
+                                        <div className="spinner-border spinner-border-sm" role="status">
+                                          <span className="visually-hidden">Loading...</span>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ) : !dashboard?.upcomingAppointments?.appointments?.length && 
+                                      !dashboard?.completedAppointments?.appointments?.length && 
+                                      !dashboard?.cancelledAppointments?.appointments?.length ? (
+                                    <tr>
+                                      <td colSpan="5" className="text-center py-3">
+                                        <p className="text-muted">No appointments found</p>
+                                        <Link to="/search" className="btn btn-sm btn-primary mt-2">Book Appointment</Link>
+                                      </td>
+                                    </tr>
+                                  ) : (
+                                    [
+                                      ...(dashboard?.upcomingAppointments?.appointments || []).slice(0, 2),
+                                      ...(dashboard?.completedAppointments?.appointments || []).slice(0, 2),
+                                      ...(dashboard?.cancelledAppointments?.appointments || []).slice(0, 1)
+                                    ].slice(0, 5).map((appointment) => {
+                                      const doctor = appointment.doctorId
+                                      const doctorName = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor.fullName : 'Unknown Doctor'
+                                      const doctorImage = (doctor && typeof doctor === 'object' && doctor !== null) ? (doctor.profileImage || '/assets/img/doctors-dashboard/doctor-profile-img.jpg') : '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                                      const doctorId = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor._id : appointment.doctorId
+                                      
+                                      return (
+                                        <tr key={appointment._id}>
+                                          <td>
+                                            <Link to={`/patient-appointment-details?id=${appointment._id}`}>
+                                              <span className="link-primary">#{appointment.appointmentNumber || appointment._id.slice(-6).toUpperCase()}</span>
+                                            </Link>
+                                          </td>
+                                          <td>
+                                            <h2 className="table-avatar">
+                                              <Link to={`/doctor-profile?id=${doctorId}`} className="avatar avatar-sm me-2">
+                                                <img 
+                                                  className="avatar-img rounded-3" 
+                                                  src={doctorImage} 
+                                                  alt="Doctor" 
+                                                  onError={(e) => {
+                                                    e.target.src = '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                                                  }}
+                                                />
+                                              </Link>
+                                              <Link to={`/doctor-profile?id=${doctorId}`}>Dr. {doctorName}</Link>
+                                            </h2>
+                                          </td>
+                                          <td>{formatDateTime(appointment.appointmentDate, appointment.appointmentTime)}</td>
+                                          <td>{getAppointmentType(appointment.bookingType)}</td>
+                                          <td>
+                                            {getStatusBadge(appointment.status)}
+                                          </td>
+                                        </tr>
+                                      )
+                                    })
+                                  )}
                                 </tbody>
                               </table>
                             </div>
@@ -701,151 +858,58 @@ const PatientDashboard = () => {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  <tr>
-                                    <td><a href="javascript:void(0);" className="link-primary">#MR1236</a></td>
-                                    <td>
-                                      <a href="javascript:void(0);" className="lab-icon">Electro cardiography</a>
-                                    </td>
-                                    <td>24 Mar 2024</td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/paitent-details" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors-dashboard/profile-06.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/paitent-details">Hendrita Clark</Link>
-                                      </h2>
-                                    </td>
-                                    <td>Take Good Rest</td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#view_report">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);">
-                                          <i className="isax isax-import"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td><a href="javascript:void(0);" className="link-primary">#MR3656</a></td>
-                                    <td>
-                                      <a href="javascript:void(0);" className="lab-icon">Complete Blood Count</a>
-                                    </td>
-                                    <td>10 Apr 2024</td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/paitent-details" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/dependent/dependent-01.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/paitent-details">Laura Stewart</Link>
-                                      </h2>
-                                    </td>
-                                    <td>Stable, no change</td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#view_report">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);">
-                                          <i className="isax isax-import"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td><a href="javascript:void(0);" className="link-primary">#MR1246</a></td>
-                                    <td>
-                                      <a href="javascript:void(0);" className="lab-icon">Blood Glucose Test</a>
-                                    </td>
-                                    <td>19 Apr 2024</td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/paitent-details" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/dependent/dependent-02.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/paitent-details">Mathew Charles </Link>
-                                      </h2>
-                                    </td>
-                                    <td>All Clear</td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#view_report">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);">
-                                          <i className="isax isax-import"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td><a href="javascript:void(0);" className="link-primary">#MR6985</a></td>
-                                    <td>
-                                      <a href="javascript:void(0);" className="lab-icon">Liver Function Tests</a>
-                                    </td>
-                                    <td>27 Apr 2024</td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/paitent-details" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/dependent/dependent-03.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/paitent-details">Christopher Joseph</Link>
-                                      </h2>
-                                    </td>
-                                    <td>Stable, no change</td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#view_report">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);">
-                                          <i className="isax isax-import"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td><a href="#" className="link-primary">#MR3659</a></td>
-                                    <td>
-                                      <a href="javascript:void(0);" className="lab-icon">Blood Cultures</a>
-                                    </td>
-                                    <td>10 May  2024</td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/paitent-details" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/dependent/dependent-04.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/paitent-details">Elisa Salcedo</Link>
-                                      </h2>
-                                    </td>
-                                    <td>Take Good Rest</td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#view_report">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);">
-                                          <i className="isax isax-import"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
+                                  {medicalRecords.length === 0 ? (
+                                    <tr>
+                                      <td colSpan="6" className="text-center py-3">
+                                        <p className="text-muted">No medical records found</p>
+                                        <Link to="/medical-records" className="btn btn-sm btn-primary mt-2">Add Medical Record</Link>
+                                      </td>
+                                    </tr>
+                                  ) : (
+                                    medicalRecords.slice(0, 5).map((record) => {
+                                      const doctor = record.relatedDoctorId
+                                      const doctorName = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor.fullName : 'Self'
+                                      
+                                      return (
+                                        <tr key={record._id}>
+                                          <td>
+                                            <Link to="/medical-records">
+                                              <span className="link-primary">#{record._id.slice(-6).toUpperCase()}</span>
+                                            </Link>
+                                          </td>
+                                          <td>
+                                            <a href="javascript:void(0);" className="lab-icon">{record.title}</a>
+                                          </td>
+                                          <td>{formatDate(record.uploadedDate || record.createdAt)}</td>
+                                          <td>
+                                            <h2 className="table-avatar">
+                                              <span className="avatar avatar-sm me-2">
+                                                {(doctor && typeof doctor === 'object' && doctor !== null) && doctor.profileImage ? (
+                                                  <img className="avatar-img rounded-3" src={doctor.profileImage} alt="Doctor" />
+                                                ) : (
+                                                  <span className="avatar-title rounded-3 bg-primary text-white">
+                                                    {doctorName.charAt(0).toUpperCase()}
+                                                  </span>
+                                                )}
+                                              </span>
+                                              <span>{doctorName}</span>
+                                            </h2>
+                                          </td>
+                                          <td>{record.description || 'N/A'}</td>
+                                          <td>
+                                            <div className="action-item">
+                                              <a href={record.fileUrl} target="_blank" rel="noopener noreferrer" title="View">
+                                                <i className="isax isax-link-2"></i>
+                                              </a>
+                                              <a href={record.fileUrl} target="_blank" rel="noopener noreferrer" title="Download">
+                                                <i className="isax isax-import"></i>
+                                              </a>
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      )
+                                    })
+                                  )}
                                 </tbody>
                               </table>
                             </div>
@@ -865,146 +929,59 @@ const PatientDashboard = () => {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  <tr>
-                                    <td className="link-primary"><a href="#" data-bs-toggle="modal" data-bs-target="#view_prescription">#P1236</a></td>
-                                    <td>
-                                      <a href="javascript:void(0);" className="lab-icon prescription">Prescription</a>
-                                    </td>
-                                    <td>21 Mar 2024, 10:30 AM</td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-02.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Edalin Hendry</Link>
-                                      </h2>
-                                    </td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#view_prescription">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);">
-                                          <i className="isax isax-import"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td className="link-primary"><a href="#" data-bs-toggle="modal" data-bs-target="#view_prescription">#P3656</a></td>
-                                    <td>
-                                      <a href="javascript:void(0);" className="lab-icon prescription">Prescription</a>
-                                    </td>
-                                    <td>28 Mar 2024, 11:40 AM</td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-05.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">John Homes</Link>
-                                      </h2>
-                                    </td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#view_prescription">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);">
-                                          <i className="isax isax-import"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td className="link-primary"><a href="#" data-bs-toggle="modal" data-bs-target="#view_prescription">#P1246</a></td>
-                                    <td>
-                                      <a href="javascript:void(0);" className="lab-icon prescription">Prescription</a>
-                                    </td>
-                                    <td>11 Apr 2024, 09:00 AM</td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-03.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Shanta Neill</Link>
-                                      </h2>
-                                    </td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#view_prescription">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);">
-                                          <i className="isax isax-import"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td className="link-primary"><a href="#" data-bs-toggle="modal" data-bs-target="#view_prescription">#P6985</a></td>
-                                    <td>
-                                      <a href="javascript:void(0);" className="lab-icon prescription">Prescription</a>
-                                    </td>
-                                    <td>15 Apr 2024, 02:30 PM</td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-08.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Anthony Tran</Link>
-                                      </h2>
-                                    </td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#view_prescription">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);">
-                                          <i className="isax isax-import"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td className="link-primary"><a href="#" data-bs-toggle="modal" data-bs-target="#view_prescription">#P3659</a></td>
-                                    <td>
-                                      <a href="javascript:void(0);" className="lab-icon prescription">Prescription</a>
-                                    </td>
-                                    <td>23 Apr 2024, 06:40 PM</td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-01.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Susan Lingo</Link>
-                                      </h2>
-                                    </td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#view_prescription">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);">
-                                          <i className="isax isax-import"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
+                                  {prescriptions.length === 0 ? (
+                                    <tr>
+                                      <td colSpan="5" className="text-center py-3">
+                                        <p className="text-muted">No prescriptions found</p>
+                                      </td>
+                                    </tr>
+                                  ) : (
+                                    prescriptions.slice(0, 5).map((prescription) => {
+                                      const doctor = prescription.relatedDoctorId
+                                      const doctorName = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor.fullName : 'Unknown Doctor'
+                                      const doctorImage = (doctor && typeof doctor === 'object' && doctor !== null) ? (doctor.profileImage || '/assets/img/doctors-dashboard/doctor-profile-img.jpg') : '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                                      const doctorId = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor._id : prescription.relatedDoctorId
+                                      
+                                      return (
+                                        <tr key={prescription._id}>
+                                          <td>
+                                            <Link to="/medical-records">
+                                              <span className="link-primary">#{prescription._id.slice(-6).toUpperCase()}</span>
+                                            </Link>
+                                          </td>
+                                          <td>
+                                            <a href="javascript:void(0);" className="lab-icon prescription">Prescription</a>
+                                          </td>
+                                          <td>{formatDateTime(prescription.uploadedDate || prescription.createdAt, null)}</td>
+                                          <td>
+                                            <h2 className="table-avatar">
+                                              <Link to={`/doctor-profile?id=${doctorId}`} className="avatar avatar-sm me-2">
+                                                <img 
+                                                  className="avatar-img rounded-3" 
+                                                  src={doctorImage} 
+                                                  alt="Doctor" 
+                                                  onError={(e) => {
+                                                    e.target.src = '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                                                  }}
+                                                />
+                                              </Link>
+                                              <Link to={`/doctor-profile?id=${doctorId}`}>{doctorName}</Link>
+                                            </h2>
+                                          </td>
+                                          <td>
+                                            <div className="action-item">
+                                              <a href={prescription.fileUrl} target="_blank" rel="noopener noreferrer" title="View">
+                                                <i className="isax isax-link-2"></i>
+                                              </a>
+                                              <a href={prescription.fileUrl} target="_blank" rel="noopener noreferrer" title="Download">
+                                                <i className="isax isax-import"></i>
+                                              </a>
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      )
+                                    })
+                                  )}
                                 </tbody>
                               </table>
                             </div>
@@ -1025,126 +1002,61 @@ const PatientDashboard = () => {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  <tr>
-                                    <td><a href="#" data-bs-toggle="modal" data-bs-target="#invoice_view" className="link-primary">#INV1236</a></td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-21.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Edalin Hendry</Link>
-                                      </h2>
-                                    </td>
-                                    <td>24 Mar 2024</td>
-                                    <td>21 Mar 2024</td>
-                                    <td>$300</td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#invoice_view">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td><a href="#" data-bs-toggle="modal" data-bs-target="#invoice_view" className="link-primary">#NV3656</a></td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-13.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">John Homes</Link>
-                                      </h2>
-                                    </td>
-                                    <td>17 Mar 2024</td>
-                                    <td>14 Mar 2024</td>
-                                    <td>$450</td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#invoice_view">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td><a href="#" data-bs-toggle="modal" data-bs-target="#invoice_view" className="link-primary">#INV1246</a></td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-03.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Shanta Neill</Link>
-                                      </h2>
-                                    </td>
-                                    <td>11 Mar 2024</td>
-                                    <td>07 Mar 2024</td>
-                                    <td>$250</td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#invoice_view">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td><a href="#" data-bs-toggle="modal" data-bs-target="#invoice_view" className="link-primary">#INV6985</a></td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-08.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Anthony Tran</Link>
-                                      </h2>
-                                    </td>
-                                    <td>26 Feb 2024</td>
-                                    <td>23 Feb 2024</td>
-                                    <td>$320</td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#invoice_view">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td><a href="#" data-bs-toggle="modal" data-bs-target="#invoice_view" className="link-primary">#INV3659</a></td>
-                                    <td>
-                                      <h2 className="table-avatar">
-                                        <Link to="/doctor-profile" className="avatar avatar-sm me-2">
-                                          <img className="avatar-img rounded-3" src="/assets/img/doctors/doctor-thumb-01.jpg" alt="User Image" />
-                                        </Link>
-                                        <Link to="/doctor-profile">Susan Lingo</Link>
-                                      </h2>
-                                    </td>
-                                    <td>18 Feb 2024</td>
-                                    <td>15 Feb 2024</td>
-                                    <td>$480</td>
-                                    <td>
-                                      <div className="action-item">
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#invoice_view">
-                                          <i className="isax isax-link-2"></i>
-                                        </a>
-                                        <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#delete_modal">
-                                          <i className="isax isax-trash"></i>
-                                        </a>
-                                      </div>
-                                    </td>
-                                  </tr>
+                                  {transactions.length === 0 ? (
+                                    <tr>
+                                      <td colSpan="6" className="text-center py-3">
+                                        <p className="text-muted">No invoices found</p>
+                                      </td>
+                                    </tr>
+                                  ) : (
+                                    transactions.slice(0, 5).map((transaction) => {
+                                      const doctor = transaction.relatedAppointmentId?.doctorId
+                                      const doctorName = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor.fullName : 
+                                                       transaction.doctorName || 'N/A'
+                                      const doctorImage = (doctor && typeof doctor === 'object' && doctor !== null) ? (doctor.profileImage || '/assets/img/doctors-dashboard/doctor-profile-img.jpg') : '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                                      const doctorId = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor._id : transaction.relatedAppointmentId?.doctorId
+                                      const appointmentDate = transaction.relatedAppointmentId?.appointmentDate
+                                      
+                                      return (
+                                        <tr key={transaction._id}>
+                                          <td>
+                                            <Link to="/patient-invoices">
+                                              <span className="link-primary">#{transaction._id.slice(-8).toUpperCase()}</span>
+                                            </Link>
+                                          </td>
+                                          <td>
+                                            {doctor ? (
+                                              <h2 className="table-avatar">
+                                                <Link to={`/doctor-profile?id=${doctorId}`} className="avatar avatar-sm me-2">
+                                                  <img 
+                                                    className="avatar-img rounded-3" 
+                                                    src={doctorImage} 
+                                                    alt="Doctor" 
+                                                    onError={(e) => {
+                                                      e.target.src = '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                                                    }}
+                                                  />
+                                                </Link>
+                                                <Link to={`/doctor-profile?id=${doctorId}`}>{doctorName}</Link>
+                                              </h2>
+                                            ) : (
+                                              <span className="text-muted">N/A</span>
+                                            )}
+                                          </td>
+                                          <td>{appointmentDate ? formatDate(appointmentDate) : 'N/A'}</td>
+                                          <td>{formatDate(transaction.createdAt)}</td>
+                                          <td>{formatCurrency(transaction.amount, transaction.currency)}</td>
+                                          <td>
+                                            <div className="action-item">
+                                              <Link to="/patient-invoices" title="View">
+                                                <i className="isax isax-link-2"></i>
+                                              </Link>
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      )
+                                    })
+                                  )}
                                 </tbody>
                               </table>
                             </div>

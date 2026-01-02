@@ -1,72 +1,144 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { usePatientOrders } from '../../queries'
+import { useCancelOrder } from '../../mutations'
+import { toast } from 'react-toastify'
 
 const OrderHistory = () => {
-  const [filter, setFilter] = useState('all')
+  const navigate = useNavigate()
+  const [statusFilter, setStatusFilter] = useState('')
+  const [page, setPage] = useState(1)
+  const limit = 10
 
-  const orders = [
-    {
-      id: 'ORD001',
-      orderDate: '15 Nov 2024',
-      items: [
-        { name: 'Benzaxapine Croplex', quantity: 2, price: '$19', total: '$38' },
-        { name: 'Ombinazol Bonibamol', quantity: 1, price: '$22', total: '$22' }
-      ],
-      total: '$60',
-      status: 'Delivered',
-      deliveryDate: '18 Nov 2024',
-      trackingNumber: 'TRK123456789'
-    },
-    {
-      id: 'ORD002',
-      orderDate: '10 Nov 2024',
-      items: [
-        { name: 'Dantotate Dantodazole', quantity: 3, price: '$10', total: '$30' }
-      ],
-      total: '$30',
-      status: 'Shipped',
-      deliveryDate: '20 Nov 2024',
-      trackingNumber: 'TRK987654321'
-    },
-    {
-      id: 'ORD003',
-      orderDate: '05 Nov 2024',
-      items: [
-        { name: 'Alispirox Aerorenone', quantity: 1, price: '$26', total: '$26' },
-        { name: 'Benzaxapine Croplex', quantity: 1, price: '$19', total: '$19' }
-      ],
-      total: '$45',
-      status: 'Delivered',
-      deliveryDate: '08 Nov 2024',
-      trackingNumber: 'TRK456789123'
-    },
-    {
-      id: 'ORD004',
-      orderDate: '01 Nov 2024',
-      items: [
-        { name: 'Ombinazol Bonibamol', quantity: 2, price: '$22', total: '$44' }
-      ],
-      total: '$44',
-      status: 'Cancelled',
-      deliveryDate: null,
-      trackingNumber: null
+  const queryParams = useMemo(() => {
+    const params = { page, limit }
+    if (statusFilter) params.status = statusFilter
+    return params
+  }, [statusFilter, page])
+
+  const { data: ordersResponse, isLoading, error, refetch } = usePatientOrders(queryParams)
+  
+  // Fetch all orders for counts
+  const { data: allOrdersResponse } = usePatientOrders({ page: 1, limit: 1000 })
+
+  const orders = useMemo(() => {
+    if (!ordersResponse) return []
+    // Handle both response.data and direct data (axios interceptor already returns response.data)
+    const responseData = ordersResponse.data || ordersResponse
+    return Array.isArray(responseData) ? responseData : (responseData.orders || [])
+  }, [ordersResponse])
+
+  // Calculate status counts
+  const statusCounts = useMemo(() => {
+    if (!allOrdersResponse) return {}
+    // Handle both response.data and direct data (axios interceptor already returns response.data)
+    const responseData = allOrdersResponse.data || allOrdersResponse
+    const allOrders = Array.isArray(responseData) ? responseData : (responseData.orders || [])
+    
+    const counts = {
+      'ALL': allOrders.length,
+      'PENDING': 0,
+      'CONFIRMED': 0,
+      'PROCESSING': 0,
+      'SHIPPED': 0,
+      'DELIVERED': 0,
+      'CANCELLED': 0,
     }
-  ]
+    
+    allOrders.forEach((order) => {
+      const status = order.status
+      if (counts.hasOwnProperty(status)) {
+        counts[status]++
+      }
+    })
+    
+    return counts
+  }, [allOrdersResponse])
+
+  const cancelOrderMutation = useCancelOrder()
 
   const getStatusBadge = (status) => {
     const badges = {
-      'Delivered': 'badge-success',
-      'Shipped': 'badge-info',
-      'Processing': 'badge-warning',
-      'Cancelled': 'badge-danger',
-      'Pending': 'badge-secondary'
+      'DELIVERED': 'badge-success',
+      'SHIPPED': 'badge-info',
+      'PROCESSING': 'badge-warning',
+      'CONFIRMED': 'badge-primary',
+      'PENDING': 'badge-secondary',
+      'CANCELLED': 'badge-danger',
+      'REFUNDED': 'badge-danger'
     }
     return <span className={`badge ${badges[status] || 'badge-secondary'}`}>{status}</span>
   }
 
-  const filteredOrders = filter === 'all' 
-    ? orders 
-    : orders.filter(order => order.status.toLowerCase() === filter.toLowerCase())
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A'
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    })
+  }
+
+  const formatCurrency = (amount) => {
+    if (amount === undefined || amount === null) return '$0.00'
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount)
+  }
+
+  const handleCancelOrder = (orderId) => {
+    if (window.confirm('Are you sure you want to cancel this order?')) {
+      cancelOrderMutation.mutate(orderId, {
+        onSuccess: () => {
+          refetch()
+        }
+      })
+    }
+  }
+
+  if (isLoading && page === 1) {
+    return (
+      <div className="content">
+        <div className="container">
+          <div className="row">
+            <div className="col-lg-4 col-xl-3 theiaStickySidebar"></div>
+            <div className="col-lg-12 col-xl-12">
+              <div className="text-center py-5">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="sr-only">Loading...</span>
+                </div>
+                <p className="mt-3">Loading orders...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="content">
+        <div className="container">
+          <div className="row">
+            <div className="col-lg-4 col-xl-3 theiaStickySidebar"></div>
+            <div className="col-lg-12 col-xl-12">
+              <div className="text-center py-5">
+                <i className="fe fe-alert-circle" style={{ fontSize: '64px', color: '#dc3545' }}></i>
+                <h5 className="mt-3">Error Loading Orders</h5>
+                <p className="text-muted">{error.message || 'Failed to load orders'}</p>
+                <button className="btn btn-primary mt-3" onClick={() => refetch()}>
+                  Retry
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="content">
@@ -84,31 +156,28 @@ const OrderHistory = () => {
             <div className="card mb-4">
               <div className="card-body">
                 <div className="d-flex align-items-center justify-content-between flex-wrap">
-                  <div className="order-filter-tabs">
+                  <div className="order-filter-tabs d-flex flex-wrap gap-2">
                     <button
-                      className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setFilter('all')}
+                      className={`btn btn-sm ${statusFilter === '' ? 'btn-primary' : 'btn-outline-primary'}`}
+                      onClick={() => {
+                        setStatusFilter('')
+                        setPage(1)
+                      }}
                     >
-                      All Orders
+                      All Orders {statusCounts['ALL'] > 0 && <span className="badge bg-light text-dark ms-1">{statusCounts['ALL']}</span>}
                     </button>
-                    <button
-                      className={`btn btn-sm ${filter === 'delivered' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setFilter('delivered')}
-                    >
-                      Delivered
-                    </button>
-                    <button
-                      className={`btn btn-sm ${filter === 'shipped' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setFilter('shipped')}
-                    >
-                      Shipped
-                    </button>
-                    <button
-                      className={`btn btn-sm ${filter === 'cancelled' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setFilter('cancelled')}
-                    >
-                      Cancelled
-                    </button>
+                    {['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((status) => (
+                      <button
+                        key={status}
+                        className={`btn btn-sm ${statusFilter === status ? 'btn-primary' : 'btn-outline-primary'}`}
+                        onClick={() => {
+                          setStatusFilter(status)
+                          setPage(1)
+                        }}
+                      >
+                        {status} {statusCounts[status] > 0 && <span className="badge bg-light text-dark ms-1">{statusCounts[status]}</span>}
+                      </button>
+                    ))}
                   </div>
                   <Link to="/pharmacy-index" className="btn btn-primary btn-sm">
                     <i className="fe fe-shopping-cart me-2"></i>
@@ -121,7 +190,7 @@ const OrderHistory = () => {
             {/* Orders List */}
             <div className="card">
               <div className="card-body">
-                {filteredOrders.length === 0 ? (
+                {orders.length === 0 ? (
                   <div className="text-center py-5">
                     <i className="fe fe-package" style={{ fontSize: '64px', color: '#dee2e6' }}></i>
                     <h5 className="mt-3">No orders found</h5>
@@ -132,84 +201,137 @@ const OrderHistory = () => {
                   </div>
                 ) : (
                   <div className="order-list">
-                    {filteredOrders.map((order) => (
-                      <div key={order.id} className="order-item mb-4 pb-4 border-bottom">
-                        <div className="d-flex justify-content-between align-items-start mb-3">
-                          <div>
-                            <h5 className="mb-1">Order #{order.id}</h5>
-                            <p className="text-muted small mb-0">
-                              <i className="fe fe-calendar me-1"></i>
-                              Ordered on {order.orderDate}
-                            </p>
-                            {order.deliveryDate && (
+                    {orders.map((order) => {
+                      const pharmacy = typeof order.pharmacyId === 'object' ? order.pharmacyId : null
+                      const pharmacyName = pharmacy?.name || 'Pharmacy'
+                      const firstItem = order.items?.[0]
+                      const product = typeof firstItem?.productId === 'object' ? firstItem.productId : null
+                      
+                      return (
+                        <div key={order._id} className="order-item mb-4 pb-4 border-bottom">
+                          <div className="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                              <h5 className="mb-1">Order #{order.orderNumber}</h5>
                               <p className="text-muted small mb-0">
-                                <i className="fe fe-truck me-1"></i>
-                                Delivered on {order.deliveryDate}
+                                <i className="fe fe-calendar me-1"></i>
+                                Ordered on {formatDate(order.createdAt)}
                               </p>
-                            )}
+                              {order.deliveredAt && (
+                                <p className="text-muted small mb-0">
+                                  <i className="fe fe-truck me-1"></i>
+                                  Delivered on {formatDate(order.deliveredAt)}
+                                </p>
+                              )}
+                              <p className="text-muted small mb-0">
+                                <i className="fe fe-store me-1"></i>
+                                {pharmacyName}
+                              </p>
+                            </div>
+                            <div className="text-end">
+                              {getStatusBadge(order.status)}
+                              <h5 className="mt-2 mb-0">Total: {formatCurrency(order.total)}</h5>
+                            </div>
                           </div>
-                          <div className="text-end">
-                            {getStatusBadge(order.status)}
-                            <h5 className="mt-2 mb-0">Total: {order.total}</h5>
-                          </div>
-                        </div>
 
-                        {/* Order Items */}
-                        <div className="order-items mb-3">
-                          <h6 className="mb-2">Items:</h6>
-                          <ul className="list-unstyled">
-                            {order.items.map((item, index) => (
-                              <li key={index} className="d-flex justify-content-between mb-2">
-                                <span>
-                                  {item.name} <span className="text-muted">x{item.quantity}</span>
-                                </span>
-                                <span className="fw-bold">{item.total}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                          {/* Order Items */}
+                          <div className="order-items mb-3">
+                            <h6 className="mb-2">Items ({order.items?.length || 0}):</h6>
+                            <ul className="list-unstyled">
+                              {order.items?.map((item, index) => {
+                                const product = typeof item.productId === 'object' ? item.productId : null
+                                const productName = product?.name || 'Product'
+                                const itemPrice = item.discountPrice || item.price
+                                return (
+                                  <li key={index} className="d-flex justify-content-between mb-2">
+                                    <span>
+                                      {productName} <span className="text-muted">x{item.quantity}</span>
+                                    </span>
+                                    <span className="fw-bold">{formatCurrency(item.total)}</span>
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
 
-                        {/* Order Actions */}
-                        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                          <div>
-                            {order.trackingNumber && (
-                              <div className="mb-2">
-                                <span className="text-muted small">Tracking Number: </span>
-                                <strong>{order.trackingNumber}</strong>
-                              </div>
-                            )}
-                          </div>
-                          <div className="order-actions">
-                            <button className="btn btn-sm btn-outline-primary me-2">
-                              <i className="fe fe-download me-1"></i>
-                              Download Invoice
-                            </button>
-                            {order.status === 'Delivered' && (
-                              <button className="btn btn-sm btn-outline-success me-2">
-                                <i className="fe fe-star me-1"></i>
-                                Rate Order
-                              </button>
-                            )}
-                            {order.status !== 'Cancelled' && order.status !== 'Delivered' && (
-                              <button className="btn btn-sm btn-outline-danger">
-                                <i className="fe fe-x me-1"></i>
-                                Cancel Order
-                              </button>
-                            )}
-                            <Link
-                              to={`/order-details/${order.id}`}
-                              className="btn btn-sm btn-primary"
-                            >
-                              View Details
-                            </Link>
+                          {/* Order Actions */}
+                          <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div>
+                              {order.paymentStatus === 'PENDING' && order.finalShipping === null && (
+                                <div className="mb-2">
+                                  <span className="badge bg-info text-white">Processing...</span>
+                                  <small className="text-muted d-block mt-1">Waiting for shipping fee</small>
+                                </div>
+                              )}
+                            </div>
+                            <div className="order-actions">
+                              {(order.paymentStatus === 'PENDING' || order.paymentStatus === 'PARTIAL') && 
+                               order.finalShipping !== null && order.finalShipping !== undefined && (
+                                <Link
+                                  to={`/order-details/${order._id}`}
+                                  className="btn btn-sm btn-success me-2"
+                                >
+                                  <i className="fe fe-credit-card me-1"></i>
+                                  Pay Now
+                                </Link>
+                              )}
+                              {(order.status === 'PENDING' || order.status === 'CONFIRMED') && 
+                               order.paymentStatus === 'PENDING' && (
+                                <button 
+                                  className="btn btn-sm btn-outline-danger me-2"
+                                  onClick={() => handleCancelOrder(order._id)}
+                                  disabled={cancelOrderMutation.isLoading}
+                                >
+                                  <i className="fe fe-x me-1"></i>
+                                  Cancel Order
+                                </button>
+                              )}
+                              <Link
+                                to={`/order-details/${order._id}`}
+                                className="btn btn-sm btn-primary"
+                              >
+                                <i className="fe fe-eye me-1"></i>
+                                View Details
+                              </Link>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
             </div>
+
+            {/* Pagination */}
+            {ordersResponse?.data?.pagination && ordersResponse.data.pagination.pages > 1 && (
+              <div className="card mt-4">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <p className="mb-0">
+                        Showing page {ordersResponse.data.pagination.page} of {ordersResponse.data.pagination.pages}
+                      </p>
+                    </div>
+                    <div>
+                      <button
+                        className="btn btn-sm btn-outline-primary me-2"
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                      >
+                        Previous
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => setPage(p => p + 1)}
+                        disabled={page >= ordersResponse.data.pagination.pages}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -218,4 +340,3 @@ const OrderHistory = () => {
 }
 
 export default OrderHistory
-

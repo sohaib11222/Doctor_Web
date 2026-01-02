@@ -66,3 +66,6 @@ export * from './notificationQueries'
 // Mapping Queries
 export * from './mappingQueries'
 
+// Order Queries
+export * from './orderQueries'
+

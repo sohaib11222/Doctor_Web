@@ -1,7 +1,26 @@
 import { Link, useLocation } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '../../contexts/AuthContext'
+import * as profileApi from '../../api/profile'
 
 const DoctorSidebar = () => {
   const location = useLocation()
+  const { user } = useAuth()
+
+  // Fetch doctor profile
+  const { data: doctorProfile } = useQuery({
+    queryKey: ['doctorProfile'],
+    queryFn: () => profileApi.getDoctorProfile(),
+    enabled: !!user
+  })
+
+  // Fetch user profile for additional info
+  const { data: userProfile } = useQuery({
+    queryKey: ['userProfile', user?._id],
+    queryFn: () => profileApi.getUserProfile(user._id),
+    enabled: !!user?._id
+  })
+
   const isActive = (paths) => {
     if (Array.isArray(paths)) {
       return paths.some(path => location.pathname === path || location.pathname.startsWith(path + '/'))
@@ -9,23 +28,48 @@ const DoctorSidebar = () => {
     return location.pathname === paths || location.pathname.startsWith(paths + '/')
   }
 
+  // Extract data
+  const doctorData = doctorProfile?.data || {}
+  const userData = userProfile?.data || user || {}
+  
+  // Get doctor info
+  const doctorName = userData.fullName || 'Dr. ' + (user?.fullName || 'Doctor')
+  const doctorTitle = doctorData.title || ''
+  const specialization = doctorData.specialization
+  const specializationName = specialization?.name || ''
+  const profileImage = userData.profileImage || doctorData.userId?.profileImage || '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+  
+  // Format display name with title
+  const displayName = doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`
+  const designation = doctorTitle ? `${doctorTitle}${specializationName ? ` - ${specializationName}` : ''}` : specializationName || ''
+
   return (
     <div className="profile-sidebar doctor-sidebar profile-sidebar-new">
       <div className="widget-profile pro-widget-content">
         <div className="profile-info-widget">
           <Link to="/doctor-profile" className="booking-doc-img">
-            <img src="/public/assets/img/doctors-dashboard/doctor-profile-img.jpg" alt="User Image" />
+            <img 
+              src={profileImage} 
+              alt="Doctor Profile" 
+              onError={(e) => {
+                e.target.src = '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+              }}
+            />
           </Link>
           <div className="profile-det-info">
             <h3>
-              <Link to="/doctor-profile">Dr Edalin Hendry</Link>
+              <Link to="/doctor-profile">{displayName}</Link>
             </h3>
-            <div className="patient-details">
-              <h5 className="mb-0">BDS, MDS - Oral & Maxillofacial Surgery</h5>
-            </div>
-            <span className="badge doctor-role-badge">
-              <i className="fa-solid fa-circle"></i>Dentist
-            </span>
+            {designation && (
+              <div className="patient-details">
+                <h5 className="mb-0">{designation}</h5>
+              </div>
+            )}
+            {specializationName && (
+              <span className="badge doctor-role-badge">
+                <i className="fa-solid fa-circle"></i>{specializationName}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -117,6 +161,24 @@ const DoctorSidebar = () => {
                 <small className="unread-msg">3</small>
               </Link>
             </li>
+            <li className={isActive(['/blog', '/blog/create', '/blog/edit']) ? 'active' : ''}>
+              <Link to="/blog">
+                <i className="fa-solid fa-blog"></i>
+                <span>Blog Posts</span>
+              </Link>
+            </li>
+            <li className={isActive('/doctor/products') ? 'active' : ''}>
+              <Link to="/doctor/products">
+                <i className="fa-solid fa-box"></i>
+                <span>Products</span>
+              </Link>
+            </li>
+            <li className={isActive(['/pharmacy-orders', '/pharmacy-order-details']) ? 'active' : ''}>
+              <Link to="/pharmacy-orders">
+                <i className="fa-solid fa-shopping-bag"></i>
+                <span>Pharmacy Orders</span>
+              </Link>
+            </li>
             <li className={isActive('/doctor/subscription-plans') ? 'active' : ''}>
               <Link to="/doctor/subscription-plans">
                 <i className="fa-solid fa-crown"></i>
@@ -155,4 +217,3 @@ const DoctorSidebar = () => {
 }
 
 export default DoctorSidebar
-

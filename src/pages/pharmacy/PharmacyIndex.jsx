@@ -1,6 +1,18 @@
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import * as productApi from '../../api/product'
+import { useCart } from '../../contexts/CartContext'
+import { toast } from 'react-toastify'
 
 const PharmacyIndex = () => {
+  const { addToCart } = useCart()
+
+  // Fetch featured products (limit to 4)
+  const { data: productsData, isLoading: productsLoading } = useQuery({
+    queryKey: ['featuredProducts'],
+    queryFn: () => productApi.listProducts({ limit: 4, page: 1 })
+  })
+
   const deals = [
     { id: 1, name: 'Diabetes', image: '/assets/img/deals/deals-01.png' },
     { id: 2, name: 'Cardiac Care', image: '/assets/img/deals/deals-02.png' },
@@ -21,12 +33,15 @@ const PharmacyIndex = () => {
     { id: 6, name: 'Personal Care', products: '520 Products', image: '/assets/img/category/categorie-06.png' },
   ]
 
-  const products = [
-    { id: 1, name: 'Benzaxapine Croplex', price: '$19.00', originalPrice: '$45.00', image: '/assets/img/products/product.jpg' },
-    { id: 2, name: 'Rapalac Neuronium', price: '$16.00', image: '/assets/img/products/product13.jpg' },
-    { id: 3, name: 'Ombinazol Bonibamol', price: '$22.00', image: '/assets/img/products/product1.jpg' },
-    { id: 4, name: 'Dantotate Dantodazole', price: '$10.00', originalPrice: '$12.00', image: '/assets/img/products/product2.jpg' },
-  ]
+  // Extract products from API response
+  const products = productsData?.data?.products || []
+
+  const handleAddToCart = (e, product) => {
+    e.preventDefault()
+    e.stopPropagation()
+    addToCart(product, 1)
+    toast.success(`${product.name} added to cart!`)
+  }
 
   return (
     <>
@@ -246,38 +261,61 @@ const PharmacyIndex = () => {
               </div>
             </div>
           </div>
-          <div className="row">
-            {products.map((product) => (
-              <div key={product.id} className="col-md-12 col-lg-3 col-xl-3 product-custom">
-                <div className="profile-widget">
-                  <div className="doc-img">
-                    <Link to="/product-description" tabIndex="-1">
-                      <img className="img-fluid" alt="Product image" src={product.image} />
-                    </Link>
-                    <a href="javascript:void(0)" className="fav-btn" tabIndex="-1">
-                      <i className="far fa-bookmark"></i>
-                    </a>
-                  </div>
-                  <div className="pro-content">
-                    <h3 className="title pb-4">
-                      <Link to="/product-description" tabIndex="-1">{product.name}</Link>
-                    </h3>
-                    <div className="row align-items-center">
-                      <div className="col-lg-6">
-                        <span className="price">{product.price}</span>
-                        {product.originalPrice && <span className="price-strike">{product.originalPrice}</span>}
-                      </div>
-                      <div className="col-lg-6 text-end">
-                        <Link to="/cart" className="cart-icon">
-                          <i className="fas fa-shopping-cart"></i>
+          {productsLoading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-5">
+              <p className="text-muted">No products available at the moment.</p>
+            </div>
+          ) : (
+            <div className="row">
+              {products.map((product) => {
+                const productPrice = product.discountPrice || product.price
+                const originalPrice = product.discountPrice ? product.price : null
+                const productImage = product.images?.[0] || '/assets/img/products/product.jpg'
+                
+                return (
+                  <div key={product._id} className="col-md-12 col-lg-3 col-xl-3 product-custom">
+                    <div className="profile-widget">
+                      <div className="doc-img">
+                        <Link to={`/product-description?id=${product._id}`} tabIndex="-1">
+                          <img className="img-fluid" alt={product.name} src={productImage} />
                         </Link>
+                        <a href="javascript:void(0)" className="fav-btn" tabIndex="-1">
+                          <i className="far fa-bookmark"></i>
+                        </a>
+                      </div>
+                      <div className="pro-content">
+                        <h3 className="title pb-4">
+                          <Link to={`/product-description?id=${product._id}`} tabIndex="-1">{product.name}</Link>
+                        </h3>
+                        <div className="row align-items-center">
+                          <div className="col-lg-6">
+                            <span className="price">${productPrice.toFixed(2)}</span>
+                            {originalPrice && <span className="price-strike">${originalPrice.toFixed(2)}</span>}
+                          </div>
+                          <div className="col-lg-6 text-end">
+                            <a
+                              href="#"
+                              className="cart-icon"
+                              onClick={(e) => handleAddToCart(e, product)}
+                              title="Add to Cart"
+                            >
+                              <i className="fas fa-shopping-cart"></i>
+                            </a>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </section>
       {/* /Products Section */}

@@ -7,10 +7,12 @@ import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
 
 const schema = yup.object({
-  name: yup.string().min(5, 'Name must be at least 5 characters').max(30, 'Name must be less than 30 characters').required('Name is required'),
+  fullName: yup.string().min(2, 'Full name must be at least 2 characters').required('Full name is required'),
   email: yup.string().email('Invalid email').required('Email is required'),
   password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
   password_confirmation: yup.string().oneOf([yup.ref('password')], 'Passwords must match').required('Confirm password is required'),
+  phone: yup.string().optional(),
+  gender: yup.string().oneOf(['MALE', 'FEMALE', 'OTHER'], 'Invalid gender').optional(),
 })
 
 const Register = () => {
@@ -25,11 +27,41 @@ const Register = () => {
   const onSubmit = async (data) => {
     setLoading(true)
     try {
-      await registerUser(data, 'patient')
+      // Prepare registration data matching backend structure
+      const registrationData = {
+        fullName: data.fullName,
+        email: data.email,
+        password: data.password,
+        role: 'PATIENT', // Patient registration
+        phone: data.phone || '',
+        gender: data.gender || undefined,
+        // Remove password_confirmation as it's not sent to backend
+      }
+      
+      const response = await registerUser(registrationData, 'patient')
       toast.success('Registration successful!')
-      navigate('/patient-dashboard')
+      
+      // Navigate based on user role
+      if (response.user) {
+        const role = response.user.role?.toUpperCase()
+        if (role === 'DOCTOR') {
+          // Doctors need to upload verification documents
+          if (response.user.status === 'PENDING') {
+            navigate('/doctor-verification-upload')
+          } else {
+            navigate('/doctor/dashboard')
+          }
+        } else if (role === 'PATIENT') {
+          navigate('/patient/dashboard')
+        } else {
+          navigate('/patient/dashboard') // Default fallback
+        }
+      } else {
+        navigate('/patient/dashboard')
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Registration failed')
+      const errorMessage = error.response?.data?.message || error.message || 'Registration failed'
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -47,13 +79,14 @@ const Register = () => {
                   <p className="account-subtitle">Access to our dashboard</p>
                   <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="form-group">
-                      <label>Name</label>
+                      <label>Full Name</label>
                       <input
                         type="text"
-                        className={`form-control ${errors.name ? 'is-invalid' : ''}`}
-                        {...register('name')}
+                        className={`form-control ${errors.fullName ? 'is-invalid' : ''}`}
+                        {...register('fullName')}
+                        placeholder="Enter your full name"
                       />
-                      {errors.name && <div className="invalid-feedback">{errors.name.message}</div>}
+                      {errors.fullName && <div className="invalid-feedback">{errors.fullName.message}</div>}
                     </div>
                     <div className="form-group">
                       <label>Email</label>
@@ -79,8 +112,32 @@ const Register = () => {
                         type="password"
                         className={`form-control ${errors.password_confirmation ? 'is-invalid' : ''}`}
                         {...register('password_confirmation')}
+                        placeholder="Confirm your password"
                       />
                       {errors.password_confirmation && <div className="invalid-feedback">{errors.password_confirmation.message}</div>}
+                    </div>
+                    <div className="form-group">
+                      <label>Phone (Optional)</label>
+                      <input
+                        type="tel"
+                        className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
+                        {...register('phone')}
+                        placeholder="Enter your phone number"
+                      />
+                      {errors.phone && <div className="invalid-feedback">{errors.phone.message}</div>}
+                    </div>
+                    <div className="form-group">
+                      <label>Gender (Optional)</label>
+                      <select
+                        className={`form-control ${errors.gender ? 'is-invalid' : ''}`}
+                        {...register('gender')}
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="MALE">Male</option>
+                        <option value="FEMALE">Female</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                      {errors.gender && <div className="invalid-feedback">{errors.gender.message}</div>}
                     </div>
                     <div className="form-group text-center">
                       <button className="btn btn-primary account-btn" type="submit" disabled={loading}>
