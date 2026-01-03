@@ -3,7 +3,7 @@
  * All API routes and endpoints are defined here
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://157.180.108.156:4001/api'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 export const API_ROUTES = {
   // ==================== Common & Public Routes ====================

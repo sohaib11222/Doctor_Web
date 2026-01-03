@@ -292,7 +292,7 @@ const DoctorClinicsSettings = () => {
                     const accordionId = `clinic${index + 1}`
                     const isFirst = index === 0
                     const displayText = clinic.name || 'Clinic'
-                    const apiBaseURL = import.meta.env.VITE_API_URL || 'http://157.180.108.156:4001/api'
+                    const apiBaseURL = import.meta.env.VITE_API_URL || '/api'
                     const baseURL = apiBaseURL.replace('/api', '')
 
                     return (

@@ -104,7 +104,7 @@ const ProfileSettings = () => {
     },
     onSuccess: (response) => {
       const relativeUrl = response.data?.url || response.url
-      const apiBaseURL = import.meta.env.VITE_API_URL || 'http://157.180.108.156:4001/api'
+      const apiBaseURL = import.meta.env.VITE_API_URL || '/api'
       const baseURL = apiBaseURL.replace('/api', '')
       const imageUrl = relativeUrl.startsWith('http') ? relativeUrl : `${baseURL}${relativeUrl}`
       setFormData(prev => ({ ...prev, profileImage: imageUrl }))
