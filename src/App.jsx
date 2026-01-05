@@ -401,6 +401,11 @@ function App() {
                 <DoctorVideoCallRoom />
               </ProtectedRoute>
             } />
+            <Route path="/doctor-video-call-room" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DoctorVideoCallRoom />
+              </ProtectedRoute>
+            } />
 
                 {/* Patient Routes - Protected (Require PATIENT role) */}
                 <Route path="/patient/dashboard" element={
@@ -489,6 +494,11 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/video-call" element={
+                  <ProtectedRoute role="PATIENT">
+                    <VideoCallRoom />
+                  </ProtectedRoute>
+                } />
+                <Route path="/video-call-room" element={
                   <ProtectedRoute role="PATIENT">
                     <VideoCallRoom />
                   </ProtectedRoute>

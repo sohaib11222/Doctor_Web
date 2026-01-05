@@ -190,6 +190,14 @@ const PatientAppointmentDetails = () => {
   const bookingType = appointment.bookingType || 'VISIT'
   const status = appointment.status
 
+  // Debug logging
+  console.log('🔍 [PatientAppointmentDetails] Appointment data:', {
+    appointmentId: appointment._id,
+    status,
+    bookingType,
+    canStartVideoCall: status === 'CONFIRMED' && bookingType === 'ONLINE'
+  })
+
   return (
     <div className="content">
       <div className="container">
@@ -279,6 +287,19 @@ const PatientAppointmentDetails = () => {
                           <i className="isax isax-messages-25"></i>
                         </a>
                       </li>
+                      {status === 'CONFIRMED' && bookingType === 'ONLINE' && (
+                        <li>
+                          <Link
+                            to={`/video-call-room?appointmentId=${appointment._id}`}
+                            className="btn btn-primary btn-sm"
+                            style={{ padding: '8px 16px', fontSize: '14px' }}
+                            title="Start Video Call"
+                          >
+                            <i className="fa-solid fa-video me-1"></i>
+                            Video Call
+                          </Link>
+                        </li>
+                      )}
                       {status !== 'CANCELLED' && status !== 'COMPLETED' && status !== 'REJECTED' && (
                         <li>
                           <a
@@ -333,11 +354,22 @@ const PatientAppointmentDetails = () => {
                       <div className="start-btn">
                         <Link
                           to={`/video-call-room?appointmentId=${appointment._id}`}
-                          className="btn btn-secondary"
+                          className="btn btn-primary btn-lg"
+                          style={{ fontSize: '16px', padding: '12px 24px', display: 'inline-block', marginTop: '10px' }}
                         >
-                          Start Session
+                          <i className="fa-solid fa-video me-2"></i>
+                          Start Video Call
                         </Link>
                       </div>
+                    </li>
+                  )}
+                  {/* Debug info - shows why button might not appear */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <li>
+                      <small className="text-muted d-block mt-2">
+                        Debug Info: Status={status || 'undefined'}, BookingType={bookingType || 'undefined'}, 
+                        Show Button={status === 'CONFIRMED' && bookingType === 'ONLINE' ? 'YES ✅' : 'NO ❌'}
+                      </small>
                     </li>
                   )}
                   {status === 'COMPLETED' && (

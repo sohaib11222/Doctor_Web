@@ -1,107 +1,146 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { 
+  StreamVideo, 
+  StreamCall, 
+  CallControls, 
+  SpeakerLayout,
+  useCallStateHooks,
+  ParticipantView
+} from '@stream-io/video-react-sdk'
+import { useAuth } from '../../contexts/AuthContext'
+import { useVideoCall } from '../../hooks/useVideoCall'
+import { toast } from 'react-toastify'
+import * as videoApi from '../../api/video'
 
 const DoctorVideoCallRoom = () => {
   const navigate = useNavigate()
-  const location = useLocation()
-  const [callActive, setCallActive] = useState(true)
-  const [videoEnabled, setVideoEnabled] = useState(true)
-  const [audioEnabled, setAudioEnabled] = useState(true)
-  const [callDuration, setCallDuration] = useState(0)
-  const localVideoRef = useRef(null)
-  const remoteVideoRef = useRef(null)
-
-  // Get patient info from location state or use defaults
-  const patientInfo = location.state?.patient || {
-    name: 'Kelly Joseph',
-    image: '/assets/img/patients/patient1.jpg',
-    appointmentId: '#Apt0001'
-  }
+  const [searchParams] = useSearchParams()
+  const appointmentId = searchParams.get('appointmentId')
+  const { user } = useAuth()
+  
+  const { client, call, loading, error, startCall, endCall } = useVideoCall(appointmentId)
+  const [callStarted, setCallStarted] = useState(false)
+  const startCallRef = useRef(false) // Use ref to prevent multiple calls
+  const [isCallActive, setIsCallActive] = useState(false)
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const pendingNavigation = useRef(null)
 
   useEffect(() => {
-    // Initialize WebRTC (placeholder - actual implementation would use WebRTC API)
-    // TODO: Implement actual WebRTC connection
-    // Example: const peerConnection = new RTCPeerConnection()
-    
-    // Start call timer
-    const timer = setInterval(() => {
-      setCallDuration(prev => prev + 1)
-    }, 1000)
+    console.log('🔍 [DoctorVideoCallRoom] useEffect triggered:', {
+      appointmentId,
+      hasUser: !!user,
+      callStarted,
+      loading,
+      hasClient: !!client,
+      hasCall: !!call,
+      startCallRef: startCallRef.current
+    })
 
-    // Request camera and microphone permissions
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then(stream => {
-          if (localVideoRef.current) {
-            localVideoRef.current.srcObject = stream
+    // Start call immediately when component mounts (if not already started)
+    if (appointmentId && user && !startCallRef.current && !loading) {
+      console.log('🚀 [DoctorVideoCallRoom] Starting video call...')
+      startCallRef.current = true // Set immediately to prevent multiple calls
+      setCallStarted(true)
+      
+      startCall()
+        .then(() => {
+          console.log('✅ [DoctorVideoCallRoom] Video call started successfully')
+          toast.success('Video call started')
+          setIsCallActive(true)
+        })
+        .catch((err) => {
+          console.error('❌ [DoctorVideoCallRoom] Error starting call:', err)
+          console.error('❌ [DoctorVideoCallRoom] Error details:', {
+            message: err.message,
+            response: err.response?.data,
+            status: err.response?.status
+          })
+          
+          let errorMessage = err.response?.data?.message || err.message || 'Failed to start video call'
+          
+          // Check if it's a permission error
+          if (err.message?.includes('permission') || err.message?.includes('Permission')) {
+            errorMessage = err.message
+            toast.error(errorMessage, { autoClose: 8000 })
+          } else {
+            toast.error(errorMessage)
           }
-        })
-        .catch(err => {
-          console.error('Error accessing media devices:', err)
+          
+          console.error('❌ [DoctorVideoCallRoom] Error message:', errorMessage)
+          startCallRef.current = false // Reset on error so user can retry
+          setCallStarted(false)
         })
     }
+  }, [appointmentId, user, loading, startCall])
 
-    return () => {
-      clearInterval(timer)
-      // Cleanup: stop all tracks
-      if (localVideoRef.current?.srcObject) {
-        localVideoRef.current.srcObject.getTracks().forEach(track => track.stop())
+  const handleEndCall = async () => {
+    try {
+      setIsCallActive(false)
+      if (call) {
+        // Get session ID from call metadata or try to find it
+        try {
+          const sessionData = await videoApi.getVideoSessionByAppointment(appointmentId)
+          if (sessionData.data?.sessionId) {
+            await videoApi.endVideoSession(sessionData.data.sessionId)
+          }
+        } catch (err) {
+          console.error('Error ending session on backend:', err)
+          // Continue even if backend call fails
+        }
+      }
+      await endCall()
+      toast.success('Call ended')
+      navigate('/appointments')
+    } catch (err) {
+      toast.error('Error ending call')
+      console.error(err)
+    }
+  }
+
+  // Prevent navigation away from active call
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isCallActive && call) {
+        e.preventDefault()
+        e.returnValue = 'You have an active call. Are you sure you want to leave?'
+        return e.returnValue
       }
     }
-  }, [])
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isCallActive, call])
 
-  const handleEndCall = () => {
-    setCallActive(false)
-    // Stop all media tracks
-    if (localVideoRef.current?.srcObject) {
-      localVideoRef.current.srcObject.getTracks().forEach(track => track.stop())
+  // Handle browser back button
+  useEffect(() => {
+    if (!isCallActive) return
+
+    const handlePopState = (e) => {
+      e.preventDefault()
+      setShowLeaveConfirm(true)
+      pendingNavigation.current = () => {
+        window.history.pushState(null, '', window.location.href)
+        handleEndCall()
+      }
     }
-    navigate('/doctor/appointments')
-  }
 
-  const toggleVideo = () => {
-    setVideoEnabled(prev => {
-      if (localVideoRef.current?.srcObject) {
-        localVideoRef.current.srcObject.getVideoTracks().forEach(track => {
-          track.enabled = !prev
-        })
-      }
-      return !prev
-    })
-  }
+    window.history.pushState(null, '', window.location.href)
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [isCallActive])
 
-  const toggleAudio = () => {
-    setAudioEnabled(prev => {
-      if (localVideoRef.current?.srcObject) {
-        localVideoRef.current.srcObject.getAudioTracks().forEach(track => {
-          track.enabled = !prev
-        })
-      }
-      return !prev
-    })
-  }
-
-  if (!callActive) {
+  if (loading) {
     return (
       <div className="content doctor-content">
         <div className="container">
           <div className="row">
             <div className="col-lg-10 mx-auto">
-              <div className="call-ended text-center py-5">
-                <div className="call-ended-icon mb-4">
-                  <i className="fe fe-phone-off" style={{ fontSize: '64px', color: '#dc3545' }}></i>
+              <div className="text-center py-5">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading...</span>
                 </div>
-                <h3>Call Ended</h3>
-                <p className="text-muted">The video consultation has been ended.</p>
-                <Link to="/doctor/appointments" className="btn btn-primary mt-3">
-                  Back to Appointments
-                </Link>
+                <p className="mt-3">Initializing video call...</p>
               </div>
             </div>
           </div>
@@ -110,132 +149,491 @@ const DoctorVideoCallRoom = () => {
     )
   }
 
-  return (
-    <div className="content doctor-content">
-      <div className="container">
-        <div className="row">
-          <div className="col-lg-10 mx-auto">
-            {/* Call Wrapper */}
-            <div className="call-wrapper">
-              <div className="call-main-row">
-                <div className="call-main-wrapper">
-                  <div className="call-view">
-                    <div className="call-window">
-                      {/* Call Header */}
-                      <div className="fixed-header">
-                        <div className="navbar">
-                          <div className="user-details">
-                            <div className="float-start user-img">
-                              <Link to="/doctor/my-patients" className="avatar avatar-sm me-2" title={patientInfo.name}>
-                                <img src={patientInfo.image} alt="User Image" className="rounded-circle" />
-                                <span className="status online"></span>
-                              </Link>
-                            </div>
-                            <div className="user-info float-start">
-                              <Link to="/doctor/my-patients"><span>{patientInfo.name}</span></Link>
-                              <span className="last-seen">Appointment: {patientInfo.appointmentId}</span>
-                            </div>
-                          </div>
-                          <ul className="nav float-end custom-menu">
-                            <li className="nav-item dropdown dropdown-action">
-                              <a href="javascript:void(0)" className="user-icon"><i className="isax isax-user-add"></i></a>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                      {/* /Call Header */}
-
-                      {/* Call Contents */}
-                      <div className="call-contents">
-                        <div className="call-content-wrap">
-                          <div className="user-video">
-                            <video
-                              ref={remoteVideoRef}
-                              autoPlay
-                              playsInline
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            >
-                              {/* Remote video stream will be displayed here */}
-                            </video>
-                            {!remoteVideoRef.current?.srcObject && (
-                              <img src="/assets/img/video-call.jpg" alt="User Image" />
-                            )}
-                          </div>
-                          <div className="my-video">
-                            <ul>
-                              <li>
-                                <video
-                                  ref={localVideoRef}
-                                  autoPlay
-                                  playsInline
-                                  muted
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                >
-                                  {/* Local video stream will be displayed here */}
-                                </video>
-                                {!localVideoRef.current?.srcObject && (
-                                  <img src="/assets/img/doctors/doctor-thumb-01.jpg" className="img-fluid" alt="User Image" />
-                                )}
-                              </li>
-                            </ul>
-                          </div>
-                          <div className="call-timer">
-                            <span>{formatTime(callDuration)}</span>
-                          </div>
-                        </div>
-                      </div>
-                      {/* /Call Contents */}
-
-                      {/* Call Footer */}
-                      <div className="call-footer">
-                        <div className="call-icons">
-                          <ul className="call-items">
-                            <li className="call-item">
-                              <a
-                                href="javascript:void(0)"
-                                className={`mute-video ${!videoEnabled ? 'muted' : ''}`}
-                                title={videoEnabled ? 'Disable Video' : 'Enable Video'}
-                                onClick={toggleVideo}
-                              >
-                                <i className={`isax ${videoEnabled ? 'isax-video' : 'isax-video-slash'}`}></i>
-                              </a>
-                            </li>
-                            <li className="call-item">
-                              <a
-                                href="javascript:void(0)"
-                                className="call-end"
-                                onClick={handleEndCall}
-                                title="End Call"
-                              >
-                                <i className="isax isax-call"></i>
-                              </a>
-                            </li>
-                            <li className="call-item">
-                              <a
-                                href="javascript:void(0)"
-                                className={`mute-bt ${!audioEnabled ? 'muted' : ''}`}
-                                title={audioEnabled ? 'Mute' : 'Unmute'}
-                                onClick={toggleAudio}
-                              >
-                                <i className={`isax ${audioEnabled ? 'isax-microphone-2' : 'isax-microphone-slash'}`}></i>
-                              </a>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                      {/* /Call Footer */}
-                    </div>
-                  </div>
-                </div>
+  if (error) {
+    return (
+      <div className="content doctor-content">
+        <div className="container">
+          <div className="row">
+            <div className="col-lg-10 mx-auto">
+              <div className="alert alert-danger">
+                <h5>Error</h5>
+                <p>{error}</p>
+                <button className="btn btn-primary" onClick={() => navigate('/appointments')}>
+                  Back to Appointments
+                </button>
               </div>
             </div>
-            {/* /Call Wrapper */}
           </div>
         </div>
+      </div>
+    )
+  }
+
+  // Show loading if client/call not ready or still loading
+  if (loading || !client || !call) {
+    return (
+      <div className="content doctor-content">
+        <div className="container">
+          <div className="row">
+            <div className="col-lg-10 mx-auto">
+              <div className="text-center py-5">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <p className="mt-3">Preparing video call...</p>
+                {!client && <p className="text-muted">Initializing client...</p>}
+                {!call && <p className="text-muted">Creating call...</p>}
+                {loading && <p className="text-muted">Joining call...</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Render video UI once client and call are ready
+  console.log('🎥 [DoctorVideoCallRoom] Rendering video UI:', { 
+    hasClient: !!client, 
+    hasCall: !!call, 
+    callId: call?.id,
+    callState: call?.state
+  })
+
+  return (
+    <>
+      <StreamVideo client={client}>
+        <StreamCall call={call}>
+          <VideoCallContent 
+            onEndCall={handleEndCall} 
+            currentUserId={user?._id}
+            currentUserRole="DOCTOR"
+          />
+        </StreamCall>
+      </StreamVideo>
+
+      {/* Leave confirmation modal */}
+      {showLeaveConfirm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            padding: '30px',
+            borderRadius: '12px',
+            maxWidth: '400px',
+            textAlign: 'center'
+          }}>
+            <h5 style={{ marginBottom: '15px' }}>End Call?</h5>
+            <p style={{ marginBottom: '20px', color: '#666' }}>
+              You have an active call. Are you sure you want to end it?
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowLeaveConfirm(false)
+                  pendingNavigation.current = null
+                  window.history.pushState(null, '', window.location.href)
+                }}
+              >
+                Stay in Call
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={() => {
+                  setShowLeaveConfirm(false)
+                  handleEndCall()
+                }}
+              >
+                End Call
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// Separate component to use Stream hooks
+const VideoCallContent = ({ onEndCall, currentUserId, currentUserRole }) => {
+  const { useCallCallingState, useParticipants } = useCallStateHooks()
+  const callingState = useCallCallingState()
+  const participants = useParticipants()
+  
+  console.log('📹 [VideoCallContent] Call state:', callingState)
+  console.log('👥 [VideoCallContent] Participants:', participants)
+
+  // Don't render if call is not joined
+  if (callingState !== 'joined') {
+    return (
+      <div className="content doctor-content" style={{ height: '100vh', padding: 0, margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' }}>
+        <div className="text-center text-white">
+          <div className="spinner-border text-primary mb-3" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p>Joining call... (State: {callingState})</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Separate local and remote participants - use isLocalParticipant to avoid duplicates
+  const localParticipant = participants.find(p => p.isLocalParticipant)
+  const remoteParticipants = participants.filter(p => !p.isLocalParticipant)
+  
+  // Get unique participants by userId to avoid duplicates
+  const uniqueRemoteParticipants = Array.from(
+    new Map(remoteParticipants.map(p => [p.userId, p])).values()
+  )
+
+  console.log('👥 [VideoCallContent] Participant details:', {
+    totalParticipants: participants.length,
+    localParticipant: localParticipant ? {
+      userId: localParticipant.userId,
+      name: localParticipant.name,
+      hasVideo: localParticipant.publishedTracks?.includes('video'),
+      hasAudio: localParticipant.publishedTracks?.includes('audio'),
+      publishedTracks: localParticipant.publishedTracks
+    } : null,
+    remoteParticipants: uniqueRemoteParticipants.map(p => ({
+      userId: p.userId,
+      name: p.name,
+      hasVideo: p.publishedTracks?.includes('video'),
+      hasAudio: p.publishedTracks?.includes('audio'),
+      publishedTracks: p.publishedTracks
+    }))
+  })
+
+  return (
+    <div className="content doctor-content" style={{ height: '100vh', padding: 0, margin: 0, overflow: 'hidden', backgroundColor: '#000' }}>
+      <div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+        {/* Header with call info */}
+        <div style={{ 
+          position: 'absolute', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          zIndex: 20, 
+          padding: '15px 20px',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '18px' }}>
+            Video Consultation
+          </div>
+          <div style={{ color: '#fff', fontSize: '14px' }}>
+            {localParticipant && uniqueRemoteParticipants.length > 0 ? '2 participants' : '1 participant'}
+          </div>
+        </div>
+
+        {/* Main video area - 50/50 split */}
+        <div style={{ 
+          flex: 1, 
+          position: 'relative', 
+          overflow: 'hidden', 
+          width: '100%', 
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'row',
+          gap: '10px',
+          padding: '10px'
+        }}>
+          {/* Left side - Patient (remote) - 50% width */}
+          <div style={{ 
+            width: 'calc(50% - 5px)',
+            height: '100%',
+            position: 'relative',
+            backgroundColor: '#1a1a1a',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            minWidth: 0
+          }}>
+            {uniqueRemoteParticipants.length > 0 ? (
+              <>
+                <div style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <ParticipantView 
+                    participant={uniqueRemoteParticipants[0]}
+                  />
+                  <style>{`
+                    div[data-testid*="participant"] {
+                      width: 100% !important;
+                      height: 100% !important;
+                    }
+                    div[data-testid*="participant"] video {
+                      width: 100% !important;
+                      height: 100% !important;
+                      object-fit: cover !important;
+                    }
+                  `}</style>
+                </div>
+                <div style={{
+                  position: 'absolute',
+                  bottom: '10px',
+                  left: '10px',
+                  backgroundColor: 'rgba(0,0,0,0.7)',
+                  color: '#fff',
+                  padding: '5px 12px',
+                  borderRadius: '20px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  zIndex: 10
+                }}>
+                  <span style={{ 
+                    backgroundColor: '#4CAF50', 
+                    width: '8px', 
+                    height: '8px', 
+                    borderRadius: '50%',
+                    display: 'inline-block'
+                  }}></span>
+                  Patient: {uniqueRemoteParticipants[0].name || uniqueRemoteParticipants[0].userId || 'Patient'}
+                </div>
+              </>
+            ) : (
+              <div style={{ 
+                width: '100%',
+                height: '100%',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                color: '#fff',
+                fontSize: '18px'
+              }}>
+                Waiting for patient to join...
+              </div>
+            )}
+          </div>
+
+          {/* Right side - Doctor (local/You) - 50% width */}
+          {localParticipant ? (
+            <div style={{ 
+              width: 'calc(50% - 5px)',
+              height: '100%',
+              position: 'relative',
+              backgroundColor: '#1a1a1a',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              minWidth: 0
+            }}>
+              <div style={{ 
+                width: '100%', 
+                height: '100%', 
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ParticipantView 
+                  participant={localParticipant}
+                />
+                <style>{`
+                  div[data-testid*="participant"] {
+                    width: 100% !important;
+                    height: 100% !important;
+                  }
+                  div[data-testid*="participant"] video {
+                    width: 100% !important;
+                    height: 100% !important;
+                    object-fit: cover !important;
+                  }
+                `}</style>
+              </div>
+              <div style={{
+                position: 'absolute',
+                bottom: '10px',
+                left: '10px',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                color: '#fff',
+                padding: '5px 12px',
+                borderRadius: '20px',
+                fontSize: '14px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                zIndex: 10
+              }}>
+                <span style={{ 
+                  backgroundColor: '#2196F3', 
+                  width: '8px', 
+                  height: '8px', 
+                  borderRadius: '50%',
+                  display: 'inline-block'
+                }}></span>
+                Doctor: You
+              </div>
+            </div>
+          ) : (
+            <div style={{ 
+              width: 'calc(50% - 5px)',
+              height: '100%',
+              position: 'relative',
+              backgroundColor: '#1a1a1a',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: '18px'
+            }}>
+              Initializing your video...
+            </div>
+          )}
+        </div>
+
+        {/* Custom Call controls at bottom - moved inside StreamCall context */}
+        <CustomCallControlsWrapper onEndCall={onEndCall} />
+      </div>
+    </div>
+  )
+}
+
+// Custom call controls wrapper - must be inside StreamCall context
+const CustomCallControlsWrapper = ({ onEndCall }) => {
+  return <CustomCallControls onEndCall={onEndCall} />
+}
+
+// Custom call controls component with icons
+const CustomCallControls = ({ onEndCall }) => {
+  const { useMicrophoneState, useCameraState } = useCallStateHooks()
+  const micState = useMicrophoneState()
+  const cameraState = useCameraState()
+
+  const toggleMic = async () => {
+    if (micState.microphone.enabled) {
+      await micState.microphone.disable()
+    } else {
+      await micState.microphone.enable()
+    }
+  }
+
+  const toggleCamera = async () => {
+    if (cameraState.camera.enabled) {
+      await cameraState.camera.disable()
+    } else {
+      await cameraState.camera.enable()
+    }
+  }
+
+  return (
+    <div style={{ 
+      position: 'absolute', 
+      bottom: 0, 
+      left: 0, 
+      right: 0, 
+      zIndex: 20, 
+      padding: '20px',
+      background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)',
+      display: 'flex',
+      justifyContent: 'center'
+    }}>
+      <div style={{ 
+        backgroundColor: 'rgba(0,0,0,0.7)', 
+        borderRadius: '50px',
+        padding: '12px 20px',
+        display: 'flex',
+        gap: '15px',
+        alignItems: 'center'
+      }}>
+        {/* Microphone Toggle */}
+        <button
+          onClick={toggleMic}
+          style={{
+            width: '50px',
+            height: '50px',
+            borderRadius: '50%',
+            border: 'none',
+            backgroundColor: micState.microphone.enabled ? '#4CAF50' : '#dc3545',
+            color: '#fff',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '20px',
+            transition: 'all 0.3s'
+          }}
+          title={micState.microphone.enabled ? 'Mute Microphone' : 'Unmute Microphone'}
+        >
+          {micState.microphone.enabled ? (
+            <i className="fa fa-microphone" style={{ fontSize: '20px' }}></i>
+          ) : (
+            <i className="fa fa-microphone-slash" style={{ fontSize: '20px' }}></i>
+          )}
+        </button>
+
+        {/* Camera Toggle */}
+        <button
+          onClick={toggleCamera}
+          style={{
+            width: '50px',
+            height: '50px',
+            borderRadius: '50%',
+            border: 'none',
+            backgroundColor: cameraState.camera.enabled ? '#4CAF50' : '#dc3545',
+            color: '#fff',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '20px',
+            transition: 'all 0.3s'
+          }}
+          title={cameraState.camera.enabled ? 'Turn Off Camera' : 'Turn On Camera'}
+        >
+          {cameraState.camera.enabled ? (
+            <i className="fa fa-video" style={{ fontSize: '20px' }}></i>
+          ) : (
+            <i className="fa fa-video-slash" style={{ fontSize: '20px' }}></i>
+          )}
+        </button>
+
+        {/* End Call */}
+        <button
+          onClick={onEndCall}
+          style={{
+            width: '50px',
+            height: '50px',
+            borderRadius: '50%',
+            border: 'none',
+            backgroundColor: '#dc3545',
+            color: '#fff',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '20px',
+            transition: 'all 0.3s'
+          }}
+          title="End Call"
+        >
+          <i className="fa fa-phone" style={{ fontSize: '20px', transform: 'rotate(135deg)' }}></i>
+        </button>
       </div>
     </div>
   )
 }
 
 export default DoctorVideoCallRoom
-

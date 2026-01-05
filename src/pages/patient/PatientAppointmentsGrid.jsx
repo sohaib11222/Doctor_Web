@@ -28,31 +28,78 @@ const PatientAppointmentsGrid = () => {
     }
   }, [activeTab])
 
-  // Build query params
-  const queryParams = useMemo(() => {
-    const params = {
+  // Build query params for each status (since API accepts single status)
+  const queryParamsList = useMemo(() => {
+    const baseParams = {
       page: 1,
       limit: 50
     }
 
-    if (statusFilter.length > 0) {
-      params.status = statusFilter[0]
-    }
-
     if (dateRange.fromDate) {
-      params.fromDate = dateRange.fromDate
+      baseParams.fromDate = dateRange.fromDate
     }
     if (dateRange.toDate) {
-      params.toDate = dateRange.toDate
+      baseParams.toDate = dateRange.toDate
     }
 
-    return params
+    // If we need multiple statuses, create separate params for each
+    if (statusFilter.length > 0) {
+      return statusFilter.map(status => ({
+        ...baseParams,
+        status
+      }))
+    }
+
+    // If no status filter, return single params without status
+    return [baseParams]
   }, [statusFilter, dateRange])
 
-  // Fetch appointments
+  // Fetch appointments - make parallel requests for each status
   const { data: appointmentsData, isLoading, error } = useQuery({
-    queryKey: ['patientAppointments', queryParams],
-    queryFn: () => appointmentApi.listAppointments(queryParams),
+    queryKey: ['patientAppointments', queryParamsList],
+    queryFn: async () => {
+      // If we have multiple statuses, fetch all in parallel
+      if (queryParamsList.length > 1) {
+        const promises = queryParamsList.map(params => appointmentApi.listAppointments(params))
+        const results = await Promise.all(promises)
+        
+        // Combine all appointments from different status queries
+        const allAppointments = []
+        results.forEach(result => {
+          const responseData = result.data || result
+          const appointments = responseData.appointments || responseData.data || []
+          allAppointments.push(...appointments)
+        })
+
+        // Remove duplicates (in case same appointment appears in multiple queries)
+        const uniqueAppointments = Array.from(
+          new Map(allAppointments.map(apt => [apt._id, apt])).values()
+        )
+
+        // Sort by appointment date
+        uniqueAppointments.sort((a, b) => {
+          const dateA = new Date(a.appointmentDate)
+          const dateB = new Date(b.appointmentDate)
+          if (dateA.getTime() !== dateB.getTime()) {
+            return dateA.getTime() - dateB.getTime()
+          }
+          return (a.appointmentTime || '').localeCompare(b.appointmentTime || '')
+        })
+
+        return {
+          appointments: uniqueAppointments,
+          pagination: {
+            page: 1,
+            limit: uniqueAppointments.length,
+            total: uniqueAppointments.length,
+            pages: 1
+          }
+        }
+      } else {
+        // Single status query
+        return appointmentApi.listAppointments(queryParamsList[0])
+      }
+    },
     enabled: !!user
   })
 
