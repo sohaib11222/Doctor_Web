@@ -6,6 +6,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../utils/api'
 import { API_ROUTES } from '../utils/apiConfig'
+import * as notificationApi from '../api/notification'
 
 // Admin: Send notification
 export const useSendNotification = () => {
@@ -15,7 +16,7 @@ export const useSendNotification = () => {
     mutationFn: (data) => api.post(API_ROUTES.NOTIFICATION.SEND, data),
     onSuccess: (data, variables) => {
       if (variables.userId) {
-        queryClient.invalidateQueries({ queryKey: ['notifications', variables.userId] })
+        queryClient.invalidateQueries({ queryKey: ['notifications'] })
       }
     },
   })
@@ -26,9 +27,23 @@ export const useMarkNotificationAsRead = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: (notificationId) => api.put(API_ROUTES.NOTIFICATION.MARK_READ(notificationId)),
+    mutationFn: (notificationId) => notificationApi.markNotificationAsRead(notificationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread', 'count'] })
+    },
+  })
+}
+
+// Mark all notifications as read
+export const useMarkAllNotificationsAsRead = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: () => notificationApi.markAllNotificationsAsRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread', 'count'] })
     },
   })
 }

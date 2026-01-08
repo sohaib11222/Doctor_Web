@@ -4,15 +4,14 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../utils/api'
-import { API_ROUTES } from '../utils/apiConfig'
+import * as reviewApi from '../api/review'
 
 // Create review (patient only)
 export const useCreateReview = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: (data) => api.post(API_ROUTES.REVIEW.CREATE, data),
+    mutationFn: (data) => reviewApi.createReview(data),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] })
       if (variables.doctorId) {
@@ -20,6 +19,11 @@ export const useCreateReview = () => {
       }
       queryClient.invalidateQueries({ queryKey: ['doctor', 'reviews'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'reviews'] })
+      // Invalidate appointment queries if review is for an appointment
+      if (variables.appointmentId) {
+        queryClient.invalidateQueries({ queryKey: ['appointment', variables.appointmentId] })
+        queryClient.invalidateQueries({ queryKey: ['patientAppointments'] })
+      }
     },
   })
 }
@@ -29,7 +33,7 @@ export const useDeleteReview = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: (id) => api.delete(API_ROUTES.REVIEW.DELETE(id)),
+    mutationFn: (id) => reviewApi.deleteReview(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'reviews'] })

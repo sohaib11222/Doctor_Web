@@ -6,6 +6,8 @@ import * as patientApi from '../../api/patient'
 import * as favoriteApi from '../../api/favorite'
 import * as medicalRecordsApi from '../../api/medicalRecords'
 import * as paymentApi from '../../api/payment'
+import { useNotifications } from '../../queries/notificationQueries'
+import { useMarkNotificationAsRead } from '../../mutations/notificationMutations'
 
 const PatientDashboard = () => {
   const { user } = useAuth()
@@ -45,6 +47,17 @@ const PatientDashboard = () => {
     queryFn: () => paymentApi.getPatientPaymentHistory({ page: 1, limit: 5 }),
     enabled: !!user
   })
+
+  // Fetch notifications for notifications section
+  const { data: notificationsResponse } = useNotifications({ page: 1, limit: 5 })
+  const markAsReadMutation = useMarkNotificationAsRead()
+
+  // Extract notifications
+  const notifications = useMemo(() => {
+    if (!notificationsResponse) return []
+    const responseData = notificationsResponse.data || notificationsResponse
+    return responseData.notifications || responseData.data || []
+  }, [notificationsResponse])
 
   // Extract dashboard data
   const dashboard = useMemo(() => {
@@ -486,81 +499,77 @@ const PatientDashboard = () => {
                       <h5>Notifications</h5>
                     </div>
                     <div className="card-view-link">
-                      <a href="#">View All</a>
+                      <Link to="/patient-notifications">View All</Link>
                     </div>
                   </div>
                   <div className="dashboard-card-body">
-                    <div className="table-responsive">
-                      <table className="table dashboard-table">
-                        <tbody>
-                          <tr>
-                            <td>
-                              <div className="table-noti-info">
-                                <div className="table-noti-icon color-violet">
-                                  <i className="fa-solid fa-bell"></i>
-                                </div>
-                                <div className="table-noti-message">
-                                  <h6><a href="#">Booking Confirmed on <span> 21 Mar 2024 </span> 10:30 AM</a></h6>
-                                  <span className="message-time">Just Now</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>
-                              <div className="table-noti-info">
-                                <div className="table-noti-icon color-blue">
-                                  <i className="fa-solid fa-star"></i>
-                                </div>
-                                <div className="table-noti-message">
-                                  <h6><a href="#">You have a  <span> New </span> Review for your Appointment </a></h6>
-                                  <span className="message-time">5 Days ago</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>
-                              <div className="table-noti-info">
-                                <div className="table-noti-icon color-red">
-                                  <i className="isax isax-calendar-tick5"></i>
-                                </div>
-                                <div className="table-noti-message">
-                                  <h6><a href="#">You have Appointment with <span> Ahmed </span> by 01:20 PM </a></h6>
-                                  <span className="message-time">12:55 PM</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>
-                              <div className="table-noti-info">
-                                <div className="table-noti-icon color-yellow">
-                                  <i className="fa-solid fa-money-bill-1-wave"></i>
-                                </div>
-                                <div className="table-noti-message">
-                                  <h6><a href="#">Sent an amount of <span> $200 </span> for an Appointment  by 01:20 PM </a></h6>
-                                  <span className="message-time">2 Days ago</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td>
-                              <div className="table-noti-info">
-                                <div className="table-noti-icon color-blue">
-                                  <i className="fa-solid fa-star"></i>
-                                </div>
-                                <div className="table-noti-message">
-                                  <h6><a href="#">You have a  <span> New </span> Review for your Appointment </a></h6>
-                                  <span className="message-time">5 Days ago</span>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
+                    {notifications.length === 0 ? (
+                      <div className="text-center py-3">
+                        <p className="text-muted">No notifications</p>
+                      </div>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table dashboard-table">
+                          <tbody>
+                            {notifications.slice(0, 5).map((notification) => {
+                              // Get notification icon based on type
+                              const getNotificationIcon = (type) => {
+                                const typeUpper = (type || 'SYSTEM').toUpperCase()
+                                switch (typeUpper) {
+                                  case 'APPOINTMENT':
+                                    return { icon: 'isax isax-calendar-tick5', color: 'color-red' }
+                                  case 'MESSAGE':
+                                    return { icon: 'isax isax-messages-1', color: 'color-violet' }
+                                  case 'PAYMENT':
+                                    return { icon: 'isax isax-wallet-2', color: 'color-yellow' }
+                                  case 'REVIEW':
+                                    return { icon: 'isax isax-star-1', color: 'color-blue' }
+                                  case 'PRESCRIPTION':
+                                    return { icon: 'isax isax-document-text', color: 'color-green' }
+                                  default:
+                                    return { icon: 'fa-solid fa-bell', color: 'color-violet' }
+                                }
+                              }
+
+                              const iconInfo = getNotificationIcon(notification.type)
+                              
+                              // Format time ago
+                              const formatTimeAgo = (dateString) => {
+                                if (!dateString) return 'Just now'
+                                const date = new Date(dateString)
+                                const now = new Date()
+                                const diffInSeconds = Math.floor((now - date) / 1000)
+                                if (diffInSeconds < 60) return 'Just now'
+                                if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
+                                if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
+                                if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`
+                                return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+                              }
+
+                              return (
+                                <tr key={notification._id}>
+                                  <td>
+                                    <div className="table-noti-info">
+                                      <div className={`table-noti-icon ${iconInfo.color}`}>
+                                        <i className={iconInfo.icon}></i>
+                                      </div>
+                                      <div className="table-noti-message">
+                                        <h6>
+                                          <Link to="/patient-notifications">
+                                            {notification.title}
+                                          </Link>
+                                        </h6>
+                                        <span className="message-time">{formatTimeAgo(notification.createdAt)}</span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

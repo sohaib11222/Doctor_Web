@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../contexts/AuthContext'
 import * as profileApi from '../../api/profile'
+import { useUnreadNotificationsCount } from '../../queries/notificationQueries'
 
 const PatientSidebar = () => {
   const location = useLocation()
@@ -57,6 +58,9 @@ const PatientSidebar = () => {
   const genderDisplay = gender ? (gender.charAt(0) + gender.slice(1).toLowerCase()) : ''
   const patientId = user?._id ? `PT${user._id.slice(-6).toUpperCase()}` : 'PT000000'
 
+  // Fetch unread notifications count
+  const { data: unreadNotificationsCount = 0 } = useUnreadNotificationsCount()
+
   return (
     <div className="profile-sidebar patient-sidebar profile-sidebar-new">
       <div className="widget-profile pro-widget-content">
@@ -104,7 +108,7 @@ const PatientSidebar = () => {
             </li>
             <li className={isActive(['/map-view', '/clinic-navigation']) ? 'active' : ''}>
               <Link to="/map-view">
-                <i className="fe fe-map"></i>
+                <i className="isax isax-location"></i>
                 <span>Nearby Clinics</span>
               </Link>
             </li>
@@ -140,21 +144,30 @@ const PatientSidebar = () => {
             </li>
             <li className={isActive('/order-history') ? 'active' : ''}>
               <Link to="/order-history">
-                <i className="fe fe-shopping-bag"></i>
+                <i className="isax isax-shopping-bag"></i>
                 <span>Order History</span>
               </Link>
             </li>
-            <li className={isActive('/documents-download') ? 'active' : ''}>
+            {/* <li className={isActive('/documents-download') ? 'active' : ''}>
               <Link to="/documents-download">
-                <i className="fe fe-download"></i>
+                <i className="isax isax-document-download"></i>
                 <span>Documents</span>
               </Link>
-            </li>
+            </li> */}
             <li className={isActive('/chat') ? 'active' : ''}>
               <Link to="/chat">
                 <i className="isax isax-messages-1"></i>
                 <span>Message</span>
                 <small className="unread-msg">7</small>
+              </Link>
+            </li>
+            <li className={isActive('/patient-notifications') ? 'active' : ''}>
+              <Link to="/patient-notifications">
+                <i className="isax isax-notification"></i>
+                <span>Notifications</span>
+                {unreadNotificationsCount > 0 && (
+                  <small className="unread-msg">{unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}</small>
+                )}
               </Link>
             </li>
             {/* <li className={isActive('/medical-details') ? 'active' : ''}>

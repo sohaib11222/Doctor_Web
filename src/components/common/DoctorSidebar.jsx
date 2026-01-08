@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../contexts/AuthContext'
 import * as profileApi from '../../api/profile'
+import { useUnreadNotificationsCount } from '../../queries/notificationQueries'
 
 const DoctorSidebar = () => {
   const location = useLocation()
@@ -42,6 +43,9 @@ const DoctorSidebar = () => {
   // Format display name with title
   const displayName = doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`
   const designation = doctorTitle ? `${doctorTitle}${specializationName ? ` - ${specializationName}` : ''}` : specializationName || ''
+
+  // Fetch unread notifications count
+  const { data: unreadNotificationsCount = 0 } = useUnreadNotificationsCount()
 
   return (
     <div className="profile-sidebar doctor-sidebar profile-sidebar-new">
@@ -159,6 +163,15 @@ const DoctorSidebar = () => {
                 <i className="fa-solid fa-bullhorn"></i>
                 <span>Announcements</span>
                 <small className="unread-msg">3</small>
+              </Link>
+            </li>
+            <li className={isActive('/doctor-notifications') ? 'active' : ''}>
+              <Link to="/doctor-notifications">
+                <i className="isax isax-notification"></i>
+                <span>Notifications</span>
+                {unreadNotificationsCount > 0 && (
+                  <small className="unread-msg">{unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}</small>
+                )}
               </Link>
             </li>
             <li className={isActive(['/blog', '/blog/create', '/blog/edit']) ? 'active' : ''}>

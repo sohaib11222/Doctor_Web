@@ -1,11 +1,178 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import * as doctorApi from '../api/doctor'
+import * as specializationApi from '../api/specialization'
+import * as reviewsApi from '../api/reviews'
 
 const Index = () => {
   const navigate = useNavigate()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [location, setLocation] = useState('')
+  const [selectedSpecialization, setSelectedSpecialization] = useState('')
+  const carouselInstances = useRef({})
 
+  // Fetch specializations
+  const { data: specializationsData, isLoading: specializationsLoading } = useQuery({
+    queryKey: ['specializations'],
+    queryFn: () => specializationApi.getAllSpecializations()
+  })
+
+  // Fetch featured doctors (static, no filters - just featured doctors for home page)
+  const { data: doctorsData, isLoading: doctorsLoading } = useQuery({
+    queryKey: ['featuredDoctors'],
+    queryFn: () => doctorApi.listDoctors({ limit: 8, page: 1 })
+  })
+
+  // Fetch all doctors for stats
+  const { data: allDoctorsData } = useQuery({
+    queryKey: ['allDoctors'],
+    queryFn: () => doctorApi.listDoctors({ limit: 1, page: 1 })
+  })
+
+  // Fetch recent reviews for testimonials (we'll get reviews from multiple doctors)
+  const { data: featuredDoctorsForReviews } = useQuery({
+    queryKey: ['doctorsForReviews'],
+    queryFn: () => doctorApi.listDoctors({ limit: 4, page: 1 }),
+    enabled: !!doctorsData
+  })
+
+  // Extract data
+  const specializations = useMemo(() => {
+    if (!specializationsData) return []
+    return Array.isArray(specializationsData) ? specializationsData : (specializationsData.data || [])
+  }, [specializationsData])
+
+  const doctors = useMemo(() => {
+    if (!doctorsData) return []
+    const responseData = doctorsData.data || doctorsData
+    return responseData.doctors || responseData.data || responseData || []
+  }, [doctorsData])
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const allDoctorsResponse = allDoctorsData?.data || allDoctorsData
+    const totalDoctors = allDoctorsResponse?.pagination?.total || allDoctorsResponse?.total || doctors.length || 500
+    const totalSpecializations = specializations.length || 18
+    const totalBookings = 30000 // This would come from appointments API if available
+    const totalHospitals = 97 // This would come from clinics/pharmacies API if available
+    const totalLabTests = 317 // This would come from products/services API if available
+
+    return {
+      doctors: totalDoctors,
+      specializations: totalSpecializations,
+      bookings: totalBookings,
+      hospitals: totalHospitals,
+      labTests: totalLabTests
+    }
+  }, [allDoctorsData, specializations.length, doctors.length])
+
+  // Normalize image URL
+  const normalizeImageUrl = (imageUri) => {
+    if (!imageUri || typeof imageUri !== 'string') return null
+    const trimmedUri = imageUri.trim()
+    if (!trimmedUri) return null
+    const apiBaseURL = import.meta.env.VITE_API_URL || '/api'
+    const baseURL = apiBaseURL.replace('/api', '')
+    if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
+      return trimmedUri
+    }
+    const imagePath = trimmedUri.startsWith('/') ? trimmedUri : `/${trimmedUri}`
+    return `${baseURL}${imagePath}`
+  }
+
+  // Get default specialization image based on index
+  const getSpecializationImage = (index) => {
+    const images = [
+      'speciality-01.jpg', 'speciality-02.jpg', 'speciality-03.jpg', 'speciality-04.jpg',
+      'speciality-05.jpg', 'speciality-06.jpg', 'speciality-07.jpg', 'speciality-08.jpg'
+    ]
+    return `/assets/img/specialities/${images[index % images.length]}`
+  }
+
+  const getSpecializationIcon = (index) => {
+    const icons = [
+      'speciality-icon-01.svg', 'speciality-icon-02.svg', 'speciality-icon-03.svg', 'speciality-icon-04.svg',
+      'speciality-icon-05.svg', 'speciality-icon-06.svg', 'speciality-icon-07.svg', 'speciality-icon-08.svg'
+    ]
+    return `/assets/img/specialities/${icons[index % icons.length]}`
+  }
+
+  // Format doctor data for display
+  const formatDoctors = useMemo(() => {
+    return doctors.slice(0, 8).map((doctor) => {
+      const userId = doctor.userId || {}
+      const specialization = doctor.specialization || {}
+      const clinic = doctor.clinics?.[0] || {}
+      
+      return {
+        id: doctor._id || doctor.userId?._id,
+        name: userId.fullName || doctor.fullName || 'Dr. Unknown',
+        specialty: specialization.name || 'General',
+        location: clinic.city ? `${clinic.city}${clinic.state ? `, ${clinic.state}` : ''}` : 'Location not available',
+        time: '30 Min', // Default, can be fetched from availability
+        fee: clinic.consultationFee ? `$${clinic.consultationFee}` : '$500',
+        rating: doctor.ratingAvg || 0,
+        image: normalizeImageUrl(userId.profileImage || doctor.profileImage) || '/assets/img/doctor-grid/doctor-grid-01.jpg',
+        available: true,
+        doctorId: doctor._id || doctor.userId?._id
+      }
+    })
+  }, [doctors])
+
+  // Fetch reviews for testimonials (we'll use a sample approach)
+  const testimonials = [
+    { id: 1, name: 'Deny Hendrawan', location: 'United States', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&auto=format', title: 'Nice Treatment', text: 'I had a wonderful experience the staff was friendly and attentive, and Dr. Smith took the time to explain everything clearly.' },
+    { id: 2, name: 'Johnson DWayne', location: 'United States', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&auto=format', title: 'Good Hospitability', text: 'Genuinely cares about his patients. He helped me understand my condition and worked with me to create a plan.' },
+    { id: 3, name: 'Rayan Smith', location: 'United States', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&auto=format', title: 'Nice Treatment', text: 'I had a great experience with Dr. Chen. She was not only professional but also made me feel comfortable discussing.' },
+    { id: 4, name: 'Sofia Doe', location: 'United States', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&auto=format', title: 'Excellent Service', text: 'I had a wonderful experience the staff was friendly and attentive, and Dr. Smith took the time to explain everything clearly.' },
+  ]
+
+  const companies = [
+    'company-01.svg', 'company-02.svg', 'company-03.svg', 'company-04.svg',
+    'company-05.svg', 'company-06.svg', 'company-07.svg', 'company-08.svg'
+  ]
+
+  // Destroy carousel instance safely
+  const destroyCarousel = (selector) => {
+    if (typeof window !== 'undefined' && window.$) {
+      try {
+        const $el = $(selector)
+        if ($el.length && $el.data('owl.carousel')) {
+          $el.trigger('destroy.owl.carousel').removeClass('owl-carousel owl-loaded')
+          $el.find('.owl-stage-outer').children().unwrap()
+        }
+      } catch (error) {
+        console.warn('Error destroying carousel:', error)
+      }
+    }
+  }
+
+  // Initialize carousel safely
+  const initCarousel = (selector, options) => {
+    if (typeof window !== 'undefined' && window.$) {
+      try {
+        const $el = $(selector)
+        if ($el.length) {
+          // Destroy existing instance first
+          destroyCarousel(selector)
+          
+          // Wait a bit before re-initializing
+          setTimeout(() => {
+            if ($el.length && !$el.data('owl.carousel')) {
+              $el.owlCarousel(options)
+              carouselInstances.current[selector] = true
+            }
+          }, 50)
+        }
+      } catch (error) {
+        console.warn('Error initializing carousel:', error)
+      }
+    }
+  }
+
+  // Initialize AOS animations (only once)
   useEffect(() => {
-    // Initialize AOS animations
     if (typeof window !== 'undefined') {
       import('aos').then((AOS) => {
         AOS.init({
@@ -14,12 +181,16 @@ const Index = () => {
         })
       })
     }
+  }, [])
 
-    // Initialize Owl Carousel
+  // Initialize carousels when data is ready (but not on every search change)
+  useEffect(() => {
     if (typeof window !== 'undefined' && window.$) {
-      // Speciality Slider
-      $('.spciality-slider').owlCarousel({
-        loop: true,
+      const timer = setTimeout(() => {
+        // Speciality Slider - only initialize once
+        if (specializations.length > 0 && !carouselInstances.current['.spciality-slider']) {
+          initCarousel('.spciality-slider', {
+            loop: specializations.length > 5,
         margin: 30,
         nav: true,
         dots: false,
@@ -29,22 +200,11 @@ const Index = () => {
           1000: { items: 5 }
         }
       })
-
-      // Doctors Slider
-      $('.doctors-slider').owlCarousel({
-        loop: true,
-        margin: 30,
-        nav: true,
-        dots: false,
-        responsive: {
-          0: { items: 1 },
-          600: { items: 2 },
-          1000: { items: 4 }
         }
-      })
 
-      // Testimonials Slider
-      $('.testimonials-slider').owlCarousel({
+        // Testimonials Slider - only initialize once
+        if (!carouselInstances.current['.testimonials-slider']) {
+          initCarousel('.testimonials-slider', {
         loop: true,
         margin: 30,
         nav: true,
@@ -55,9 +215,11 @@ const Index = () => {
           1000: { items: 3 }
         }
       })
+        }
 
-      // Company Slider
-      $('.company-slider').owlCarousel({
+        // Company Slider - only initialize once
+        if (!carouselInstances.current['.company-slider']) {
+          initCarousel('.company-slider', {
         loop: true,
         margin: 30,
         nav: false,
@@ -71,43 +233,56 @@ const Index = () => {
         }
       })
     }
+      }, 200)
+
+      return () => clearTimeout(timer)
+  }
+  }, [specializations.length])
+
+  // Initialize doctors slider once when data is ready
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.$ && formatDoctors.length > 0) {
+      const timer = setTimeout(() => {
+        if (!carouselInstances.current['.doctors-slider']) {
+          initCarousel('.doctors-slider', {
+            loop: formatDoctors.length > 4,
+            margin: 30,
+            nav: true,
+            dots: false,
+            responsive: {
+              0: { items: 1 },
+              600: { items: 2 },
+              1000: { items: 4 }
+            }
+          })
+        }
+      }, 300)
+
+      return () => clearTimeout(timer)
+    }
+  }, [formatDoctors.length])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && window.$) {
+        destroyCarousel('.spciality-slider')
+        destroyCarousel('.doctors-slider')
+        destroyCarousel('.testimonials-slider')
+        destroyCarousel('.company-slider')
+      }
+    }
   }, [])
 
   const handleSearch = (e) => {
     e.preventDefault()
-    navigate('/search-2')
+    // Navigate to search page with search parameters
+    const params = new URLSearchParams()
+    if (searchTerm.trim()) params.set('search', searchTerm.trim())
+    if (location.trim()) params.set('location', location.trim())
+    if (selectedSpecialization) params.set('specialization', selectedSpecialization)
+    navigate(`/search-2?${params.toString()}`)
   }
-
-  const specialities = [
-    { id: 1, name: 'Cardiology', doctors: 254, image: 'speciality-01.jpg', icon: 'speciality-icon-01.svg' },
-    { id: 2, name: 'Orthopedics', doctors: 151, image: 'speciality-02.jpg', icon: 'speciality-icon-02.svg' },
-    { id: 3, name: 'Neurology', doctors: 176, image: 'speciality-03.jpg', icon: 'speciality-icon-03.svg' },
-    { id: 4, name: 'Pediatrics', doctors: 124, image: 'speciality-04.jpg', icon: 'speciality-icon-04.svg' },
-    { id: 5, name: 'Psychiatry', doctors: 112, image: 'speciality-05.jpg', icon: 'speciality-icon-05.svg' },
-    { id: 6, name: 'Endocrinology', doctors: 104, image: 'speciality-06.jpg', icon: 'speciality-icon-06.svg' },
-    { id: 7, name: 'Pulmonology', doctors: 41, image: 'speciality-07.jpg', icon: 'speciality-icon-07.svg' },
-    { id: 8, name: 'Urology', doctors: 39, image: 'speciality-08.jpg', icon: 'speciality-icon-08.svg' },
-  ]
-
-  const doctors = [
-    { id: 1, name: 'Dr. Michael Brown', specialty: 'Psychologist', location: 'Minneapolis, MN', time: '30 Min', fee: '$650', rating: 5.0, image: 'doctor-grid-01.jpg', available: true },
-    { id: 2, name: 'Dr. Nicholas Tello', specialty: 'Pediatrician', location: 'Ogden, IA', time: '60 Min', fee: '$400', rating: 4.6, image: 'doctor-grid-02.jpg', available: true },
-    { id: 3, name: 'Dr. Harold Bryant', specialty: 'Neurologist', location: 'Winona, MS', time: '30 Min', fee: '$500', rating: 4.8, image: 'doctor-grid-03.jpg', available: true },
-    { id: 4, name: 'Dr. Sandra Jones', specialty: 'Cardiologist', location: 'Beckley, WV', time: '30 Min', fee: '$550', rating: 4.8, image: 'doctor-grid-04.jpg', available: true },
-    { id: 5, name: 'Dr. Charles Scott', specialty: 'Neurologist', location: 'Hamshire, TX', time: '30 Min', fee: '$600', rating: 4.2, image: 'doctor-grid-05.jpg', available: true },
-  ]
-
-  const testimonials = [
-    { id: 1, name: 'Deny Hendrawan', location: 'United States', image: 'patient22.jpg', title: 'Nice Treatment', text: 'I had a wonderful experience the staff was friendly and attentive, and Dr. Smith took the time to explain everything clearly.' },
-    { id: 2, name: 'Johnson DWayne', location: 'United States', image: 'patient21.jpg', title: 'Good Hospitability', text: 'Genuinely cares about his patients. He helped me understand my condition and worked with me to create a plan.' },
-    { id: 3, name: 'Rayan Smith', location: 'United States', image: 'patient.jpg', title: 'Nice Treatment', text: 'I had a great experience with Dr. Chen. She was not only professional but also made me feel comfortable discussing.' },
-    { id: 4, name: 'Sofia Doe', location: 'United States', image: 'patient23.jpg', title: 'Excellent Service', text: 'I had a wonderful experience the staff was friendly and attentive, and Dr. Smith took the time to explain everything clearly.' },
-  ]
-
-  const companies = [
-    'company-01.svg', 'company-02.svg', 'company-03.svg', 'company-04.svg',
-    'company-05.svg', 'company-06.svg', 'company-07.svg', 'company-08.svg'
-  ]
 
   return (
     <>
@@ -120,13 +295,13 @@ const Index = () => {
                 <div className="rating-appointment d-inline-flex align-items-center gap-2">
                   <div className="avatar-list-stacked avatar-group-lg">
                     <span className="avatar avatar-rounded">
-                      <img className="border border-white" src="/assets/img/doctors/doctor-thumb-22.jpg" alt="img" />
+                      <img className="border border-white" src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&h=100&fit=crop&auto=format" alt="img" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&h=100&fit=crop&auto=format' }} />
                     </span>
                     <span className="avatar avatar-rounded">
-                      <img className="border border-white" src="/assets/img/doctors/doctor-thumb-23.jpg" alt="img" />
+                      <img className="border border-white" src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&h=100&fit=crop&auto=format" alt="img" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&h=100&fit=crop&auto=format' }} />
                     </span>
                     <span className="avatar avatar-rounded">
-                      <img src="/assets/img/doctors/doctor-thumb-24.jpg" alt="img" />
+                      <img src="https://images.unsplash.com/photo-1594824476968-48df8a5ad053?w=100&h=100&fit=crop&auto=format" alt="img" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&h=100&fit=crop&auto=format' }} />
                     </span>
                   </div>
                   <div className="me-2">
@@ -155,19 +330,42 @@ const Index = () => {
                     <div className="search-input search-line">
                       <i className="isax isax-hospital5 bficon"></i>
                       <div className="mb-0">
-                        <input type="text" className="form-control" placeholder="Search doctors, clinics, hospitals, etc" />
+                        <input 
+                          type="text" 
+                          className="form-control" 
+                          placeholder="Search doctors, clinics, hospitals, etc" 
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
                       </div>
                     </div>
                     <div className="search-input search-map-line">
                       <i className="isax isax-location5"></i>
                       <div className="mb-0">
-                        <input type="text" className="form-control" placeholder="Location" />
+                        <input 
+                          type="text" 
+                          className="form-control" 
+                          placeholder="Location" 
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                        />
                       </div>
                     </div>
                     <div className="search-input search-calendar-line">
                       <i className="isax isax-calendar-tick5"></i>
                       <div className="mb-0">
-                        <input type="text" className="form-control datetimepicker" placeholder="Date" />
+                        <select
+                          className="form-control"
+                          value={selectedSpecialization}
+                          onChange={(e) => setSelectedSpecialization(e.target.value)}
+                        >
+                          <option value="">All Specialities</option>
+                          {specializations.map((spec) => (
+                            <option key={spec._id || spec} value={spec._id || spec}>
+                              {spec.name || spec}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                     <div className="form-search-btn">
@@ -189,13 +387,13 @@ const Index = () => {
                 <div className="banner-patient">
                   <div className="avatar-list-stacked avatar-group-sm">
                     <span className="avatar avatar-rounded">
-                      <img src="/assets/img/patients/patient19.jpg" alt="img" />
+                      <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&auto=format" alt="img" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&auto=format' }} />
                     </span>
                     <span className="avatar avatar-rounded">
-                      <img src="/assets/img/patients/patient16.jpg" alt="img" />
+                      <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&auto=format" alt="img" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&auto=format' }} />
                     </span>
                     <span className="avatar avatar-rounded">
-                      <img src="/assets/img/patients/patient18.jpg" alt="img" />
+                      <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&auto=format" alt="img" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&auto=format' }} />
                     </span>
                   </div>
                   <p>15K+</p>
@@ -279,20 +477,34 @@ const Index = () => {
             <h2>Highlighting the Care & Support</h2>
           </div>
           <div className="owl-carousel spciality-slider aos" data-aos="fade-up">
-            {specialities.map((speciality) => (
-              <div key={speciality.id} className="spaciality-item">
+            {specializationsLoading ? (
+              <div className="text-center py-5">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="sr-only">Loading...</span>
+                </div>
+              </div>
+            ) : specializations.length > 0 ? (
+              specializations.slice(0, 8).map((specialization, index) => (
+                <div key={specialization._id || specialization.id || index} className="spaciality-item">
                 <div className="spaciality-img">
-                  <img src={`/assets/img/specialities/${speciality.image}`} alt="img" />
+                    <img src={getSpecializationImage(index)} alt={specialization.name} />
                   <span className="spaciality-icon">
-                    <img src={`/assets/img/specialities/${speciality.icon}`} alt="img" />
+                      <img src={getSpecializationIcon(index)} alt={specialization.name} />
                   </span>
                 </div>
                 <h6>
-                  <Link to="/doctor-grid">{speciality.name}</Link>
+                    <Link to={`/search-2?specialization=${specialization._id || specialization.id}`}>
+                      {specialization.name}
+                    </Link>
                 </h6>
-                <p className="mb-0">{speciality.doctors} Doctors</p>
+                  <p className="mb-0">{specialization.doctorCount || '0'} Doctors</p>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="text-center py-5">
+                <p>No specializations available</p>
+              </div>
+            )}
           </div>
           <div className="spciality-nav nav-bottom owl-nav"></div>
         </div>
@@ -307,15 +519,28 @@ const Index = () => {
             <h2>Our Highlighted Doctors</h2>
           </div>
           <div className="doctors-slider owl-carousel aos" data-aos="fade-up">
-            {doctors.map((doctor) => (
+            {doctorsLoading ? (
+              <div className="text-center py-5">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="sr-only">Loading...</span>
+                </div>
+              </div>
+            ) : formatDoctors.length > 0 ? (
+              formatDoctors.map((doctor) => (
               <div key={doctor.id} className="card">
                 <div className="card-img card-img-hover">
-                  <Link to="/doctor-profile">
-                    <img src={`/assets/img/doctor-grid/${doctor.image}`} alt={doctor.name} />
+                    <Link to={`/doctor-profile?id=${doctor.doctorId}`}>
+                      <img 
+                        src={doctor.image} 
+                        alt={doctor.name}
+                        onError={(e) => {
+                          e.target.src = '/assets/img/doctor-grid/doctor-grid-01.jpg'
+                        }}
+                      />
                   </Link>
                   <div className="grid-overlay-item d-flex align-items-center justify-content-between">
                     <span className="badge bg-orange">
-                      <i className="fa-solid fa-star me-1"></i>{doctor.rating}
+                        <i className="fa-solid fa-star me-1"></i>{doctor.rating.toFixed(1)}
                     </span>
                     <a href="javascript:void(0)" className="fav-icon">
                       <i className="fa fa-heart"></i>
@@ -333,7 +558,7 @@ const Index = () => {
                   <div className="p-3 pt-0">
                     <div className="doctor-info-detail mb-3 pb-3">
                       <h3 className="mb-1">
-                        <Link to="/doctor-profile">{doctor.name}</Link>
+                          <Link to={`/doctor-profile?id=${doctor.doctorId}`}>{doctor.name}</Link>
                       </h3>
                       <div className="d-flex align-items-center">
                         <p className="d-flex align-items-center mb-0 fs-14">
@@ -348,7 +573,7 @@ const Index = () => {
                         <p className="mb-1">Consultation Fees</p>
                         <h3 className="text-orange">{doctor.fee}</h3>
                       </div>
-                      <Link to="/booking" className="btn btn-md btn-dark inline-flex align-items-center rounded-pill">
+                        <Link to={`/booking?doctorId=${doctor.doctorId}`} className="btn btn-md btn-dark inline-flex align-items-center rounded-pill">
                         <i className="isax isax-calendar-1 me-2"></i>
                         Book Now
                       </Link>
@@ -356,7 +581,12 @@ const Index = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="text-center py-5">
+                <p>No doctors available at the moment.</p>
+              </div>
+            )}
           </div>
           <div className="doctor-nav nav-bottom owl-nav"></div>
         </div>
@@ -438,13 +668,13 @@ const Index = () => {
               <div className="bookus-img">
                 <div className="row g-3">
                   <div className="col-md-12 aos" data-aos="fade-up">
-                    <img src="/assets/img/book-01.jpg" alt="img" className="img-fluid" />
+                    <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=600&h=400&fit=crop&auto=format" alt="img" className="img-fluid" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=600&h=400&fit=crop&auto=format' }} />
                   </div>
                   <div className="col-sm-6 aos" data-aos="fade-up">
-                    <img src="/assets/img/book-02.jpg" alt="img" className="img-fluid" />
+                    <img src="https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=400&h=300&fit=crop&auto=format" alt="img" className="img-fluid" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400&h=300&fit=crop&auto=format' }} />
                   </div>
                   <div className="col-sm-6 aos" data-aos="fade-up">
-                    <img src="/assets/img/book-03.jpg" alt="img" className="img-fluid" />
+                    <img src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400&h=300&fit=crop&auto=format" alt="img" className="img-fluid" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=400&h=300&fit=crop&auto=format' }} />
                   </div>
                 </div>
               </div>
@@ -579,7 +809,7 @@ const Index = () => {
                   <p>{testimonial.text}</p>
                   <div className="d-flex align-items-center">
                     <a href="javascript:void(0);" className="avatar avatar-lg">
-                      <img src={`/assets/img/patients/${testimonial.image}`} className="rounded-circle" alt="img" />
+                      <img src={testimonial.image} className="rounded-circle" alt="img" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&auto=format' }} />
                     </a>
                     <div className="ms-2">
                       <h6 className="mb-1"><a href="javascript:void(0);">{testimonial.name}</a></h6>
@@ -593,23 +823,23 @@ const Index = () => {
           <div className="testimonial-counter">
             <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 row-gap-4">
               <div className="counter-item text-center aos" data-aos="fade-up">
-                <h6 className="display-6"><span className="count-digit">500</span>+</h6>
+                <h6 className="display-6"><span className="count-digit">{stats.doctors}</span>+</h6>
                 <p>Doctors Available</p>
               </div>
               <div className="counter-item text-center aos" data-aos="fade-up">
-                <h6 className="display-6 secondary-count"><span className="count-digit">18</span>+</h6>
+                <h6 className="display-6 secondary-count"><span className="count-digit">{stats.specializations}</span>+</h6>
                 <p>Specialities</p>
               </div>
               <div className="counter-item text-center aos" data-aos="fade-up">
-                <h6 className="display-6 purple-count"><span className="count-digit">30</span>K</h6>
+                <h6 className="display-6 purple-count"><span className="count-digit">{Math.floor(stats.bookings / 1000)}</span>K</h6>
                 <p>Bookings Done</p>
               </div>
               <div className="counter-item text-center aos" data-aos="fade-up">
-                <h6 className="display-6 pink-count"><span className="count-digit">97</span>+</h6>
+                <h6 className="display-6 pink-count"><span className="count-digit">{stats.hospitals}</span>+</h6>
                 <p>Hospitals & Clinic</p>
               </div>
               <div className="counter-item text-center aos" data-aos="fade-up">
-                <h6 className="display-6 warning-count"><span className="count-digit">317</span>+</h6>
+                <h6 className="display-6 warning-count"><span className="count-digit">{stats.labTests}</span>+</h6>
                 <p>Lab Tests Available</p>
               </div>
             </div>
@@ -724,39 +954,7 @@ const Index = () => {
       {/* /FAQ Section */}
 
       {/* App Section */}
-      <section className="app-section app-sec-one p-0">
-        <div className="container">
-          <div className="app-bg">
-            <div className="row">
-              <div className="col-lg-6 col-md-12 d-flex">
-                <div className="app-content d-flex flex-column justify-content-center">
-                  <div className="app-header aos" data-aos="fade-up">
-                    <h3 className="display-6 text-white">Download the myDoctor App today!</h3>
-                    <p className="text-light">To download an app related to a doctor or medical services, you can typically visit the app store on your device.</p>
-                  </div>
-                  <div className="google-imgs aos" data-aos="fade-up">
-                    <a href="javascript:void(0);"><img src="/assets/img/icons/app-store-01.svg" alt="img" /></a>
-                    <a href="javascript:void(0);"><img src="/assets/img/icons/google-play-01.svg" alt="img" /></a>
-                  </div>
-                </div>
-              </div>
-              <div className="col-lg-6 col-md-12 aos" data-aos="fade-up">
-                <div className="mobile-img">
-                  <img src="/assets/img/mobile-img.png" className="img-fluid" alt="img" />
-                </div>
-              </div>
-            </div>
-            <div className="app-bgs">
-              <img src="/assets/img/bg/app-bg-02.png" alt="img" className="app-bg-01" />
-              <img src="/assets/img/bg/app-bg-03.png" alt="img" className="app-bg-02" />
-              <img src="/assets/img/bg/app-bg-04.png" alt="img" className="app-bg-03" />
-            </div>
-          </div>
-        </div>
-        <div className="download-bg">
-          <img src="/assets/img/bg/download-bg.png" alt="img" />
-        </div>
-      </section>
+     
       {/* /App Section */}
 
       {/* Info Section */}

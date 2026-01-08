@@ -56,83 +56,42 @@ const AboutUs = () => {
     }
   }, [])
 
-  const doctors = [
-    {
-      id: 1,
-      name: 'Dr. Ruby Perrin',
-      speciality: 'Cardiology',
-      image: '/assets/img/doctors/doctor-03.jpg',
-      price: '$200',
-      rating: 4.5,
-      reviews: 35,
-      location: 'Newyork, USA'
-    },
-    {
-      id: 2,
-      name: 'Dr. Darren Elder',
-      speciality: 'Neurology',
-      image: '/assets/img/doctors/doctor-04.jpg',
-      price: '$360',
-      rating: 4.0,
-      reviews: 20,
-      location: 'Florida, USA'
-    },
-    {
-      id: 3,
-      name: 'Dr. Sofia Brient',
-      speciality: 'Urology',
-      image: '/assets/img/doctors/doctor-05.jpg',
-      price: '$450',
-      rating: 4.5,
-      reviews: 30,
-      location: 'Georgia, USA'
-    },
-    {
-      id: 4,
-      name: 'Dr. Paul Richard',
-      speciality: 'Orthopedic',
-      image: '/assets/img/doctors/doctor-02.jpg',
-      price: '$570',
-      rating: 4.3,
-      reviews: 45,
-      location: 'Michigan, USA'
-    }
-  ]
+ 
 
   const testimonials = [
     {
       id: 1,
       name: 'John Doe',
       location: 'New York',
-      image: '/assets/img/clients/client-01.jpg',
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&auto=format',
       text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
     },
     {
       id: 2,
       name: 'Amanda Warren',
       location: 'Florida',
-      image: '/assets/img/clients/client-02.jpg',
+      image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&auto=format',
       text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
     },
     {
       id: 3,
       name: 'Betty Carlson',
       location: 'Georgia',
-      image: '/assets/img/clients/client-03.jpg',
+      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&auto=format',
       text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
     },
     {
       id: 4,
       name: 'Veronica',
       location: 'California',
-      image: '/assets/img/clients/client-04.jpg',
+      image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&auto=format',
       text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
     },
     {
       id: 5,
       name: 'Richard',
       location: 'Michigan',
-      image: '/assets/img/clients/client-05.jpg',
+      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&auto=format',
       text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
     }
   ]
@@ -217,10 +176,28 @@ const AboutUs = () => {
                   <div className="col-md-6">
                     <div className="about-inner-img">
                       <div className="about-img">
-                        <img src="/assets/img/about-img1.jpg" className="img-fluid" alt="about-image" />
+                        <img 
+                          src="https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=600&h=400&fit=crop&auto=format" 
+                          className="img-fluid" 
+                          alt="Medical professionals"
+                          loading="lazy"
+                          onError={(e) => { 
+                            e.target.onerror = null
+                            e.target.src = 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=600&h=400&fit=crop&auto=format'
+                          }}
+                        />
                       </div>
                       <div className="about-img">
-                        <img src="/assets/img/about-img2.jpg" className="img-fluid" alt="about-image" />
+                        <img 
+                          src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=600&h=400&fit=crop&auto=format" 
+                          className="img-fluid" 
+                          alt="Healthcare facility"
+                          loading="lazy"
+                          onError={(e) => { 
+                            e.target.onerror = null
+                            e.target.src = 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=600&h=400&fit=crop&auto=format'
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -230,7 +207,16 @@ const AboutUs = () => {
                         <h4>Over 25+ Years Experience</h4>
                       </div>
                       <div className="about-img">
-                        <img src="/assets/img/about-img3.jpg" className="img-fluid" alt="about-image" />
+                        <img 
+                          src="https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=600&h=400&fit=crop&auto=format" 
+                          className="img-fluid" 
+                          alt="Medical team"
+                          loading="lazy"
+                          onError={(e) => { 
+                            e.target.onerror = null
+                            e.target.src = 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=600&h=400&fit=crop&auto=format'
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -322,7 +308,14 @@ const AboutUs = () => {
               </div>
               <div className="col-lg-5 col-md-12">
                 <div className="way-img">
-                  <img src="/assets/img/way-img.png" className="img-fluid" alt="doctor-way-image" />
+                  <img 
+                    src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&h=600&fit=crop&auto=format" 
+                    className="img-fluid" 
+                    alt="Healthcare journey"
+                    onError={(e) => {
+                      e.target.src = 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=600&h=600&fit=crop&auto=format'
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -332,7 +325,7 @@ const AboutUs = () => {
       {/* /Way Choose Us */}
 
       {/* Doctors Section */}
-      <section className="doctors-section professional-section">
+      {/* <section className="doctors-section professional-section">
         <div className="container">
           <div className="row">
             <div className="col-md-12">
@@ -349,7 +342,14 @@ const AboutUs = () => {
                   <div className="doc-pro-img">
                     <Link to="/doctor-profile">
                       <div className="doctor-profile-img">
-                        <img src={doctor.image} className="img-fluid" alt={doctor.name} />
+                        <img 
+                          src={doctor.image} 
+                          className="img-fluid" 
+                          alt={doctor.name}
+                          onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&auto=format'
+                          }}
+                        />
                       </div>
                     </Link>
                     <div className="doctor-amount">
@@ -377,7 +377,7 @@ const AboutUs = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
       {/* /Doctors Section */}
 
       {/* Testimonial Section */}
@@ -398,7 +398,14 @@ const AboutUs = () => {
                   <div key={testimonial.id} className="testimonial-grid">
                     <div className="testimonial-info">
                       <div className="testimonial-img">
-                        <img src={testimonial.image} className="img-fluid" alt="client-image" />
+                        <img 
+                          src={testimonial.image} 
+                          className="img-fluid" 
+                          alt={testimonial.name}
+                          onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&auto=format'
+                          }}
+                        />
                       </div>
                       <div className="testimonial-content">
                         <div className="section-inner-header testimonial-header">
@@ -434,7 +441,14 @@ const AboutUs = () => {
           <div className="row align-items-center">
             <div className="col-lg-6 col-md-12">
               <div className="faq-img">
-                <img src="/assets/img/faq-img.png" className="img-fluid" alt="img" />
+                <img 
+                  src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&h=600&fit=crop&auto=format" 
+                  className="img-fluid" 
+                  alt="Healthcare FAQ"
+                  onError={(e) => {
+                    e.target.src = 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&h=600&fit=crop&auto=format'
+                  }}
+                />
                 <div className="faq-patients-count">
                   <div className="faq-smile-img">
                     <img src="/assets/img/icons/smiling-icon.svg" alt="icon" />

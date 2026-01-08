@@ -9,6 +9,7 @@ import MainLayout from './layouts/MainLayout'
 import AuthLayout from './layouts/AuthLayout'
 import DashboardLayout from './layouts/DashboardLayout'
 import ProtectedRoute from './components/common/ProtectedRoute'
+import GoogleTranslate from './components/common/GoogleTranslate'
 
 // Public Pages - Home
 import Index from './pages/Index'
@@ -77,6 +78,7 @@ import DoctorBlogDetails from './pages/doctor/BlogDetails'
 import BlogCreateEdit from './pages/doctor/BlogCreateEdit'
 import PharmacyOrders from './pages/doctor/PharmacyOrders'
 import PharmacyOrderDetails from './pages/doctor/PharmacyOrderDetails'
+import DoctorNotifications from './pages/doctor/DoctorNotifications'
 
 // Patient Pages
 import PatientDashboard from './pages/patient/PatientDashboard'
@@ -349,6 +351,11 @@ function App() {
             <Route path="/doctor/announcements" element={
               <ProtectedRoute role="DOCTOR" requireApproved={true}>
                 <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Announcements", li2: "Announcements" }}><DoctorAnnouncements /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor-notifications" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Notifications", li2: "Notifications" }}><DoctorNotifications /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/blog" element={
@@ -648,6 +655,7 @@ function App() {
             <Route path="/error-500" element={<Error500 />} />
             <Route path="*" element={<Error404 />} />
           </Routes>
+          <GoogleTranslate />
           <ToastContainer position="top-right" autoClose={3000} />
         </BrowserRouter>
         </CartProvider>

@@ -32,6 +32,7 @@ const DashboardLayout = ({ children, breadcrumb }) => {
                         location.pathname === '/patient-profile' ||
                         location.pathname === '/patient-invoices' ||
                         location.pathname === '/patient-accounts' ||
+                        location.pathname === '/patient-notifications' ||
                         location.pathname === '/profile-settings' ||
                         location.pathname === '/change-password' ||
                         location.pathname === '/favourites' ||

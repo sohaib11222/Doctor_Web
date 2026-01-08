@@ -1,12 +1,43 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import * as profileApi from '../../api/profile'
 
 const Header = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  // Fetch user profile to get profile image
+  const { data: userProfileData } = useQuery({
+    queryKey: ['userProfile', user?._id],
+    queryFn: () => profileApi.getUserProfile(user._id),
+    enabled: !!user?._id
+  })
+
+  // Normalize image URL
+  const normalizeImageUrl = (imageUri) => {
+    if (!imageUri || typeof imageUri !== 'string') return null
+    const trimmedUri = imageUri.trim()
+    if (!trimmedUri) return null
+    const apiBaseURL = import.meta.env.VITE_API_URL || '/api'
+    const baseURL = apiBaseURL.replace('/api', '')
+    if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
+      return trimmedUri
+    }
+    const imagePath = trimmedUri.startsWith('/') ? trimmedUri : `/${trimmedUri}`
+    return `${baseURL}${imagePath}`
+  }
+
+  // Get user profile image
+  const userProfileImage = useMemo(() => {
+    if (!user) return '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+    const profileData = userProfileData?.data || userProfileData || {}
+    const imageUrl = profileData.profileImage || user.profileImage
+    return normalizeImageUrl(imageUrl) || '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+  }, [user, userProfileData])
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
   const isIndexPage = location.pathname === '/' || location.pathname === '/index'
@@ -463,13 +494,28 @@ const Header = () => {
                 <li className="nav-item dropdown has-arrow logged-item">
                   <a href="javascript:void(0);" className="nav-link ps-0" data-bs-toggle="dropdown">
                     <span className="user-img">
-                      <img className="rounded-circle" src="/assets/img/doctors-dashboard/doctor-profile-img.jpg" width="31" alt="User" />
+                      <img 
+                        className="rounded-circle" 
+                        src={userProfileImage} 
+                        width="31" 
+                        alt="User"
+                        onError={(e) => {
+                          e.target.src = '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                        }}
+                      />
                     </span>
                   </a>
                   <div className="dropdown-menu dropdown-menu-end">
                     <div className="user-header">
                       <div className="avatar avatar-sm">
-                        <img src="/assets/img/doctors-dashboard/doctor-profile-img.jpg" alt="User" className="avatar-img rounded-circle" />
+                        <img 
+                          src={userProfileImage} 
+                          alt="User" 
+                          className="avatar-img rounded-circle"
+                          onError={(e) => {
+                            e.target.src = '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+                          }}
+                        />
                       </div>
                       <div className="user-text">
                         <h6>{user.fullName || user.name || 'User'}</h6>

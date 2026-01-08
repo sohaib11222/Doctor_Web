@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as appointmentApi from '../../api/appointments'
 import { useAuth } from '../../contexts/AuthContext'
+import { useCreateReview } from '../../mutations/reviewMutations'
+import * as reviewsApi from '../../api/reviews'
 
 const PatientAppointmentDetails = () => {
   const { user } = useAuth()
@@ -14,6 +16,9 @@ const PatientAppointmentDetails = () => {
 
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewText, setReviewText] = useState('')
 
   // Fetch appointment details
   const { data: appointmentData, isLoading, error } = useQuery({
@@ -21,6 +26,12 @@ const PatientAppointmentDetails = () => {
     queryFn: () => appointmentApi.getAppointmentById(appointmentId),
     enabled: !!appointmentId && !!user
   })
+
+  // Extract appointment from response (must be done before using it in other queries)
+  const appointment = useMemo(() => {
+    if (!appointmentData) return null
+    return appointmentData.data || appointmentData
+  }, [appointmentData])
 
   // Fetch recent appointments for the same patient
   const { data: recentAppointmentsData } = useQuery({
@@ -45,8 +56,62 @@ const PatientAppointmentDetails = () => {
     }
   })
 
-  // Extract appointment from response
-  const appointment = appointmentData?.data || appointmentData
+  // Check if review exists for this appointment
+  const { data: existingReviewData } = useQuery({
+    queryKey: ['appointmentReview', appointmentId],
+    queryFn: async () => {
+      if (!appointment || appointment.status !== 'COMPLETED' || !appointment.doctorId) return null
+      const doctorId = appointment.doctorId._id || appointment.doctorId
+      const reviews = await reviewsApi.getReviewsByDoctorId(doctorId, { page: 1, limit: 100 })
+      const reviewsList = reviews.data?.reviews || reviews.reviews || []
+      return reviewsList.find(r => r.appointmentId === appointmentId || r.appointmentId?._id === appointmentId)
+    },
+    enabled: !!appointment && appointment.status === 'COMPLETED' && !!appointment.doctorId
+  })
+
+  const existingReview = existingReviewData
+
+  // Create review mutation
+  const createReviewMutation = useCreateReview()
+
+  // Handle review submission
+  const handleReviewSubmit = async () => {
+    if (!reviewText.trim()) {
+      toast.error('Please provide a review text')
+      return
+    }
+    if (!appointment || !appointment.doctorId) {
+      toast.error('Doctor information not available')
+      return
+    }
+
+    const doctorId = appointment.doctorId._id || appointment.doctorId
+
+    try {
+      await createReviewMutation.mutateAsync({
+        doctorId,
+        appointmentId: appointment._id,
+        rating: reviewRating,
+        reviewText: reviewText.trim(),
+        reviewType: 'APPOINTMENT'
+      })
+      toast.success('Review submitted successfully!')
+      setShowReviewModal(false)
+      setReviewText('')
+      setReviewRating(5)
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to submit review'
+      toast.error(errorMessage)
+    }
+  }
+
+  // Show review modal if appointment is completed and no review exists
+  useEffect(() => {
+    if (appointment && appointment.status === 'COMPLETED' && !existingReview && !showReviewModal) {
+      // Auto-show review modal after a short delay (optional - you can remove this if you want manual trigger)
+      // setTimeout(() => setShowReviewModal(true), 1000)
+    }
+  }, [appointment, existingReview, showReviewModal])
 
   // Extract recent appointments
   const recentAppointments = useMemo(() => {
@@ -380,6 +445,20 @@ const PatientAppointmentDetails = () => {
                       >
                         Download Prescription
                       </Link>
+                      {!existingReview ? (
+                        <button
+                          className="btn btn-success prime-btn me-3"
+                          onClick={() => setShowReviewModal(true)}
+                        >
+                          <i className="isax isax-star-1 me-2"></i>
+                          Write a Review
+                        </button>
+                      ) : (
+                        <div className="alert alert-success d-inline-block me-3 mb-0">
+                          <i className="isax isax-tick-circle me-2"></i>
+                          Review Submitted
+                        </div>
+                      )}
                       <Link
                         to={`/booking?doctorId=${doctorId}`}
                         className="btn reschedule-btn btn-primary-border"
@@ -553,6 +632,119 @@ const PatientAppointmentDetails = () => {
             onClick={() => {
               setShowCancelModal(false)
               setCancelReason('')
+            }}
+            style={{
+              zIndex: 1054,
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)'
+            }}
+          ></div>
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && (
+        <div
+          className="modal fade show"
+          style={{
+            display: 'block',
+            zIndex: 1055,
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%'
+          }}
+          tabIndex="-1"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="modal-dialog modal-dialog-centered" style={{ zIndex: 1056 }}>
+            <div className="modal-content" style={{ position: 'relative', zIndex: 1057 }}>
+              <div className="modal-header">
+                <h5 className="modal-title">Write a Review</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => {
+                    setShowReviewModal(false)
+                    setReviewText('')
+                    setReviewRating(5)
+                  }}
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>How would you rate your experience with Dr. {doctorName}?</p>
+                <div className="mb-3">
+                  <label className="form-label">Rating</label>
+                  <div className="d-flex align-items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        className="btn btn-link p-0"
+                        onClick={() => setReviewRating(star)}
+                        style={{ fontSize: '2rem', color: star <= reviewRating ? '#ffc107' : '#ccc' }}
+                      >
+                        <i className="fa-solid fa-star"></i>
+                      </button>
+                    ))}
+                    <span className="ms-2">{reviewRating} / 5</span>
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Your Review</label>
+                  <textarea
+                    className="form-control"
+                    rows="5"
+                    placeholder="Share your experience with this doctor..."
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowReviewModal(false)
+                    setReviewText('')
+                    setReviewRating(5)
+                  }}
+                  disabled={createReviewMutation.isPending}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleReviewSubmit}
+                  disabled={createReviewMutation.isPending || !reviewText.trim()}
+                >
+                  {createReviewMutation.isPending ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Review'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            className="modal-backdrop fade show"
+            onClick={() => {
+              setShowReviewModal(false)
+              setReviewText('')
+              setReviewRating(5)
             }}
             style={{
               zIndex: 1054,

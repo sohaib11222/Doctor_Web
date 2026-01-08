@@ -6,7 +6,7 @@ import { useNotifications } from '../../queries/notificationQueries'
 import { useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '../../mutations/notificationMutations'
 import { toast } from 'react-toastify'
 
-const PatientNotifications = () => {
+const DoctorNotifications = () => {
   const { user } = useAuth()
   const [filter, setFilter] = useState('all') // 'all', 'unread', 'read'
 
@@ -99,7 +99,6 @@ const PatientNotifications = () => {
       toast.success('Notification marked as read')
     } catch (error) {
       console.error('Mark as read error:', error)
-      // The axios interceptor returns error.response directly, so check both structures
       const errorMessage = error?.response?.data?.message || 
                           error?.response?.message || 
                           error?.data?.message ||
@@ -116,7 +115,11 @@ const PatientNotifications = () => {
       toast.success('All notifications marked as read')
     } catch (error) {
       console.error('Mark all as read error:', error)
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to mark all notifications as read'
+      const errorMessage = error?.response?.data?.message || 
+                          error?.response?.message || 
+                          error?.data?.message ||
+                          error?.message || 
+                          'Failed to mark all notifications as read'
       toast.error(errorMessage)
     }
   }
@@ -220,4 +223,5 @@ const PatientNotifications = () => {
   )
 }
 
-export default PatientNotifications
+export default DoctorNotifications
+

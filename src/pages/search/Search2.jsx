@@ -1,14 +1,120 @@
-import { Link } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import * as doctorApi from '../../api/doctor'
+import * as specializationApi from '../../api/specialization'
 
 const Search2 = () => {
-  const doctors = [
-    { id: 1, name: 'Dr. Michael Brown', specialty: 'Psychologist', rating: 5.0, location: 'Minneapolis, MN', duration: '30 Min', fee: 650, available: true, image: '/assets/img/doctors/doctor-01.jpg' },
-    { id: 2, name: 'Dr. Nicholas Tello', specialty: 'Pediatrician', rating: 4.6, location: 'Ogden, IA', duration: '60 Min', fee: 400, available: true, image: '/assets/img/doctors/doctor-02.jpg' },
-    { id: 3, name: 'Dr. Harold Bryant', specialty: 'Neurologist', rating: 4.8, location: 'Winona, MS', duration: '30 Min', fee: 500, available: true, image: '/assets/img/doctors/doctor-03.jpg' },
-    { id: 4, name: 'Dr. Sandra Jones', specialty: 'Cardiologist', rating: 4.8, location: 'Beckley, WV', duration: '30 Min', fee: 550, available: true, image: '/assets/img/doctors/doctor-04.jpg' },
-    { id: 5, name: 'Dr. Charles Scott', specialty: 'Neurologist', rating: 4.2, location: 'Hamshire, TX', duration: '30 Min', fee: 600, available: true, image: '/assets/img/doctors/doctor-05.jpg' },
-    { id: 6, name: 'Dr. Robert Thomas', specialty: 'Cardiologist', rating: 4.2, location: 'Oakland, CA', duration: '30 Min', fee: 450, available: true, image: '/assets/img/doctors/doctor-06.jpg' },
-  ]
+  const [searchParams, setSearchParams] = useSearchParams()
+  
+  // Get initial values from URL params
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
+  const [location, setLocation] = useState(searchParams.get('location') || '')
+  const [selectedSpecialization, setSelectedSpecialization] = useState(searchParams.get('specialization') || '')
+  const [page, setPage] = useState(1)
+  const [showAvailability, setShowAvailability] = useState(false)
+  const limit = 12
+
+  // Build query params
+  const queryParams = useMemo(() => {
+    const params = {
+      page,
+      limit
+    }
+
+    if (searchTerm) {
+      params.search = searchTerm
+    }
+
+    if (location) {
+      params.city = location
+    }
+
+    if (selectedSpecialization) {
+      params.specializationId = selectedSpecialization
+    }
+
+    if (showAvailability) {
+      params.isAvailableOnline = true
+    }
+
+    return params
+  }, [searchTerm, location, selectedSpecialization, showAvailability, page, limit])
+
+  // Fetch doctors
+  const { data: doctorsData, isLoading, error } = useQuery({
+    queryKey: ['doctors', queryParams],
+    queryFn: () => doctorApi.listDoctors(queryParams)
+  })
+
+  // Fetch specializations
+  const { data: specializationsData } = useQuery({
+    queryKey: ['specializations'],
+    queryFn: () => specializationApi.getAllSpecializations()
+  })
+
+  // Extract data
+  const doctors = useMemo(() => {
+    if (!doctorsData) return []
+    const responseData = doctorsData.data || doctorsData
+    return responseData.doctors || responseData.data || responseData || []
+  }, [doctorsData])
+
+  const specializations = useMemo(() => {
+    if (!specializationsData) return []
+    return Array.isArray(specializationsData) ? specializationsData : (specializationsData.data || [])
+  }, [specializationsData])
+
+  const pagination = useMemo(() => {
+    if (!doctorsData) return { page: 1, limit: 12, total: 0, pages: 0 }
+    const responseData = doctorsData.data || doctorsData
+    return responseData.pagination || { page: 1, limit: 12, total: doctors.length, pages: 1 }
+  }, [doctorsData, doctors.length])
+
+  // Normalize image URL
+  const normalizeImageUrl = (imageUri) => {
+    if (!imageUri || typeof imageUri !== 'string') return null
+    const trimmedUri = imageUri.trim()
+    if (!trimmedUri) return null
+    const apiBaseURL = import.meta.env.VITE_API_URL || '/api'
+    const baseURL = apiBaseURL.replace('/api', '')
+    if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
+      return trimmedUri
+    }
+    const imagePath = trimmedUri.startsWith('/') ? trimmedUri : `/${trimmedUri}`
+    return `${baseURL}${imagePath}`
+  }
+
+  // Handle search form submit
+  const handleSearch = (e) => {
+    e.preventDefault()
+    setPage(1) // Reset to first page
+    // Update URL params
+    const params = new URLSearchParams()
+    if (searchTerm.trim()) params.set('search', searchTerm.trim())
+    if (location.trim()) params.set('location', location.trim())
+    if (selectedSpecialization) params.set('specialization', selectedSpecialization)
+    if (showAvailability) params.set('availability', 'true')
+    setSearchParams(params)
+  }
+
+  // Format doctor data
+  const formatDoctor = (doctor) => {
+    const userId = doctor.userId || {}
+    const specialization = doctor.specialization || {}
+    const clinic = doctor.clinics?.[0] || {}
+    
+    return {
+      id: doctor._id || doctor.userId?._id,
+      name: userId.fullName || doctor.fullName || 'Dr. Unknown',
+      specialty: specialization.name || 'General',
+      location: clinic.city ? `${clinic.city}${clinic.state ? `, ${clinic.state}` : ''}` : 'Location not available',
+      rating: doctor.ratingAvg || 0,
+      fee: clinic.consultationFee || 0,
+      image: normalizeImageUrl(userId.profileImage || doctor.profileImage) || '/assets/img/doctors/doctor-01.jpg',
+      doctorId: doctor._id || doctor.userId?._id
+    }
+  }
 
   return (
     <>
@@ -29,23 +135,46 @@ const Search2 = () => {
           </div>
           <div className="bg-primary-gradient rounded-pill doctors-search-box">
             <div className="search-box-one rounded-pill">
-              <form action="/search-2">
+              <form onSubmit={handleSearch}>
                 <div className="search-input search-line">
                   <i className="isax isax-hospital5 bficon"></i>
                   <div className="mb-0">
-                    <input type="text" className="form-control" placeholder="Search for Doctors, Hospitals, Clinics" />
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="Search for Doctors, Hospitals, Clinics"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                   </div>
                 </div>
                 <div className="search-input search-map-line">
                   <i className="isax isax-location5"></i>
                   <div className="mb-0">
-                    <input type="text" className="form-control" placeholder="Location" />
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="Location"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                    />
                   </div>
                 </div>
                 <div className="search-input search-calendar-line">
                   <i className="isax isax-calendar-tick5"></i>
                   <div className="mb-0">
-                    <input type="text" className="form-control datetimepicker" placeholder="Date" />
+                    <select
+                      className="form-control"
+                      value={selectedSpecialization}
+                      onChange={(e) => setSelectedSpecialization(e.target.value)}
+                    >
+                      <option value="">All Specialities</option>
+                      {specializations.map((spec) => (
+                        <option key={spec._id || spec} value={spec._id || spec}>
+                          {spec.name || spec}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 <div className="form-search-btn">
@@ -118,7 +247,7 @@ const Search2 = () => {
               <div className="row align-items-center">
                 <div className="col-md-6">
                   <div className="mb-4">
-                    <h3>Showing <span className="text-secondary">450</span> Doctors For You</h3>
+                    <h3>Showing <span className="text-secondary">{pagination.total || 0}</span> Doctors For You</h3>
                   </div>
                 </div>
                 <div className="col-md-6">
@@ -126,7 +255,16 @@ const Search2 = () => {
                     <div className="doctor-filter-availability me-2">
                       <p>Availability</p>
                       <div className="status-toggle status-tog">
-                        <input type="checkbox" id="status_6" className="check" />
+                        <input 
+                          type="checkbox" 
+                          id="status_6" 
+                          className="check"
+                          checked={showAvailability}
+                          onChange={(e) => {
+                            setShowAvailability(e.target.checked)
+                            setPage(1)
+                          }}
+                        />
                         <label htmlFor="status_6" className="checktoggle">checkbox</label>
                       </div>
                     </div>
@@ -151,68 +289,112 @@ const Search2 = () => {
                   </div>
                 </div>
               </div>
-              <div className="row">
-                {doctors.map((doctor) => (
-                  <div key={doctor.id} className="col-md-12">
-                    <div className="card">
-                      <div className="card-body">
-                        <div className="doctor-widget">
-                          <div className="doc-info-left">
-                            <div className="doctor-img">
-                              <Link to="/doctor-profile">
-                                <img src={doctor.image} className="img-fluid" alt={doctor.name} />
-                              </Link>
-                            </div>
-                            <div className="doc-info-cont">
-                              <h4 className="doc-name"><Link to="/doctor-profile">{doctor.name}</Link></h4>
-                              <p className="doc-speciality">{doctor.specialty}</p>
-                              <div className="rating">
-                                <i className="fas fa-star filled"></i>
-                                <i className="fas fa-star filled"></i>
-                                <i className="fas fa-star filled"></i>
-                                <i className="fas fa-star filled"></i>
-                                <i className="fas fa-star"></i>
-                                <span className="d-inline-block average-rating">35</span>
+              {isLoading ? (
+                <div className="text-center py-5">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                  <p className="mt-3 text-muted">Loading doctors...</p>
+                </div>
+              ) : error ? (
+                <div className="alert alert-danger">
+                  <h5>Error Loading Doctors</h5>
+                  <p>{error.response?.data?.message || error.message || 'Failed to load doctors'}</p>
+                </div>
+              ) : doctors.length === 0 ? (
+                <div className="text-center py-5">
+                  <p className="text-muted">No doctors found. Try adjusting your search criteria.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="row">
+                    {doctors.map((doctor) => {
+                      const formatted = formatDoctor(doctor)
+                      return (
+                        <div key={formatted.id} className="col-md-12">
+                          <div className="card">
+                            <div className="card-body">
+                              <div className="doctor-widget">
+                                <div className="doc-info-left">
+                                  <div className="doctor-img">
+                                    <Link to={`/doctor-profile?id=${formatted.doctorId}`}>
+                                      <img 
+                                        src={formatted.image} 
+                                        className="img-fluid" 
+                                        alt={formatted.name}
+                                        onError={(e) => {
+                                          e.target.src = '/assets/img/doctors/doctor-01.jpg'
+                                        }}
+                                      />
+                                    </Link>
+                                  </div>
+                                  <div className="doc-info-cont">
+                                    <h4 className="doc-name">
+                                      <Link to={`/doctor-profile?id=${formatted.doctorId}`}>{formatted.name}</Link>
+                                    </h4>
+                                    <p className="doc-speciality">{formatted.specialty}</p>
+                                    <div className="rating">
+                                      {[...Array(5)].map((_, i) => (
+                                        <i 
+                                          key={i} 
+                                          className={`fas fa-star ${i < Math.floor(formatted.rating) ? 'filled' : ''}`}
+                                        ></i>
+                                      ))}
+                                      <span className="d-inline-block average-rating">{formatted.rating.toFixed(1)}</span>
+                                    </div>
+                                    <div className="clinic-details">
+                                      <p className="doc-location">
+                                        <i className="fas fa-map-marker-alt"></i> {formatted.location}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="doc-info-right">
+                                  <div className="clini-infos">
+                                    <ul>
+                                      <li><i className="far fa-thumbs-up"></i> {formatted.rating > 0 ? `${Math.round(formatted.rating * 20)}%` : 'N/A'}</li>
+                                      <li><i className="fas fa-map-marker-alt"></i> {formatted.location}</li>
+                                    </ul>
+                                  </div>
+                                  <div className="clinic-booking">
+                                    <Link className="view-pro-btn" to={`/doctor-profile?id=${formatted.doctorId}`}>View Profile</Link>
+                                    <Link className="btn btn-primary" to={`/booking?doctorId=${formatted.doctorId}`}>Book Appointment</Link>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="clinic-details">
-                                <p className="doc-location"><i className="fas fa-map-marker-alt"></i> {doctor.location}</p>
-                                <ul className="clinic-gallery">
-                                  <li><a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#photos-modal"><img src="/assets/img/clinic/clinic-01.jpg" alt="Feature" /></a></li>
-                                  <li><a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#photos-modal"><img src="/assets/img/clinic/clinic-02.jpg" alt="Feature" /></a></li>
-                                  <li><a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#photos-modal"><img src="/assets/img/clinic/clinic-03.jpg" alt="Feature" /></a></li>
-                                  <li><a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#photos-modal"><span>+2</span></a></li>
-                                </ul>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="doc-info-right">
-                            <div className="clini-infos">
-                              <ul>
-                                <li><i className="far fa-thumbs-up"></i> 98%</li>
-                                <li><i className="far fa-comment"></i> 35 Feedback</li>
-                                <li><i className="fas fa-map-marker-alt"></i> {doctor.location}</li>
-                                <li><i className="far fa-clock"></i> Available on Fri, 22 Mar</li>
-                              </ul>
-                            </div>
-                            <div className="clinic-booking">
-                              <a className="view-pro-btn" href="/doctor-profile">View Profile</a>
-                              <Link className="btn btn-primary" to="/booking">Book Appointment</Link>
                             </div>
                           </div>
                         </div>
+                      )
+                    })}
+                  </div>
+                  {pagination.pages > 1 && (
+                    <div className="col-md-12">
+                      <div className="text-center mb-4">
+                        <div className="d-flex justify-content-center gap-2">
+                          <button
+                            className="btn btn-md btn-primary-gradient"
+                            disabled={page === 1}
+                            onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                          >
+                            Previous
+                          </button>
+                          <span className="d-flex align-items-center px-3">
+                            Page {pagination.page} of {pagination.pages}
+                          </span>
+                          <button
+                            className="btn btn-md btn-primary-gradient"
+                            disabled={page >= pagination.pages}
+                            onClick={() => setPage(prev => Math.min(pagination.pages, prev + 1))}
+                          >
+                            Next
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-                <div className="col-md-12">
-                  <div className="text-center mb-4">
-                    <Link to="/login" className="btn btn-md btn-primary-gradient inline-flex align-items-center rounded-pill">
-                      <i className="isax isax-d-cube-scan5 me-2"></i>
-                      Load More 425 Doctors
-                    </Link>
-                  </div>
-                </div>
-              </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

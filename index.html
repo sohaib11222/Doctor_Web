@@ -75,6 +75,19 @@
     
     <!-- Apple Touch Icon -->
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/apple-touch-icon.png">
+    
+    <!-- Google Translate Script -->
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        // This will be called when the script loads
+        // The React component will handle initialization
+        if (window.google && window.google.translate) {
+          // Trigger custom event for React component
+          window.dispatchEvent(new CustomEvent('googleTranslateReady'));
+        }
+      }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
   </head>
   <body>
     <div id="root"></div>
