@@ -18,11 +18,15 @@ const DoctorProfileSettings = () => {
     profileImage: ''
   })
 
-  // Form state for doctor profile (title, biography, memberships)
+  // Form state for doctor profile (title, biography, memberships, consultationFees)
   const [doctorProfileData, setDoctorProfileData] = useState({
     title: '',
     biography: '',
-    memberships: []
+    memberships: [],
+    consultationFees: {
+      clinic: '',
+      online: ''
+    }
   })
 
   // Profile image file
@@ -87,7 +91,7 @@ const DoctorProfileSettings = () => {
       const relativeUrl = response.data?.url || response.url
       // Convert relative URL to full URL for validation
       // Base URL from env might include /api, so we need to remove it for image URLs
-      const apiBaseURL = import.meta.env.VITE_API_URL || '/api'
+      const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
       const baseURL = apiBaseURL.replace('/api', '')
       const imageUrl = relativeUrl.startsWith('http') ? relativeUrl : `${baseURL}${relativeUrl}`
       setUserProfileData(prev => ({ ...prev, profileImage: imageUrl }))
@@ -120,7 +124,11 @@ const DoctorProfileSettings = () => {
       setDoctorProfileData({
         title: profile.title || '',
         biography: profile.biography || '',
-        memberships: profile.memberships || []
+        memberships: profile.memberships || [],
+        consultationFees: {
+          clinic: profile.consultationFees?.clinic || '',
+          online: profile.consultationFees?.online || ''
+        }
       })
     }
   }, [doctorProfile])
@@ -138,6 +146,16 @@ const DoctorProfileSettings = () => {
     setDoctorProfileData(prev => ({
       ...prev,
       [name]: value
+    }))
+  }
+
+  const handleConsultationFeeChange = (type, value) => {
+    setDoctorProfileData(prev => ({
+      ...prev,
+      consultationFees: {
+        ...prev.consultationFees,
+        [type]: value === '' ? '' : parseFloat(value) || 0
+      }
     }))
   }
 
@@ -227,7 +245,7 @@ const DoctorProfileSettings = () => {
       } else if (userProfileData.profileImage.startsWith('/uploads')) {
         // Convert relative path to full URL
         // Base URL from env might include /api, so we need to remove it for image URLs
-        const apiBaseURL = import.meta.env.VITE_API_URL || '/api'
+        const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
         const baseURL = apiBaseURL.replace('/api', '')
         userUpdateData.profileImage = `${baseURL}${userProfileData.profileImage}`
       }
@@ -241,6 +259,13 @@ const DoctorProfileSettings = () => {
     if (doctorProfileData.memberships && doctorProfileData.memberships.length > 0) {
       // Filter out empty memberships
       doctorUpdateData.memberships = doctorProfileData.memberships.filter(m => m.name && m.name.trim())
+    }
+    // Include consultationFees if either value is provided
+    if (doctorProfileData.consultationFees.clinic || doctorProfileData.consultationFees.online) {
+      doctorUpdateData.consultationFees = {
+        clinic: doctorProfileData.consultationFees.clinic ? parseFloat(doctorProfileData.consultationFees.clinic) : null,
+        online: doctorProfileData.consultationFees.online ? parseFloat(doctorProfileData.consultationFees.online) : null
+      }
     }
 
     // Update user profile
@@ -324,9 +349,6 @@ const DoctorProfileSettings = () => {
                   </li>
                   <li className="nav-item">
                     <Link className="nav-link" to="/doctor-awards-settings">Awards</Link>
-                  </li>
-                  <li className="nav-item">
-                    <Link className="nav-link" to="/doctor-insurance-settings">Insurances</Link>
                   </li>
                   <li className="nav-item">
                     <Link className="nav-link" to="/doctor-clinics-settings">Clinics</Link>
@@ -479,6 +501,44 @@ const DoctorProfileSettings = () => {
                         style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
                       />
                       <small className="form-text text-muted">Email cannot be changed</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="setting-title">
+                <h5>Consultation Fees</h5>
+              </div>
+              <div className="setting-card">
+                <div className="row">
+                  <div className="col-lg-4 col-md-6">
+                    <div className="form-wrap">
+                      <label className="form-label">In-Person Visit Fee ($)</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={doctorProfileData.consultationFees.clinic}
+                        onChange={(e) => handleConsultationFeeChange('clinic', e.target.value)}
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                      />
+                      <small className="form-text text-muted">Fee for physical clinic visits</small>
+                    </div>
+                  </div>
+                  <div className="col-lg-4 col-md-6">
+                    <div className="form-wrap">
+                      <label className="form-label">Online Consultation Fee ($)</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={doctorProfileData.consultationFees.online}
+                        onChange={(e) => handleConsultationFeeChange('online', e.target.value)}
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                      />
+                      <small className="form-text text-muted">Fee for video/online consultations</small>
                     </div>
                   </div>
                 </div>

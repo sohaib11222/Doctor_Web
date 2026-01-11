@@ -153,22 +153,6 @@ const PatientDashboard = () => {
   useEffect(() => {
     // Initialize carousels if needed
     if (typeof window !== 'undefined' && window.$) {
-      // Initialize appointment calendar slider
-      if ($('.appointment-calender-slider').length) {
-        $('.appointment-calender-slider').owlCarousel({
-          loop: false,
-          margin: 10,
-          nav: true,
-          dots: false,
-          navContainer: '.slide-nav',
-          responsive: {
-            0: { items: 3 },
-            600: { items: 5 },
-            1000: { items: 7 }
-          }
-        })
-      }
-
       // Initialize past appointments slider
       if ($('.past-appointments-slider').length) {
         $('.past-appointments-slider').owlCarousel({
@@ -244,76 +228,6 @@ const PatientDashboard = () => {
               )}
             </div>
             <div className="row">
-              <div className="col-xl-8 d-flex">
-                <div className="dashboard-card w-100">
-                  <div className="dashboard-card-head">
-                    <div className="header-title">
-                      <h5>Health Records</h5>
-                    </div>
-                  </div>
-                  <div className="dashboard-card-body">
-                    <div className="row">
-                      <div className="col-sm-7">
-                        <div className="row">
-                          <div className="col-lg-6">
-                            <div className="health-records icon-orange">
-                              <span><i className="fa-solid fa-heart"></i>Heart Rate</span>
-                              <h3>140 Bpm <sup> 2%</sup></h3>
-                            </div>
-                          </div>
-                          <div className="col-lg-6">
-                            <div className="health-records icon-amber">
-                              <span><i className="fa-solid fa-temperature-high"></i>Body Temprature</span>
-                              <h3>37.5 C</h3>
-                            </div>
-                          </div>
-                          <div className="col-lg-6">
-                            <div className="health-records icon-dark-blue">
-                              <span><i className="fa-solid fa-notes-medical"></i>Glucose Level</span>
-                              <h3>70 - 90<sup> 6%</sup></h3>
-                            </div>
-                          </div>
-                          <div className="col-lg-6">
-                            <div className="health-records icon-blue">
-                              <span><i className="fa-solid fa-highlighter"></i>SPo2</span>
-                              <h3>96%</h3>
-                            </div>
-                          </div>
-                          <div className="col-lg-6">
-                            <div className="health-records icon-red">
-                              <span><i className="fa-solid fa-syringe"></i>Blood Pressure</span>
-                              <h3>100 mg/dl<sup> 2%</sup></h3>
-                            </div>
-                          </div>
-                          <div className="col-lg-6">
-                            <div className="health-records icon-purple">
-                              <span><i className="fa-solid fa-user-pen"></i>BMI </span>
-                              <h3>20.1 kg/m2</h3>
-                            </div>
-                          </div>
-                          <div className="col-md-12">
-                            <div className="report-gen-date">
-                              <p>Report generated on last visit : 25 Mar 2024 <span><i className="fa-solid fa-copy"></i></span></p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="col-sm-5">
-                        <div className="chart-over-all-report">
-                          <h6>Overall Report</h6>
-                          <div className="circle-bar circle-bar3 report-chart">
-                            <div className="circle-graph3" data-percent="66">
-                              <p>Last visit<br />25 Mar 2024</p>
-                            </div>
-                          </div>
-                          <span className="health-percentage">Your health is 95% Normal</span>
-                          <Link to="/medical-details" className="btn btn-dark w-100 rounded-pill">View Details<i className="fa-solid fa-chevron-right ms-2"></i></Link>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
               <div className="col-xl-4 d-flex">
                 <div className="favourites-dashboard w-100">
                   <div className="book-appointment-head">
@@ -373,58 +287,18 @@ const PatientDashboard = () => {
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="row">
-              <div className="col-xl-5 d-flex flex-column">
+              <div className="col-xl-8 d-flex flex-column">
                 <div className="dashboard-card flex-fill">
                   <div className="dashboard-card-head">
                     <div className="header-title">
                       <h5>Appointment</h5>
                     </div>
                     <div className="card-view-link">
-                      <div className="owl-nav slide-nav text-end nav-control"></div>
+                      <Link to="/patient-appointments">View All</Link>
                     </div>
                   </div>
                   <div className="dashboard-card-body">
-                    <div className="apponiment-dates">
-                      <ul className="appointment-calender-slider owl-carousel">
-                        <li>
-                          <a href="#">
-                            <h5>19 <span>Mon</span></h5>
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <h5>20 <span>Mon</span></h5>
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#" className="available-date">
-                            <h5>21 <span>Tue</span></h5>
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#" className="available-date">
-                            <h5>22 <span>Wed</span></h5>
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <h5>23 <span>Thu</span></h5>
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <h5>24 <span>Fri</span></h5>
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <h5>25 <span>Sat</span></h5>
-                          </a>
-                        </li>
-                      </ul>
-                      {dashboardLoading ? (
+                    {dashboardLoading ? (
                         <div className="text-center py-3">
                           <div className="spinner-border spinner-border-sm" role="status">
                             <span className="visually-hidden">Loading...</span>
@@ -573,69 +447,32 @@ const PatientDashboard = () => {
                   </div>
                 </div>
               </div>
-              <div className="col-xl-7 d-flex flex-column">
-                <div className="dashboard-card flex-fill">
-                  <div className="dashboard-card-head">
-                    <div className="header-title">
-                      <h5>Analytics</h5>
-                    </div>
-                    <div className="dropdown-links d-flex align-items-center flex-wrap">
-                      <div className="dropdown header-dropdown header-dropdown-two">
-                        <a className="dropdown-toggle" data-bs-toggle="dropdown" href="javascript:void(0);">
-                          Mar 14 - Mar 21
-                        </a>
-                        <div className="dropdown-menu dropdown-menu-end">
-                          <a href="javascript:void(0);" className="dropdown-item">This Week</a>
-                          <a href="javascript:void(0);" className="dropdown-item">This Month</a>
-                          <a href="javascript:void(0);" className="dropdown-item">This Year</a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="dashboard-card-body pb-1">
-                    <div className="chart-tabs">
-                      <ul className="nav" role="tablist">
-                        <li className="nav-item" role="presentation">
-                          <a className="nav-link active" href="#" data-bs-toggle="tab" data-bs-target="#heart-rate" aria-selected="false" role="tab" tabIndex="-1">Heart Rate</a>
-                        </li>
-                        <li className="nav-item" role="presentation">
-                          <a className="nav-link " href="#" data-bs-toggle="tab" data-bs-target="#blood-pressure" aria-selected="true" role="tab">Blood Pressure</a>
-                        </li>
-                      </ul>
-                    </div>
-                    <div className="tab-content pt-0">
-                      <div className="tab-pane fade active show" id="heart-rate" role="tabpanel">
-                        <div id="heart-rate-chart"></div>
-                      </div>
-                      <div className="tab-pane fade" id="blood-pressure" role="tabpanel">
-                        <div id="blood-pressure-chart"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            </div>
+            <div className="row">
+              <div className="col-xl-12 d-flex flex-column">
                 <div className="dashboard-card flex-fill">
                   <div className="dashboard-card-head">
                     <div className="header-title">
                       <h5>Past Appointments</h5>
                     </div>
                     <div className="card-view-link">
-                      <div className="owl-nav slide-nav2 text-end nav-control"></div>
+                      <Link to="/patient-appointments">View All</Link>
                     </div>
                   </div>
                   <div className="dashboard-card-body">
-                    <div className="past-appointments-slider owl-carousel">
-                      {dashboardLoading ? (
-                        <div className="text-center py-3">
-                          <div className="spinner-border spinner-border-sm" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                          </div>
+                    {dashboardLoading ? (
+                      <div className="text-center py-3">
+                        <div className="spinner-border spinner-border-sm" role="status">
+                          <span className="visually-hidden">Loading...</span>
                         </div>
-                      ) : dashboard?.completedAppointments?.appointments?.length === 0 ? (
-                        <div className="text-center py-3">
-                          <p className="text-muted">No past appointments</p>
-                        </div>
-                      ) : (
-                        dashboard?.completedAppointments?.appointments?.slice(0, 2).map((appointment) => {
+                      </div>
+                    ) : dashboard?.completedAppointments?.appointments?.length === 0 ? (
+                      <div className="text-center py-3">
+                        <p className="text-muted">No past appointments</p>
+                      </div>
+                    ) : (
+                      <div className="row">
+                        {dashboard?.completedAppointments?.appointments?.slice(0, 2).map((appointment) => {
                           const doctor = appointment.doctorId
                           const doctorName = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor.fullName : 'Unknown Doctor'
                           const doctorImage = (doctor && typeof doctor === 'object' && doctor !== null) ? (doctor.profileImage || '/assets/img/doctors-dashboard/doctor-profile-img.jpg') : '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
@@ -650,7 +487,8 @@ const PatientDashboard = () => {
                           const dateStr = appointmentDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                           
                           return (
-                            <div key={appointment._id} className="appointment-dash-card past-appointment mt-0">
+                            <div key={appointment._id} className="col-md-6">
+                              <div className="appointment-dash-card past-appointment mt-0">
                               <div className="doctor-fav-list">
                                 <div className="doctor-info-profile">
                                   <Link to={`/doctor-profile?id=${doctorId}`} className="table-avatar">
@@ -696,53 +534,11 @@ const PatientDashboard = () => {
                                 </Link>
                               </div>
                             </div>
+                          </div>
                           )
-                        })
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="dashboard-card flex-fill">
-                  <div className="dashboard-card-head">
-                    <div className="header-title">
-                      <h5>Dependant</h5>
-                    </div>
-                    <div className="card-view-link">
-                      <a href="#" className="add-new" data-bs-toggle="modal" data-bs-target="#add_dependent"><i className="fa-solid fa-circle-plus me-1"></i>Add New</a>
-                      <Link to="/dependent">View All</Link>
-                    </div>
-                  </div>
-                  <div className="dashboard-card-body">
-                    <div className="doctor-fav-list">
-                      <div className="doctor-info-profile">
-                        <a href="#" className="table-avatar">
-                          <img src="/assets/img/patients/patient-20.jpg" alt="Img" />
-                        </a>
-                        <div className="doctor-name-info">
-                          <h5><a href="#">Laura</a></h5>
-                          <span>Mother - 58 years 20 days</span>
-                        </div>
+                        })}
                       </div>
-                      <div className="d-flex align-items-center">
-                        <a href="#" className="cal-plus-icon me-2"><i className="isax isax-calendar5"></i></a>
-                        <Link to="/dependent" className="cal-plus-icon"><i className="isax isax-eye4"></i></Link>
-                      </div>
-                    </div>
-                    <div className="doctor-fav-list">
-                      <div className="doctor-info-profile">
-                        <a href="#" className="table-avatar">
-                          <img src="/assets/img/patients/patient-21.jpg" alt="Img" />
-                        </a>
-                        <div className="doctor-name-info">
-                          <h5><a href="#">Mathew</a></h5>
-                          <span>Father - 59 years 15 days</span>
-                        </div>
-                      </div>
-                      <div className="d-flex align-items-center">
-                        <a href="#" className="cal-plus-icon me-2"><i className="isax isax-calendar5"></i></a>
-                        <Link to="/dependent" className="cal-plus-icon"><i className="isax isax-eye4"></i></Link>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1080,7 +876,6 @@ const PatientDashboard = () => {
           </div>
         </div>
       </div>
-    </div>
   )
 }
 

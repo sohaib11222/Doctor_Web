@@ -1,12 +1,15 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect, useMemo } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../contexts/AuthContext'
 import * as profileApi from '../../api/profile'
 import { useUnreadNotificationsCount } from '../../queries/notificationQueries'
+import { toast } from 'react-toastify'
 
 const DoctorSidebar = () => {
   const location = useLocation()
   const { user } = useAuth()
+  const queryClient = useQueryClient()
 
   // Fetch doctor profile
   const { data: doctorProfile } = useQuery({
@@ -22,23 +25,80 @@ const DoctorSidebar = () => {
     enabled: !!user?._id
   })
 
+  // Extract data
+  const doctorData = doctorProfile?.data || {}
+  const userData = userProfile?.data || user || {}
+  
+  // Normalize image URL helper function
+  const normalizeImageUrl = (imageUri) => {
+    if (!imageUri || typeof imageUri !== 'string') return null
+    const trimmedUri = imageUri.trim()
+    if (!trimmedUri) return null
+    // If already a full URL, return as-is
+    if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
+      return trimmedUri
+    }
+    // Otherwise, build full URL from base
+    const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
+    const baseURL = apiBaseURL.replace('/api', '')
+    const imagePath = trimmedUri.startsWith('/') ? trimmedUri : `/${trimmedUri}`
+    return `${baseURL}${imagePath}`
+  }
+  
+  // Compute current availability value from profile - handle false explicitly
+  // If isAvailableOnline is explicitly false, show "not-available", otherwise show "available"
+  const currentAvailabilityValue = useMemo(() => {
+    if (doctorData.isAvailableOnline === false) {
+      return 'not-available'
+    }
+    // If true or undefined/null, default to available
+    return 'available'
+  }, [doctorData.isAvailableOnline])
+  
+  // State for availability
+  const [availability, setAvailability] = useState(currentAvailabilityValue)
+
+  // Update state when profile data changes
+  useEffect(() => {
+    setAvailability(currentAvailabilityValue)
+  }, [currentAvailabilityValue])
+
+  // Update availability mutation
+  const updateAvailabilityMutation = useMutation({
+    mutationFn: (isAvailable) => profileApi.updateDoctorProfile({ isAvailableOnline: isAvailable }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['doctorProfile'])
+      toast.success('Availability updated successfully!')
+    },
+    onError: (error) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update availability'
+      toast.error(errorMessage)
+    }
+  })
+
+  // Handle availability update
+  const handleUpdateAvailability = () => {
+    const isAvailable = availability === 'available'
+    updateAvailabilityMutation.mutate(isAvailable)
+  }
+
   const isActive = (paths) => {
     if (Array.isArray(paths)) {
       return paths.some(path => location.pathname === path || location.pathname.startsWith(path + '/'))
     }
     return location.pathname === paths || location.pathname.startsWith(paths + '/')
   }
-
-  // Extract data
-  const doctorData = doctorProfile?.data || {}
-  const userData = userProfile?.data || user || {}
   
-  // Get doctor info
-  const doctorName = userData.fullName || 'Dr. ' + (user?.fullName || 'Doctor')
+  // Get doctor info - prioritize doctorData.userId from API response
+  const doctorUserId = doctorData.userId || {}
+  const doctorName = doctorUserId.fullName || userData.fullName || user?.fullName || 'Dr. ' + (user?.fullName || 'Doctor')
   const doctorTitle = doctorData.title || ''
   const specialization = doctorData.specialization
   const specializationName = specialization?.name || ''
-  const profileImage = userData.profileImage || doctorData.userId?.profileImage || '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+  
+  // Get profile image - prioritize doctorData.userId.profileImage from API response
+  const profileImageUrl = doctorUserId.profileImage || userData.profileImage || user?.profileImage
+  const profileImage = normalizeImageUrl(profileImageUrl) || '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
   
   // Format display name with title
   const displayName = doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`
@@ -80,10 +140,30 @@ const DoctorSidebar = () => {
       <div className="doctor-available-head">
         <div className="input-block input-block-new">
           <label className="form-label">Availability <span className="text-danger">*</span></label>
-          <select className="select form-control">
-            <option>I am Available Now</option>
-            <option>Not Available</option>
+          <select 
+            className="select form-control"
+            value={availability}
+            onChange={(e) => setAvailability(e.target.value)}
+            disabled={updateAvailabilityMutation.isPending}
+          >
+            <option value="available">I am Available Now</option>
+            <option value="not-available">Not Available</option>
           </select>
+          <button
+            className="btn btn-primary btn-sm w-100 mt-2"
+            onClick={handleUpdateAvailability}
+            disabled={updateAvailabilityMutation.isPending}
+            style={{ marginTop: '10px' }}
+          >
+            {updateAvailabilityMutation.isPending ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              'Update'
+            )}
+          </button>
         </div>
       </div>
       <div className="dashboard-widget">

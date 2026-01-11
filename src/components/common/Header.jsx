@@ -17,12 +17,19 @@ const Header = () => {
     enabled: !!user?._id
   })
 
+  // Fetch doctor profile for doctors (to get profileImage from userId)
+  const { data: doctorProfileData } = useQuery({
+    queryKey: ['doctorProfile'],
+    queryFn: () => profileApi.getDoctorProfile(),
+    enabled: !!user && user?.role === 'DOCTOR'
+  })
+
   // Normalize image URL
   const normalizeImageUrl = (imageUri) => {
     if (!imageUri || typeof imageUri !== 'string') return null
     const trimmedUri = imageUri.trim()
     if (!trimmedUri) return null
-    const apiBaseURL = import.meta.env.VITE_API_URL || '/api'
+    const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
     const baseURL = apiBaseURL.replace('/api', '')
     if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
       return trimmedUri
@@ -31,13 +38,24 @@ const Header = () => {
     return `${baseURL}${imagePath}`
   }
 
-  // Get user profile image
+  // Get user profile image - prioritize doctor profile userId.profileImage if doctor
   const userProfileImage = useMemo(() => {
     if (!user) return '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+    
+    // For doctors, try to get image from doctor profile first
+    if (user?.role === 'DOCTOR' && doctorProfileData?.data) {
+      const doctorUserId = doctorProfileData.data.userId || {}
+      if (doctorUserId.profileImage) {
+        const normalized = normalizeImageUrl(doctorUserId.profileImage)
+        if (normalized) return normalized
+      }
+    }
+    
+    // Fallback to user profile data
     const profileData = userProfileData?.data || userProfileData || {}
     const imageUrl = profileData.profileImage || user.profileImage
     return normalizeImageUrl(imageUrl) || '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
-  }, [user, userProfileData])
+  }, [user, userProfileData, doctorProfileData])
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
   const isIndexPage = location.pathname === '/' || location.pathname === '/index'
@@ -363,28 +381,28 @@ const Header = () => {
                     )}
                     
                     {/* Public browsing/search items - Show to everyone */}
-                    <li className="has-submenu">
+                    {/* <li className="has-submenu">
                       <a href="javascript:void(0);">Doctors</a>
                       <ul className="submenu inner-submenu">
                         <li><Link to="/map-grid">Map Grid</Link></li>
                         <li><Link to="/map-list">Map List</Link></li>
                         <li><Link to="/map-list-availability">Map with Availability</Link></li>
                       </ul>
-                    </li>
-                    <li className="has-submenu">
-                      <a href="javascript:void(0);">Search Doctor</a>
-                      <ul className="submenu inner-submenu">
-                        <li><Link to="/search">Search Doctor 1</Link></li>
+                    </li> */}
+                    <li className="submenu">
+                      <a href="/search">Search Doctor</a>
+                      {/* <ul className="submenu inner-submenu">
+                        <li><Link to="">Search Doctor 1</Link></li>
                         <li><Link to="/search-2">Search Doctor 2</Link></li>
-                      </ul>
+                      </ul> */}
                     </li>
-                    <li className="has-submenu">
+                    {/* <li className="has-submenu">
                       <a href="javascript:void(0);">Doctor Profile</a>
                       <ul className="submenu inner-submenu">
                         <li><Link to="/doctor-profile">Doctor Profile 1</Link></li>
                         <li><Link to="/doctor-profile-2">Doctor Profile 2</Link></li>
                       </ul>
-                    </li>
+                    </li> */}
                     
                     {/* Booking - Only for patients */}
                     {shouldShowMenuItem('PATIENT') && (

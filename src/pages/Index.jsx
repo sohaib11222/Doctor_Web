@@ -72,7 +72,7 @@ const Index = () => {
     if (!imageUri || typeof imageUri !== 'string') return null
     const trimmedUri = imageUri.trim()
     if (!trimmedUri) return null
-    const apiBaseURL = import.meta.env.VITE_API_URL || '/api'
+    const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
     const baseURL = apiBaseURL.replace('/api', '')
     if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
       return trimmedUri
@@ -102,16 +102,64 @@ const Index = () => {
   const formatDoctors = useMemo(() => {
     return doctors.slice(0, 8).map((doctor) => {
       const userId = doctor.userId || {}
-      const specialization = doctor.specialization || {}
-      const clinic = doctor.clinics?.[0] || {}
+      
+      // Get specialization - can be an object (populated) or just an ID
+      let specialtyName = 'General'
+      if (doctor.specialization) {
+        if (typeof doctor.specialization === 'object' && doctor.specialization.name) {
+          specialtyName = doctor.specialization.name
+        }
+      }
+      
+      // Get clinic location
+      let location = 'Location not available'
+      if (doctor.clinics && doctor.clinics.length > 0) {
+        const clinic = doctor.clinics[0]
+        // Build location string from available fields
+        const locationParts = []
+        
+        // Add address if available
+        if (clinic.address) {
+          locationParts.push(clinic.address)
+        }
+        
+        // Add city if available
+        if (clinic.city) {
+          locationParts.push(clinic.city)
+        }
+        
+        // Add state if available
+        if (clinic.state) {
+          locationParts.push(clinic.state)
+        }
+        
+        // Add country if available
+        if (clinic.country) {
+          locationParts.push(clinic.country)
+        }
+        
+        if (locationParts.length > 0) {
+          location = locationParts.join(', ')
+        }
+      }
+      
+      // Get consultation fee - prefer online fee, fallback to clinic fee, then default
+      let feeDisplay = '$500' // Default
+      if (doctor.consultationFees) {
+        if (doctor.consultationFees.online) {
+          feeDisplay = `$${doctor.consultationFees.online}`
+        } else if (doctor.consultationFees.clinic) {
+          feeDisplay = `$${doctor.consultationFees.clinic}`
+        }
+      }
       
       return {
         id: doctor._id || doctor.userId?._id,
         name: userId.fullName || doctor.fullName || 'Dr. Unknown',
-        specialty: specialization.name || 'General',
-        location: clinic.city ? `${clinic.city}${clinic.state ? `, ${clinic.state}` : ''}` : 'Location not available',
+        specialty: specialtyName,
+        location: location,
         time: '30 Min', // Default, can be fetched from availability
-        fee: clinic.consultationFee ? `$${clinic.consultationFee}` : '$500',
+        fee: feeDisplay,
         rating: doctor.ratingAvg || 0,
         image: normalizeImageUrl(userId.profileImage || doctor.profileImage) || '/assets/img/doctor-grid/doctor-grid-01.jpg',
         available: true,
@@ -415,7 +463,7 @@ const Index = () => {
       {/* /Home Banner */}
 
       {/* List */}
-      <div className="list-section">
+      {/* <div className="list-section">
         <div className="container">
           <div className="list-card card mb-0">
             <div className="card-body">
@@ -466,7 +514,7 @@ const Index = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
       {/* /List */}
 
       {/* Speciality Section */}

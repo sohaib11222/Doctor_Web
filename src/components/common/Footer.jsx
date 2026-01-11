@@ -18,9 +18,9 @@ const Footer = () => {
                     <ul>
                       <li><Link to="/about-us">About</Link></li>
                       <li><Link to="/search">Features</Link></li>
-                      <li><a href="javascript:void(0);">Works</a></li>
-                      <li><a href="javascript:void(0);">Careers</a></li>
-                      <li><a href="javascript:void(0);">Locations</a></li>
+                      <li><Link to="/blog-list">Blog</Link></li>
+                      <li><Link to="/contact-us">Contact</Link></li>
+                      <li><Link to="/search">Find Doctors</Link></li>
                     </ul>
                   </div>
                 </div>
@@ -55,8 +55,8 @@ const Footer = () => {
                       <li><Link to="/pricing">Pricing</Link></li>
                       <li><Link to="/contact-us">Contact</Link></li>
                       <li><Link to="/contact-us">Request A Quote</Link></li>
-                      <li><a href="javascript:void(0);">Premium Membership</a></li>
-                      <li><a href="javascript:void(0);">Integrations</a></li>
+                      <li><Link to="/pricing">Premium Membership</Link></li>
+                      <li><Link to="/faq">FAQ</Link></li>
                     </ul>
                   </div>
                 </div>
@@ -104,9 +104,9 @@ const Footer = () => {
             </div>
             <div className="copyright-menu">
               <ul className="policy-menu">
-                <li><a href="javascript:void(0);">Legal Notice</a></li>
+                <li><Link to="/terms-condition">Terms & Conditions</Link></li>
                 <li><Link to="/privacy-policy">Privacy Policy</Link></li>
-                <li><a href="javascript:void(0);">Refund Policy</a></li>
+                <li><Link to="/terms-condition">Refund Policy</Link></li>
               </ul>
             </div>
             <ul className="payment-method">
@@ -148,7 +148,7 @@ const Footer = () => {
                       <ul>
                         <li><Link to="/">Home</Link></li>
                         <li><Link to="/search">Specialities</Link></li>
-                        <li><Link to="/video-call">Video Consult</Link></li>
+                        <li><Link to="/search">Find Doctors</Link></li>
                       </ul>
                     </div>
                   </div>

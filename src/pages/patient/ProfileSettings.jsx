@@ -104,7 +104,7 @@ const ProfileSettings = () => {
     },
     onSuccess: (response) => {
       const relativeUrl = response.data?.url || response.url
-      const apiBaseURL = import.meta.env.VITE_API_URL || '/api'
+      const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
       const baseURL = apiBaseURL.replace('/api', '')
       const imageUrl = relativeUrl.startsWith('http') ? relativeUrl : `${baseURL}${relativeUrl}`
       setFormData(prev => ({ ...prev, profileImage: imageUrl }))

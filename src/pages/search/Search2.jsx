@@ -76,7 +76,7 @@ const Search2 = () => {
     if (!imageUri || typeof imageUri !== 'string') return null
     const trimmedUri = imageUri.trim()
     if (!trimmedUri) return null
-    const apiBaseURL = import.meta.env.VITE_API_URL || '/api'
+    const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
     const baseURL = apiBaseURL.replace('/api', '')
     if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
       return trimmedUri
@@ -101,16 +101,68 @@ const Search2 = () => {
   // Format doctor data
   const formatDoctor = (doctor) => {
     const userId = doctor.userId || {}
-    const specialization = doctor.specialization || {}
-    const clinic = doctor.clinics?.[0] || {}
+    
+    // Get specialization - can be an object (populated) or just an ID
+    let specialtyName = 'General'
+    if (doctor.specialization) {
+      if (typeof doctor.specialization === 'object' && doctor.specialization.name) {
+        specialtyName = doctor.specialization.name
+      }
+    }
+    
+    // Get clinic location
+    let location = 'Location not available'
+    if (doctor.clinics && doctor.clinics.length > 0) {
+      const clinic = doctor.clinics[0]
+      // Build location string from available fields
+      const locationParts = []
+      
+      // Add address if available
+      if (clinic.address) {
+        locationParts.push(clinic.address)
+      }
+      
+      // Add city if available
+      if (clinic.city) {
+        locationParts.push(clinic.city)
+      }
+      
+      // Add state if available
+      if (clinic.state) {
+        locationParts.push(clinic.state)
+      }
+      
+      // Add country if available
+      if (clinic.country) {
+        locationParts.push(clinic.country)
+      }
+      
+      if (locationParts.length > 0) {
+        location = locationParts.join(', ')
+      }
+    }
+    
+    // Get consultation fee - prefer online fee, fallback to clinic fee, then default
+    let fee = 0
+    if (doctor.consultationFees) {
+      if (doctor.consultationFees.online) {
+        fee = doctor.consultationFees.online
+      } else if (doctor.consultationFees.clinic) {
+        fee = doctor.consultationFees.clinic
+      }
+    }
+    
+    // Check availability - use isAvailableOnline from profile (defaults to true)
+    const available = doctor.isAvailableOnline !== undefined ? doctor.isAvailableOnline : true
     
     return {
       id: doctor._id || doctor.userId?._id,
       name: userId.fullName || doctor.fullName || 'Dr. Unknown',
-      specialty: specialization.name || 'General',
-      location: clinic.city ? `${clinic.city}${clinic.state ? `, ${clinic.state}` : ''}` : 'Location not available',
+      specialty: specialtyName,
+      location: location,
       rating: doctor.ratingAvg || 0,
-      fee: clinic.consultationFee || 0,
+      fee: fee,
+      available: available,
       image: normalizeImageUrl(userId.profileImage || doctor.profileImage) || '/assets/img/doctors/doctor-01.jpg',
       doctorId: doctor._id || doctor.userId?._id
     }
@@ -343,8 +395,8 @@ const Search2 = () => {
                                       <span className="d-inline-block average-rating">{formatted.rating.toFixed(1)}</span>
                                     </div>
                                     <div className="clinic-details">
-                                      <p className="doc-location">
-                                        <i className="fas fa-map-marker-alt"></i> {formatted.location}
+                                      <p className="doc-location" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+                                        <i className="fas fa-map-marker-alt"></i> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: 'calc(100% - 24px)' }}>{formatted.location}</span>
                                       </p>
                                     </div>
                                   </div>
@@ -353,8 +405,20 @@ const Search2 = () => {
                                   <div className="clini-infos">
                                     <ul>
                                       <li><i className="far fa-thumbs-up"></i> {formatted.rating > 0 ? `${Math.round(formatted.rating * 20)}%` : 'N/A'}</li>
-                                      <li><i className="fas fa-map-marker-alt"></i> {formatted.location}</li>
+                                      <li style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                                        <i className="fas fa-map-marker-alt"></i> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: 'calc(100% - 24px)' }}>{formatted.location}</span>
+                                      </li>
                                     </ul>
+                                  </div>
+                                  <div className="d-flex align-items-center justify-content-between mb-3">
+                                    <div>
+                                      <p className="mb-1">Consultation Fees</p>
+                                      <h3 className="text-orange mb-0">${formatted.fee > 0 ? formatted.fee : 'N/A'}</h3>
+                                    </div>
+                                    <span className={`badge ${formatted.available ? 'bg-success-light' : 'bg-danger-light'} d-inline-flex align-items-center`}>
+                                      <i className="fa-solid fa-circle fs-5 me-1"></i>
+                                      {formatted.available ? 'Available' : 'Unavailable'}
+                                    </span>
                                   </div>
                                   <div className="clinic-booking">
                                     <Link className="view-pro-btn" to={`/doctor-profile?id=${formatted.doctorId}`}>View Profile</Link>

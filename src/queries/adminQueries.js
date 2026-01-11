@@ -1,33 +1,32 @@
-/**
- * Admin Queries
- * All GET requests related to admin panel
- */
-
 import { useQuery } from '@tanstack/react-query'
-import { api } from '../utils/api'
-import { API_ROUTES } from '../utils/apiConfig'
+import * as adminApi from '../api/admin'
 
-// Get admin dashboard stats
+/**
+ * Get admin dashboard statistics
+ */
 export const useAdminDashboard = () => {
   return useQuery({
-    queryKey: ['admin', 'dashboard'],
-    queryFn: () => api.get(API_ROUTES.ADMIN.DASHBOARD),
+    queryKey: ['adminDashboard'],
+    queryFn: () => adminApi.getDashboardStats()
   })
 }
 
-// Get all patients (admin)
-export const useAdminPatients = (params = {}) => {
+/**
+ * List all doctors (admin only - shows all statuses)
+ */
+export const useAdminDoctors = (params = {}) => {
   return useQuery({
-    queryKey: ['admin', 'patients', params],
-    queryFn: () => api.get(API_ROUTES.ADMIN.PATIENTS, { params }),
+    queryKey: ['adminDoctors', params],
+    queryFn: () => adminApi.listAllDoctors(params)
   })
 }
 
-// Get system activity logs
-export const useAdminActivity = (params = {}) => {
+/**
+ * List all users (admin only)
+ */
+export const useAdminUsers = (params = {}) => {
   return useQuery({
-    queryKey: ['admin', 'activity', params],
-    queryFn: () => api.get(API_ROUTES.ADMIN.ACTIVITY, { params }),
+    queryKey: ['adminUsers', params],
+    queryFn: () => adminApi.listAllUsers(params)
   })
 }
-

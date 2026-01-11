@@ -282,11 +282,12 @@ const AvailableTimings = () => {
                   borderRadius: '50%',
                   position: 'relative',
                   zIndex: 10,
-                  flexShrink: 0
+                  flexShrink: 0,
+                  cursor: 'pointer'
                 }}
                 title="Edit slot"
               >
-                <i className="fe fe-edit" style={{ fontSize: '14px', display: 'block', lineHeight: '1' }}></i>
+                <i className="isax isax-edit-2" style={{ fontSize: '16px', display: 'inline-block', lineHeight: '1', color: '#0d6efd', visibility: 'visible', opacity: 1, }}></i>
               </button>
               <button
                 type="button"
@@ -309,11 +310,12 @@ const AvailableTimings = () => {
                   borderRadius: '50%',
                   position: 'relative',
                   zIndex: 10,
-                  flexShrink: 0
+                  flexShrink: 0,
+                  cursor: 'pointer'
                 }}
                 title="Delete slot"
               >
-                <i className="fe fe-trash-2" style={{ fontSize: '14px', display: 'block', lineHeight: '1' }}></i>
+                <i className="isax isax-trash" style={{ fontSize: '16px', display: 'inline-block', lineHeight: '1', color: '#dc3545', visibility: 'visible', opacity: 1 }}></i>
               </button>
             </div>
           </li>
@@ -423,6 +425,20 @@ const AvailableTimings = () => {
         .time-slots li button i {
           display: inline-block !important;
           visibility: visible !important;
+          opacity: 1 !important;
+          font-size: 16px !important;
+        }
+        .time-slots li button[title="Edit slot"] i {
+          color: #0d6efd !important;
+        }
+        .time-slots li button[title="Delete slot"] i {
+          color: #dc3545 !important;
+        }
+        .time-slots li button:hover {
+          transform: scale(1.05);
+        }
+        .time-slots li button:active {
+          transform: scale(0.95);
         }
       `}</style>
       <div className="dashboard-header">
@@ -443,7 +459,7 @@ const AvailableTimings = () => {
               General Availability
             </a>
           </li>
-          <li className="nav-item" role="presentation">
+          {/* <li className="nav-item" role="presentation">
             <a
               className={`nav-link ${activeTab === 'clinic' ? 'active' : ''}`}
               href="#"
@@ -454,7 +470,7 @@ const AvailableTimings = () => {
             >
               Clinic Availability
             </a>
-          </li>
+          </li> */}
         </ul>
       </div>
 

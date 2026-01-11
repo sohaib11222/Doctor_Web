@@ -366,21 +366,16 @@ const DoctorAppointmentDetails = () => {
                 </div>
               </li>
             )}
-            {appointment.status === 'CONFIRMED' && (
+            {appointment.status === 'CONFIRMED' && appointment.bookingType === 'ONLINE' && (
               <li>
                 <div className="start-btn d-flex gap-2">
-                  <Link to={`/doctor-appointment-start?id=${appointment._id}`} className="btn btn-secondary">
-                    Start Session
+                  <Link 
+                    to={`/doctor-video-call-room?appointmentId=${appointment._id}`} 
+                    className="btn btn-primary"
+                  >
+                    <i className="fa-solid fa-video me-2"></i>
+                    Start Video Call
                   </Link>
-                  {appointment.bookingType === 'ONLINE' && (
-                    <Link 
-                      to={`/doctor-video-call-room?appointmentId=${appointment._id}`} 
-                      className="btn btn-primary"
-                    >
-                      <i className="fa-solid fa-video me-2"></i>
-                      Start Video Call
-                    </Link>
-                  )}
                 </div>
               </li>
             )}

@@ -422,7 +422,7 @@ const DoctorAppointmentsGrid = () => {
                             </li>
                           )}
                         </ul>
-                        {appointment.status === 'PENDING' ? (
+                        {appointment.status === 'PENDING' && (
                           <div className="appointment-start">
                             <button
                               className="start-link"
@@ -432,13 +432,7 @@ const DoctorAppointmentsGrid = () => {
                               {acceptMutation.isLoading ? 'Accepting...' : 'Accept'}
                             </button>
                           </div>
-                        ) : appointment.status === 'CONFIRMED' ? (
-                          <div className="appointment-start">
-                            <Link to={`/doctor-appointment-start?id=${appointment._id}`} className="start-link">
-                              Start Now
-                            </Link>
-                          </div>
-                        ) : null}
+                        )}
                       </li>
                     </ul>
                   </div>

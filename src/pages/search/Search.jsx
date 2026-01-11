@@ -98,23 +98,61 @@ const Search = () => {
 
   // Format location
   const formatLocation = (doctor) => {
-    if (doctor.doctorProfile?.clinics?.[0]) {
-      const clinic = doctor.doctorProfile.clinics[0]
-      return `${clinic.city || ''}${clinic.state ? `, ${clinic.state}` : ''}`
+    // The listDoctors API returns DoctorProfile documents with clinics directly on the doctor object
+    if (doctor.clinics && doctor.clinics.length > 0) {
+      const clinic = doctor.clinics[0]
+      // Build location string from available fields
+      const locationParts = []
+      
+      // Add address if available
+      if (clinic.address) {
+        locationParts.push(clinic.address)
+      }
+      
+      // Add city if available
+      if (clinic.city) {
+        locationParts.push(clinic.city)
+      }
+      
+      // Add state if available
+      if (clinic.state) {
+        locationParts.push(clinic.state)
+      }
+      
+      // Add country if available
+      if (clinic.country) {
+        locationParts.push(clinic.country)
+      }
+      
+      if (locationParts.length > 0) {
+        return locationParts.join(', ')
+      }
     }
     return 'Location not available'
   }
 
-  // Check if doctor is available (has active subscription)
+  // Check if doctor is available (uses isAvailableOnline from profile, defaults to true)
   const isDoctorAvailable = (doctor) => {
-    if (!doctor.subscriptionExpiresAt) return false
-    return new Date(doctor.subscriptionExpiresAt) > new Date()
+    // Check isAvailableOnline from doctor profile (defaults to true if not set)
+    if (doctor.isAvailableOnline !== undefined) {
+      return doctor.isAvailableOnline
+    }
+    // Default to true if field is not present
+    return true
   }
 
   // Get consultation fee
   const getConsultationFee = (doctor) => {
-    // You can add consultation fee to doctor profile or use a default
-    return doctor.doctorProfile?.consultationFee || 0
+    // Get consultation fee from doctor.consultationFees
+    if (doctor.consultationFees) {
+      // Prefer online fee, fallback to clinic fee
+      if (doctor.consultationFees.online) {
+        return doctor.consultationFees.online
+      } else if (doctor.consultationFees.clinic) {
+        return doctor.consultationFees.clinic
+      }
+    }
+    return 0
   }
 
   // Get appointment duration
@@ -226,8 +264,12 @@ const Search = () => {
 
   // Get specialty name
   const getSpecialtyName = (doctor) => {
-    if (doctor.doctorProfile?.specializations?.[0]) {
-      return doctor.doctorProfile.specializations[0].name || 'General'
+    // The listDoctors API returns DoctorProfile documents with populated specialization
+    if (doctor.specialization) {
+      // specialization can be an object (populated) or just an ID
+      if (typeof doctor.specialization === 'object' && doctor.specialization.name) {
+        return doctor.specialization.name
+      }
     }
     return 'General'
   }
@@ -443,8 +485,9 @@ const Search = () => {
                                 <Link to={`/doctor-profile?id=${doctorId}`}>{doctorName}</Link>
                               </h3>
                               <div className="d-flex align-items-center">
-                                <p className="d-flex align-items-center mb-0 fs-14">
-                                  <i className="isax isax-location me-2"></i>{locationStr}
+                                <p className="d-flex align-items-center mb-0 fs-14" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                                  <i className="isax isax-location me-2"></i>
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: 'calc(100% - 24px)' }}>{locationStr}</span>
                                 </p>
                                 <i className="fa-solid fa-circle fs-5 text-primary mx-2 me-1"></i>
                                 <span className="fs-14 fw-medium">{duration}</span>

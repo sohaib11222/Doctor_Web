@@ -435,7 +435,7 @@ const DoctorAppointments = () => {
                         )}
                       </ul>
                     </li>
-                    {appointment.status === 'PENDING' ? (
+                    {appointment.status === 'PENDING' && (
                       <li className="appointment-start">
                         <button
                           className="start-link"
@@ -445,13 +445,7 @@ const DoctorAppointments = () => {
                           {acceptMutation.isLoading ? 'Processing...' : 'Accept'}
                         </button>
                       </li>
-                    ) : appointment.status === 'CONFIRMED' ? (
-                      <li className="appointment-start">
-                        <Link to={`/doctor-appointment-start?id=${appointment._id}`} className="start-link">
-                          Start Now
-                        </Link>
-                      </li>
-                    ) : null}
+                    )}
                   </ul>
                 </div>
               ))}

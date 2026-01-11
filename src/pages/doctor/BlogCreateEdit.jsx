@@ -112,7 +112,7 @@ const BlogCreateEdit = () => {
         const responseData = uploadResponse.data || uploadResponse
         const relativeUrl = responseData.data?.url || responseData.url || responseData
         // Convert relative URL to full URL
-        const apiBaseURL = import.meta.env.VITE_API_URL || '/api'
+        const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
         const baseURL = apiBaseURL.replace('/api', '')
         const imageUrl = relativeUrl.startsWith('http') ? relativeUrl : `${baseURL}${relativeUrl}`
         setFormData(prev => ({ ...prev, coverImage: imageUrl }))
