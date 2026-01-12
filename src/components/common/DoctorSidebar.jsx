@@ -26,8 +26,22 @@ const DoctorSidebar = () => {
   })
 
   // Extract data
-  const doctorData = doctorProfile?.data || {}
-  const userData = userProfile?.data || user || {}
+  const doctorData = doctorProfile?.data || doctorProfile || {}
+  const userData = userProfile?.data || userProfile || user || {}
+  
+  // Debug: Log doctor profile data in development
+  useEffect(() => {
+    if (import.meta.env.DEV && doctorProfile) {
+      console.log('🔍 DoctorSidebar - Doctor Profile Data:', {
+        rawResponse: doctorProfile,
+        extractedDoctorData: doctorData,
+        userId: doctorData.userId,
+        userIdProfileImage: doctorData.userId?.profileImage,
+        userDataProfileImage: userData.profileImage,
+        userProfileImage: user?.profileImage
+      })
+    }
+  }, [doctorProfile, doctorData, userData, user])
   
   // Normalize image URL helper function
   const normalizeImageUrl = (imageUri) => {
@@ -42,7 +56,19 @@ const DoctorSidebar = () => {
     const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
     const baseURL = apiBaseURL.replace('/api', '')
     const imagePath = trimmedUri.startsWith('/') ? trimmedUri : `/${trimmedUri}`
-    return `${baseURL}${imagePath}`
+    const fullUrl = `${baseURL}${imagePath}`
+    
+    // Debug logging
+    if (import.meta.env.DEV && imageUri) {
+      console.log('🔍 DoctorSidebar - Image URL normalization:', {
+        original: imageUri,
+        baseURL: baseURL,
+        imagePath: imagePath,
+        normalized: fullUrl
+      })
+    }
+    
+    return fullUrl
   }
   
   // Compute current availability value from profile - handle false explicitly
@@ -98,6 +124,19 @@ const DoctorSidebar = () => {
   
   // Get profile image - prioritize doctorData.userId.profileImage from API response
   const profileImageUrl = doctorUserId.profileImage || userData.profileImage || user?.profileImage
+  
+  // Debug logging
+  if (import.meta.env.DEV) {
+    console.log('🔍 DoctorSidebar - Profile Image Debug:', {
+      doctorUserId: doctorUserId,
+      doctorUserIdProfileImage: doctorUserId.profileImage,
+      userDataProfileImage: userData.profileImage,
+      userProfileImage: user?.profileImage,
+      finalProfileImageUrl: profileImageUrl,
+      normalized: normalizeImageUrl(profileImageUrl)
+    })
+  }
+  
   const profileImage = normalizeImageUrl(profileImageUrl) || '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
   
   // Format display name with title
@@ -116,7 +155,17 @@ const DoctorSidebar = () => {
               src={profileImage} 
               alt="Doctor Profile" 
               onError={(e) => {
+                console.error('❌ DoctorSidebar - Image failed to load:', {
+                  attemptedUrl: e.target.src,
+                  profileImage: profileImage,
+                  profileImageUrl: profileImageUrl
+                })
                 e.target.src = '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+              }}
+              onLoad={() => {
+                if (import.meta.env.DEV) {
+                  console.log('✅ DoctorSidebar - Image loaded successfully:', profileImage)
+                }
               }}
             />
           </Link>

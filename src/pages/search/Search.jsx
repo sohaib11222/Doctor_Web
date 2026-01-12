@@ -279,25 +279,9 @@ const Search = () => {
     return doctor.doctorProfile?.ratingAvg || doctor.rating?.average || 0
   }
 
-  // Normalize image URL
-  const normalizeImageUrl = (imageUri) => {
-    if (!imageUri || typeof imageUri !== 'string') return null
-    const trimmedUri = imageUri.trim()
-    if (!trimmedUri) return null
-    const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
-    const baseURL = apiBaseURL.replace('/api', '')
-    if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
-      return trimmedUri
-    }
-    const imagePath = trimmedUri.startsWith('/') ? trimmedUri : `/${trimmedUri}`
-    return `${baseURL}${imagePath}`
-  }
-
-  // Get doctor image - use userId.profileImage (from populated userId object)
+  // Get doctor image
   const getDoctorImage = (doctor) => {
-    const userId = doctor.userId || {}
-    const imageUrl = userId.profileImage || doctor.profileImage
-    return normalizeImageUrl(imageUrl) || '/assets/img/doctor-grid/doctor-grid-01.jpg'
+    return doctor.profileImage || doctor.doctorProfile?.profileImage || '/assets/img/doctor-grid/doctor-grid-01.jpg'
   }
 
   // Handle search
