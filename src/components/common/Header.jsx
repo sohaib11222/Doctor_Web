@@ -357,7 +357,7 @@ const Header = () => {
                           <li><Link to="/appointments">Appointments</Link></li>
                           <li><Link to="/available-timings">Available Timing</Link></li>
                           <li><Link to="/my-patients">Patients List</Link></li>
-                          <li><Link to="/patient-profile">Patients Profile</Link></li>
+                          {/* <li><Link to="/patient-profile">Patients Profile</Link></li> */}
                           <li><Link to="/chat-doctor">Chat</Link></li>
                           <li><Link to="/invoices">Invoices</Link></li>
                           <li><Link to="/doctor-profile-settings">Profile Settings</Link></li>

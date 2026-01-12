@@ -79,7 +79,21 @@ const PharmacyDetails = () => {
     )
   }
 
-  const pharmacyLogo = pharmacy.logo || '/assets/img/medical-img1.jpg'
+  // Normalize image URL
+  const normalizeImageUrl = (imageUri) => {
+    if (!imageUri || typeof imageUri !== 'string') return null
+    const trimmedUri = imageUri.trim()
+    if (!trimmedUri) return null
+    const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
+    const baseURL = apiBaseURL.replace('/api', '')
+    if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
+      return trimmedUri
+    }
+    const imagePath = trimmedUri.startsWith('/') ? trimmedUri : `/${trimmedUri}`
+    return `${baseURL}${imagePath}`
+  }
+  
+  const pharmacyLogo = normalizeImageUrl(pharmacy.logo) || '/assets/img/medical-img1.jpg'
   const pharmacyAddress = formatAddress(pharmacy.address)
   const pharmacyPhone = pharmacy.phone || 'Phone not available'
   const ownerName = pharmacy.ownerId && typeof pharmacy.ownerId === 'object'
@@ -273,7 +287,7 @@ const PharmacyDetails = () => {
                             <div className="row mt-3">
                               {products.map((product) => {
                                 const productPrice = product.discountPrice || product.price
-                                const productImage = product.images?.[0] || '/assets/img/products/product.jpg'
+                                const productImage = normalizeImageUrl(product.images?.[0]) || '/assets/img/products/product.jpg'
                                 
                                 return (
                                   <div key={product._id} className="col-md-6 col-lg-4 mb-3">

@@ -96,7 +96,21 @@ const ProductDescription = () => {
   const productPrice = product.discountPrice || product.price
   const originalPrice = product.discountPrice ? product.price : null
   const discountPercent = originalPrice ? Math.round(((originalPrice - productPrice) / originalPrice) * 100) : 0
-  const productImage = product.images?.[0] || '/assets/img/products/product.jpg'
+  // Normalize image URL
+  const normalizeImageUrl = (imageUri) => {
+    if (!imageUri || typeof imageUri !== 'string') return null
+    const trimmedUri = imageUri.trim()
+    if (!trimmedUri) return null
+    const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
+    const baseURL = apiBaseURL.replace('/api', '')
+    if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
+      return trimmedUri
+    }
+    const imagePath = trimmedUri.startsWith('/') ? trimmedUri : `/${trimmedUri}`
+    return `${baseURL}${imagePath}`
+  }
+  
+  const productImage = normalizeImageUrl(product.images?.[0]) || '/assets/img/products/product.jpg'
   const isInStock = product.stock > 0
 
   return (
