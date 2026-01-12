@@ -79,6 +79,7 @@ import BlogCreateEdit from './pages/doctor/BlogCreateEdit'
 import PharmacyOrders from './pages/doctor/PharmacyOrders'
 import PharmacyOrderDetails from './pages/doctor/PharmacyOrderDetails'
 import DoctorNotifications from './pages/doctor/DoctorNotifications'
+import DoctorPharmacy from './pages/doctor/DoctorPharmacy'
 
 // Patient Pages
 import PatientDashboard from './pages/patient/PatientDashboard'
@@ -336,6 +337,11 @@ function App() {
             <Route path="/doctor-business-settings" element={
               <ProtectedRoute role="DOCTOR" requireApproved={true}>
                 <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorBusinessSettings /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor/pharmacy" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "My Pharmacy", li2: "My Pharmacy" }}><DoctorPharmacy /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/social-media" element={

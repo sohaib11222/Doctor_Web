@@ -116,7 +116,7 @@ const BlogList = () => {
                   <p className="text-muted mb-0">Manage your blog posts</p>
                 </div>
                 <Link to="/blog/create" className="btn btn-primary">
-                  <i className="fe fe-plus me-2"></i>
+                  <i className="fa fa-plus me-2"></i>
                   Create New Post
                 </Link>
               </div>
@@ -191,7 +191,7 @@ const BlogList = () => {
                       </p>
                       {!searchQuery && (
                         <Link to="/blog/create" className="btn btn-primary mt-3">
-                          <i className="fe fe-plus me-2"></i>
+                          <i className="fa fa-plus me-2"></i>
                           Create New Post
                         </Link>
                       )}
@@ -249,15 +249,35 @@ const BlogList = () => {
                           <Link
                             to={`/blog/edit/${blog._id}`}
                             className="btn btn-sm btn-outline-primary"
+                            title="Edit"
+                            style={{ 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              minWidth: '32px',
+                              height: '32px',
+                              padding: '4px 8px',
+                              cursor: 'pointer'
+                            }}
                           >
-                            <i className="fe fe-edit"></i>
+                            <i className="fa fa-edit" style={{ fontSize: '14px', display: 'inline-block', lineHeight: '1', visibility: 'visible', opacity: 1 }}></i>
                           </Link>
                           <button
                             className="btn btn-sm btn-outline-danger"
                             onClick={() => handleDelete(blog._id, blog.title)}
                             disabled={deleteBlogMutation.isLoading}
+                            title="Delete"
+                            style={{ 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              minWidth: '32px',
+                              height: '32px',
+                              padding: '4px 8px',
+                              cursor: 'pointer'
+                            }}
                           >
-                            <i className="fe fe-trash-2"></i>
+                            <i className="fa fa-trash" style={{ fontSize: '14px', display: 'inline-block', lineHeight: '1', visibility: 'visible', opacity: 1 }}></i>
                           </button>
                         </div>
                       </div>

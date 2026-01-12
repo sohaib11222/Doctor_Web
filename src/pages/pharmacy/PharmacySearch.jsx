@@ -205,9 +205,24 @@ const PharmacySearch = () => {
                         <div className="card-body">
                           <div className="doctor-widget">
                             <div className="doc-info-left">
-                              <div className="doctor-img1">
-                                <Link to={`/pharmacy-details?id=${pharmacy._id}`}>
-                                  <img src={pharmacyLogo} className="img-fluid" alt={pharmacy.name} />
+                              <div className="doctor-img1" style={{ width: '100px', height: '100px', overflow: 'hidden', flexShrink: 0 }}>
+                                <Link to={`/pharmacy-details?id=${pharmacy._id}`} style={{ display: 'block', width: '100%', height: '100%' }}>
+                                  <img 
+                                    src={pharmacyLogo} 
+                                    className="img-fluid" 
+                                    alt={pharmacy.name}
+                                    style={{
+                                      width: '100px',
+                                      height: '70px',
+                                      maxWidth: '100px',
+                                      maxHeight: '70px',
+                                      objectFit: 'cover',
+                                      display: 'block'
+                                    }}
+                                    onError={(e) => {
+                                      e.target.src = '/assets/img/medical-img1.jpg'
+                                    }}
+                                  />
                                 </Link>
                               </div>
                               <div className="doc-info-cont">

@@ -261,17 +261,81 @@ const ProductDescription = () => {
                   <div className="clinic-details mt-4">
                     <div className="clinic-booking">
                       <button
-                        className="apt-btn w-100 mb-2"
+                        className="btn btn-outline-primary w-100 mb-3"
                         onClick={handleAddToCart}
                         disabled={!isInStock}
+                        style={{
+                          padding: '12px 24px',
+                          fontSize: '16px',
+                          fontWeight: '600',
+                          borderWidth: '2px',
+                          borderRadius: '8px',
+                          transition: 'all 0.3s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          backgroundColor: '#fff',
+                          borderColor: '#0d6efd',
+                          color: '#0d6efd',
+                          cursor: !isInStock ? 'not-allowed' : 'pointer',
+                          opacity: !isInStock ? 0.6 : 1
+                        }}
+                        onMouseEnter={(e) => {
+                          if (isInStock) {
+                            e.currentTarget.style.backgroundColor = '#0d6efd'
+                            e.currentTarget.style.color = '#fff'
+                            e.currentTarget.style.transform = 'translateY(-2px)'
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (isInStock) {
+                            e.currentTarget.style.backgroundColor = '#fff'
+                            e.currentTarget.style.color = '#0d6efd'
+                            e.currentTarget.style.transform = 'translateY(0)'
+                            e.currentTarget.style.boxShadow = 'none'
+                          }
+                        }}
                       >
+                        <i className="fas fa-shopping-cart"></i>
                         Add To Cart
                       </button>
                       <button
-                        className="apt-btn w-100"
+                        className="btn btn-primary w-100"
                         onClick={handleBuyNow}
                         disabled={!isInStock}
+                        style={{
+                          padding: '14px 24px',
+                          fontSize: '16px',
+                          fontWeight: '700',
+                          border: 'none',
+                          borderRadius: '8px',
+                          transition: 'all 0.3s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          color: '#fff',
+                          cursor: !isInStock ? 'not-allowed' : 'pointer',
+                          opacity: !isInStock ? 0.6 : 1,
+                          boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (isInStock) {
+                            e.currentTarget.style.transform = 'translateY(-2px)'
+                            e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.6)'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (isInStock) {
+                            e.currentTarget.style.transform = 'translateY(0)'
+                            e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)'
+                          }
+                        }}
                       >
+                        <i className="fas fa-bolt"></i>
                         Buy Now
                       </button>
                     </div>

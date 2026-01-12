@@ -145,7 +145,7 @@ const BlogDetails = () => {
                         to={`/blog/edit/${blog._id}`}
                         className="btn btn-outline-primary"
                       >
-                        <i className="fe fe-edit me-2"></i>
+                        <i className="fa fa-edit me-2" style={{ fontSize: '14px', display: 'inline-block', lineHeight: '1', visibility: 'visible', opacity: 1 }}></i>
                         Edit
                       </Link>
                     </div>

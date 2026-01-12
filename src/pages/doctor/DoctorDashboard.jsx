@@ -141,7 +141,7 @@ const DoctorDashboard = () => {
 
   // Handle appointment details
   const handleAppointmentClick = (appointmentId) => {
-    navigate(`/appointment-details?id=${appointmentId}`)
+    navigate(`/doctor-appointment-details?id=${appointmentId}`)
   }
 
   useEffect(() => {
@@ -385,7 +385,7 @@ const DoctorDashboard = () => {
                                         <i className="fa-solid fa-comment"></i>
                                       </Link>
                                       <Link
-                                        to={`/appointment-details?id=${appointment._id}`}
+                                        to={`/doctor-appointment-details?id=${appointment._id}`}
                                         className="text-success-icon me-2"
                                         title="View Details"
                                       >
@@ -542,7 +542,7 @@ const DoctorDashboard = () => {
                             Chat Now
                           </Link>
                           <Link
-                            to={`/appointment-details?id=${upcomingAppointments[0]?._id}`}
+                            to={`/doctor-appointment-details?id=${upcomingAppointments[0]?._id}`}
                             className="btn"
                           >
                             View Details

@@ -38,12 +38,24 @@ export const createPharmacy = async (data) => {
 }
 
 /**
- * Update pharmacy (Private - Admin)
+ * Update pharmacy (Private - Admin, Doctor - own pharmacy only)
  * @param {string} id - Pharmacy ID
  * @param {Object} data - Pharmacy data
  * @returns {Promise<Object>} Updated pharmacy
  */
 export const updatePharmacy = async (id, data) => {
   return api.put(`/pharmacy/${id}`, data)
+}
+
+/**
+ * Get pharmacy by owner ID (Private - Doctor)
+ * @param {string} ownerId - Owner User ID
+ * @returns {Promise<Object>} Pharmacy details
+ */
+export const getPharmacyByOwnerId = async (ownerId) => {
+  const response = await api.get('/pharmacy', { params: { ownerId, limit: 1 } })
+  const responseData = response.data || response
+  const pharmacies = responseData.data?.pharmacies || responseData.pharmacies || []
+  return pharmacies.length > 0 ? pharmacies[0] : null
 }
 

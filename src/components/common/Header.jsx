@@ -371,16 +371,17 @@ const Header = () => {
                   </li>
                 )}
 
-                {/* Patients Menu - Show to patients and public (for browsing/search) */}
-                <li className={`has-submenu ${isActive('/patient') || isActive('/search') || isActive('/booking') ? 'active' : ''}`}>
-                  <a href="javascript:void(0);">Patients <i className="fas fa-chevron-down"></i></a>
-                  <ul className="submenu">
-                    {/* Patient Dashboard - Only for patients */}
-                    {shouldShowMenuItem('PATIENT') && (
-                      <li><Link to="/patient/dashboard">Patient Dashboard</Link></li>
-                    )}
-                    
-                    {/* Public browsing/search items - Show to everyone */}
+                {/* Patients Menu - Show to patients and public (for browsing/search), but NOT to doctors */}
+                {(!user || user.role !== 'DOCTOR') && (
+                  <li className={`has-submenu ${isActive('/patient') || isActive('/search') || isActive('/booking') ? 'active' : ''}`}>
+                    <a href="javascript:void(0);">Patients <i className="fas fa-chevron-down"></i></a>
+                    <ul className="submenu">
+                      {/* Patient Dashboard - Only for patients */}
+                      {shouldShowMenuItem('PATIENT') && (
+                        <li><Link to="/patient/dashboard">Patient Dashboard</Link></li>
+                      )}
+                      
+                      {/* Public browsing/search items - Show to everyone */}
                     {/* <li className="has-submenu">
                       <a href="javascript:void(0);">Doctors</a>
                       <ul className="submenu inner-submenu">
@@ -424,35 +425,44 @@ const Header = () => {
                         <li><Link to="/change-password">Change Password</Link></li>
                       </>
                     )}
-                  </ul>
-                </li>
+                    </ul>
+                  </li>
+                )}
 
-                {/* Pharmacy Menu - Show to everyone (browse) but cart/checkout only for patients */}
-                <li className={`has-submenu ${isActive('/pharmacy') || isActive('/product') || isActive('/cart') ? 'active' : ''}`}>
-                  <a href="javascript:void(0);">Pharmacy <i className="fas fa-chevron-down"></i></a>
-                  <ul className="submenu">
-                    {/* Public browsing - Show to everyone */}
-                   {/* <li><Link to="/pharmacy-index">Pharmacy</Link></li>*/}
-                    <li><Link to="/pharmacy-search"> Pharmacies </Link></li>
-                    {/* <li><Link to="/pharmacy-details">Pharmacy Details</Link></li> */}
-                    <li><Link to="/product-all">Products</Link></li>
-                    {/* <li><Link to="/product-description">Product Description</Link></li> */}
-                    
-                    {/* Cart & Checkout - Only for patients */}
-                    {shouldShowMenuItem('PATIENT') && (
-                      <>
-                        <li><Link to="/cart">Cart</Link></li>
-                        {/* <li><Link to="/product-checkout">Product Checkout</Link></li> */}
-                        {/* <li><Link to="/payment-success">Payment Success</Link></li> */}
-                      </>
-                    )}
-                    
-                    {/* Pharmacy Register - Only show if not logged in */}
-                    {!user && (
-                      <li><Link to="/pharmacy-register">Pharmacy Register</Link></li>
-                    )}
-                  </ul>
-                </li>
+                {/* Pharmacy Menu - Different for doctors vs others */}
+                {user && user.role === 'DOCTOR' ? (
+                  /* My Pharmacy - Only for doctors */
+                  <li className={isActive('/doctor/pharmacy') ? 'active' : ''}>
+                    <Link to="/doctor/pharmacy">My Pharmacy</Link>
+                  </li>
+                ) : (
+                  /* Pharmacy Menu - Show to everyone else (browse) but cart/checkout only for patients */
+                  <li className={`has-submenu ${isActive('/pharmacy') || isActive('/product') || isActive('/cart') ? 'active' : ''}`}>
+                    <a href="javascript:void(0);">Pharmacy <i className="fas fa-chevron-down"></i></a>
+                    <ul className="submenu">
+                      {/* Public browsing - Show to everyone */}
+                     {/* <li><Link to="/pharmacy-index">Pharmacy</Link></li>*/}
+                      <li><Link to="/pharmacy-search"> Pharmacies </Link></li>
+                      {/* <li><Link to="/pharmacy-details">Pharmacy Details</Link></li> */}
+                      <li><Link to="/product-all">Products</Link></li>
+                      {/* <li><Link to="/product-description">Product Description</Link></li> */}
+                      
+                      {/* Cart & Checkout - Only for patients */}
+                      {shouldShowMenuItem('PATIENT') && (
+                        <>
+                          <li><Link to="/cart">Cart</Link></li>
+                          {/* <li><Link to="/product-checkout">Product Checkout</Link></li> */}
+                          {/* <li><Link to="/payment-success">Payment Success</Link></li> */}
+                        </>
+                      )}
+                      
+                      {/* Pharmacy Register - Only show if not logged in */}
+                      {!user && (
+                        <li><Link to="/pharmacy-register">Pharmacy Register</Link></li>
+                      )}
+                    </ul>
+                  </li>
+                )}
 
                 {/* Blog */}
                 <li className={isActive('/blog-list') || isActive('/blog-details') ? 'active' : ''}>
@@ -465,9 +475,9 @@ const Header = () => {
                 </li>
 
                 {/* Contact Us */}
-                <li className={isActive('/contact-us') ? 'active' : ''}>
+                {/* <li className={isActive('/contact-us') ? 'active' : ''}>
                   <Link to="/contact-us">Contact Us</Link>
-                </li>
+                </li> */}
               </ul>
             </div>
 
@@ -475,15 +485,7 @@ const Header = () => {
             {!user ? (
               <ul className="nav header-navbar-rht">
                 <li className="searchbar">
-                  <a href="javascript:void(0);"><i className="feather-search"></i></a>
-                  <div className="togglesearch">
-                    <form action="/search">
-                      <div className="input-group">
-                        <input type="text" className="form-control" />
-                        <button type="submit" className="btn">Search</button>
-                      </div>
-                    </form>
-                  </div>
+                  <Link to="/search"><i className="feather-search"></i></Link>
                 </li>
                 <li>
                   <Link to="/login" className="btn btn-md btn-primary-gradient d-inline-flex align-items-center rounded-pill">
@@ -499,24 +501,32 @@ const Header = () => {
             ) : (
               <ul className="nav header-navbar-rht">
                 <li className="searchbar">
-                  <a href="javascript:void(0);"><i className="feather-search"></i></a>
+                  <Link to="/search"><i className="feather-search"></i></Link>
                 </li>
-                <li className="header-theme noti-nav">
+                {/* <li className="header-theme noti-nav">
                   <a href="javascript:void(0);" id="dark-mode-toggle" className="theme-toggle">
                     <i className="isax isax-sun-1"></i>
                   </a>
                   <a href="javascript:void(0);" id="light-mode-toggle" className="theme-toggle activate">
                     <i className="isax isax-moon"></i>
                   </a>
-                </li>
+                </li> */}
                 <li className="nav-item dropdown has-arrow logged-item">
                   <a href="javascript:void(0);" className="nav-link ps-0" data-bs-toggle="dropdown">
-                    <span className="user-img">
+                    <span className="user-img" style={{ display: 'inline-block', width: '31px', height: '31px', overflow: 'hidden', borderRadius: '50%' }}>
                       <img 
-                        className="rounded-circle" 
+                        className="avatar-img rounded-circle" 
                         src={userProfileImage} 
                         width="31" 
+                        height="31"
                         alt="User"
+                        style={{ 
+                          width: '31px', 
+                          height: '31px', 
+                          objectFit: 'cover', 
+                          borderRadius: '50%',
+                          display: 'block'
+                        }}
                         onError={(e) => {
                           e.target.src = '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
                         }}
@@ -525,11 +535,18 @@ const Header = () => {
                   </a>
                   <div className="dropdown-menu dropdown-menu-end">
                     <div className="user-header">
-                      <div className="avatar avatar-sm">
+                      <div className="avatar avatar-sm" style={{ width: '40px', height: '40px', overflow: 'hidden', borderRadius: '50%' }}>
                         <img 
                           src={userProfileImage} 
                           alt="User" 
                           className="avatar-img rounded-circle"
+                          style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: 'cover', 
+                            borderRadius: '50%',
+                            display: 'block'
+                          }}
                           onError={(e) => {
                             e.target.src = '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
                           }}

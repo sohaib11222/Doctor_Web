@@ -113,7 +113,20 @@ const PharmacyDetails = () => {
               <div className="doctor-widget">
                 <div className="doc-info-left">
                   <div className="doctor-img1">
-                    <img src={pharmacyLogo} className="img-fluid" alt={pharmacy.name} />
+                    <img 
+                      src={pharmacyLogo} 
+                      className="img-fluid" 
+                      alt={pharmacy.name}
+                      style={{
+                        width: '100px',
+                        height: '70px',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                      onError={(e) => {
+                        e.target.src = '/assets/img/medical-img1.jpg'
+                      }}
+                    />
                   </div>
                   <div className="doc-info-cont">
                     <h4 className="doc-name mb-2">{pharmacy.name}</h4>

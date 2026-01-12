@@ -279,9 +279,25 @@ const Search = () => {
     return doctor.doctorProfile?.ratingAvg || doctor.rating?.average || 0
   }
 
-  // Get doctor image
+  // Normalize image URL
+  const normalizeImageUrl = (imageUri) => {
+    if (!imageUri || typeof imageUri !== 'string') return null
+    const trimmedUri = imageUri.trim()
+    if (!trimmedUri) return null
+    const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
+    const baseURL = apiBaseURL.replace('/api', '')
+    if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
+      return trimmedUri
+    }
+    const imagePath = trimmedUri.startsWith('/') ? trimmedUri : `/${trimmedUri}`
+    return `${baseURL}${imagePath}`
+  }
+
+  // Get doctor image - use userId.profileImage (from populated userId object)
   const getDoctorImage = (doctor) => {
-    return doctor.profileImage || doctor.doctorProfile?.profileImage || '/assets/img/doctor-grid/doctor-grid-01.jpg'
+    const userId = doctor.userId || {}
+    const imageUrl = userId.profileImage || doctor.profileImage
+    return normalizeImageUrl(imageUrl) || '/assets/img/doctor-grid/doctor-grid-01.jpg'
   }
 
   // Handle search
@@ -304,6 +320,38 @@ const Search = () => {
         .sub-links .favorited .feather-heart.filled {
           color: #f44336 !important;
           fill: #f44336 !important;
+        }
+        /* Fixed size for doctor profile images - 612px × 391px (aspect ratio ~1.57:1) */
+        .card-img.card-img-hover img,
+        .card-img img {
+          width: 100% !important;
+          height: 391px !important;
+          max-width: 612px !important;
+          object-fit: cover !important;
+          object-position: center !important;
+          display: block !important;
+        }
+        .card-img.card-img-hover,
+        .card-img {
+          width: 100% !important;
+          height: 188px !important;
+          max-width: 612px !important;
+          overflow: hidden !important;
+          position: relative !important;
+          margin: 0 auto !important;
+        }
+        /* Maintain aspect ratio on smaller screens */
+        @media (max-width: 768px) {
+          .card-img.card-img-hover img,
+          .card-img img {
+            height: calc(100vw * 0.639) !important; /* 391/612 ratio */
+            max-height: 391px !important;
+          }
+          .card-img.card-img-hover,
+          .card-img {
+            height: calc(100vw * 0.639) !important;
+            max-height: 391px !important;
+          }
         }
       `}</style>
       {/* Breadcrumb */}
@@ -490,7 +538,7 @@ const Search = () => {
                                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: 'calc(100% - 24px)' }}>{locationStr}</span>
                                 </p>
                                 <i className="fa-solid fa-circle fs-5 text-primary mx-2 me-1"></i>
-                                <span className="fs-14 fw-medium">{duration}</span>
+                                {/* <span className="fs-14 fw-medium">{duration}</span> */}
                               </div>
                             </div>
                             <div className="d-flex align-items-center justify-content-between">

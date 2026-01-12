@@ -1,12 +1,17 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'react-toastify'
+import { useAuth } from '../contexts/AuthContext'
 import * as doctorApi from '../api/doctor'
 import * as specializationApi from '../api/specialization'
 import * as reviewsApi from '../api/reviews'
+import * as favoriteApi from '../api/favorite'
 
 const Index = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [location, setLocation] = useState('')
   const [selectedSpecialization, setSelectedSpecialization] = useState('')
@@ -167,6 +172,107 @@ const Index = () => {
       }
     })
   }, [doctors])
+
+  // Fetch user's favorites to check which doctors are favorited
+  const { data: favoritesData } = useQuery({
+    queryKey: ['favorites', user?._id],
+    queryFn: () => favoriteApi.listFavorites(user?._id, { limit: 1000 }),
+    enabled: !!user && user.role === 'PATIENT'
+  })
+
+  // Extract favorite doctor IDs
+  const favoriteDoctorIds = useMemo(() => {
+    if (!favoritesData) return new Set()
+    const responseData = favoritesData.data || favoritesData
+    const favorites = responseData.favorites || []
+    return new Set(favorites.map(fav => {
+      const doctorId = typeof fav.doctorId === 'object' ? fav.doctorId._id || fav.doctorId : fav.doctorId
+      return String(doctorId)
+    }))
+  }, [favoritesData])
+
+  // Create a map of favoriteId by doctorId for easy removal
+  const favoriteIdMap = useMemo(() => {
+    if (!favoritesData) return {}
+    const responseData = favoritesData.data || favoritesData
+    const favorites = responseData.favorites || []
+    const map = {}
+    favorites.forEach(fav => {
+      const doctorId = typeof fav.doctorId === 'object' ? fav.doctorId._id || fav.doctorId : fav.doctorId
+      map[String(doctorId)] = fav._id
+    })
+    return map
+  }, [favoritesData])
+
+  // Add favorite mutation
+  const addFavoriteMutation = useMutation({
+    mutationFn: ({ doctorId, patientId }) => favoriteApi.addFavorite(doctorId, patientId),
+    onSuccess: () => {
+      toast.success('Doctor added to favorites')
+      queryClient.invalidateQueries(['favorites', user?._id])
+    },
+    onError: (error) => {
+      console.error('Add favorite error:', error)
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          'Failed to add favorite'
+      
+      // Show detailed validation errors
+      if (error.response?.status === 400) {
+        const validationErrors = error.response?.data?.errors || error.response?.data?.error
+        if (validationErrors) {
+          console.error('Validation errors:', validationErrors)
+          toast.error(`Validation error: ${typeof validationErrors === 'string' ? validationErrors : JSON.stringify(validationErrors)}`)
+        } else {
+          toast.error(errorMessage)
+        }
+      } else {
+        toast.error(errorMessage)
+      }
+    }
+  })
+
+  // Remove favorite mutation
+  const removeFavoriteMutation = useMutation({
+    mutationFn: (favoriteId) => favoriteApi.removeFavorite(favoriteId),
+    onSuccess: () => {
+      toast.success('Doctor removed from favorites')
+      queryClient.invalidateQueries(['favorites', user?._id])
+    },
+    onError: (error) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to remove favorite'
+      toast.error(errorMessage)
+    }
+  })
+
+  // Handle favorite toggle
+  const handleFavoriteToggle = (e, doctorId) => {
+    e.preventDefault()
+    
+    if (!user || user.role !== 'PATIENT') {
+      toast.error('Please login as a patient to add favorites')
+      return
+    }
+
+    const doctorIdStr = String(doctorId)
+    const patientIdStr = String(user._id)
+    const isFavorited = favoriteDoctorIds.has(doctorIdStr)
+
+    if (isFavorited) {
+      // Remove from favorites
+      const favoriteId = favoriteIdMap[doctorIdStr]
+      if (favoriteId) {
+        removeFavoriteMutation.mutate(favoriteId)
+      } else {
+        toast.error('Favorite ID not found')
+      }
+    } else {
+      // Add to favorites - include patientId for validator
+      console.log('Adding favorite:', { doctorId: doctorIdStr, patientId: patientIdStr })
+      addFavoriteMutation.mutate({ doctorId: doctorIdStr, patientId: patientIdStr })
+    }
+  }
 
   // Fetch reviews for testimonials (we'll use a sample approach)
   const testimonials = [
@@ -329,11 +435,41 @@ const Index = () => {
     if (searchTerm.trim()) params.set('search', searchTerm.trim())
     if (location.trim()) params.set('location', location.trim())
     if (selectedSpecialization) params.set('specialization', selectedSpecialization)
-    navigate(`/search-2?${params.toString()}`)
+    navigate(`/search?${params.toString()}`)
   }
 
   return (
     <>
+      <style>{`
+        /* Fixed size for doctor profile images on home page - 612px × 188px */
+        .doctors-slider .card-img.card-img-hover img,
+        .doctors-slider .card-img img {
+          width: 100% !important;
+          height: 188px !important;
+          max-width: 612px !important;
+          object-fit: cover !important;
+          object-position: center !important;
+          display: block !important;
+        }
+        .doctors-slider .card-img.card-img-hover,
+        .doctors-slider .card-img {
+          width: 100% !important;
+          height: 188px !important;
+          max-width: 612px !important;
+          overflow: hidden !important;
+          position: relative !important;
+          margin: 0 auto !important;
+        }
+        /* Favorite icon styles */
+        .fav-icon.favorited .fa-heart,
+        .fav-icon .fa-heart.filled {
+          color: #f44336 !important;
+        }
+        .fav-icon:hover .fa-heart {
+          color: #f44336 !important;
+          transition: color 0.2s;
+        }
+      `}</style>
       {/* Home Banner */}
       <section className="banner-section banner-sec-one">
         <div className="container">
@@ -541,7 +677,7 @@ const Index = () => {
                   </span>
                 </div>
                 <h6>
-                    <Link to={`/search-2?specialization=${specialization._id || specialization.id}`}>
+                    <Link to={`/search?specialization=${specialization._id || specialization.id}`}>
                       {specialization.name}
                     </Link>
                 </h6>
@@ -590,8 +726,13 @@ const Index = () => {
                     <span className="badge bg-orange">
                         <i className="fa-solid fa-star me-1"></i>{doctor.rating.toFixed(1)}
                     </span>
-                    <a href="javascript:void(0)" className="fav-icon">
-                      <i className="fa fa-heart"></i>
+                    <a 
+                      href="javascript:void(0)" 
+                      className={`fav-icon ${favoriteDoctorIds.has(String(doctor.doctorId)) ? 'favorited' : ''}`}
+                      onClick={(e) => handleFavoriteToggle(e, doctor.doctorId)}
+                      title={favoriteDoctorIds.has(String(doctor.doctorId)) ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <i className={`fa fa-heart ${favoriteDoctorIds.has(String(doctor.doctorId)) ? 'filled' : ''}`}></i>
                     </a>
                   </div>
                 </div>
@@ -609,11 +750,12 @@ const Index = () => {
                           <Link to={`/doctor-profile?id=${doctor.doctorId}`}>{doctor.name}</Link>
                       </h3>
                       <div className="d-flex align-items-center">
-                        <p className="d-flex align-items-center mb-0 fs-14">
-                          <i className="isax isax-location me-2"></i>{doctor.location}
+                        <p className="d-flex align-items-center mb-0 fs-14" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                          <i className="isax isax-location me-2"></i>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: 'calc(100% - 24px)' }}>{doctor.location}</span>
                         </p>
                         <i className="fa-solid fa-circle fs-5 text-primary mx-2 me-1"></i>
-                        <span className="fs-14 fw-medium">{doctor.time}</span>
+                        {/* <span className="fs-14 fw-medium">{doctor.time}</span> */}
                       </div>
                     </div>
                     <div className="d-flex align-items-center justify-content-between">

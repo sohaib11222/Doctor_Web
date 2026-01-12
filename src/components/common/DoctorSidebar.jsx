@@ -228,7 +228,7 @@ const DoctorSidebar = () => {
               <Link to="/doctor-request">
                 <i className="fa-solid fa-calendar-check"></i>
                 <span>Requests</span>
-                <small className="unread-msg">2</small>
+                {/* <small className="unread-msg">2</small> */}
               </Link>
             </li>
             <li className={isActive(['/appointments', '/doctor-appointments-grid', '/doctor-appointment-details', '/doctor-upcoming-appointment', '/doctor-completed-appointment', '/doctor-cancelled-appointment', '/doctor-appointment-start']) ? 'active' : ''}>
@@ -277,21 +277,21 @@ const DoctorSidebar = () => {
               <Link to="/chat-doctor">
                 <i className="fa-solid fa-comments"></i>
                 <span>Message</span>
-                <small className="unread-msg">7</small>
+                {/* <small className="unread-msg">7</small> */}
               </Link>
             </li>
             <li className={isActive('/doctor/admin-chat') ? 'active' : ''}>
               <Link to="/doctor/admin-chat">
                 <i className="fa-solid fa-headset"></i>
                 <span>Admin Messages</span>
-                <small className="unread-msg">2</small>
+                {/* <small className="unread-msg">2</small> */}
               </Link>
             </li>
             <li className={isActive('/doctor/announcements') ? 'active' : ''}>
               <Link to="/doctor/announcements">
                 <i className="fa-solid fa-bullhorn"></i>
                 <span>Announcements</span>
-                <small className="unread-msg">3</small>
+                {/* <small className="unread-msg">3</small> */}   
               </Link>
             </li>
             <li className={isActive('/doctor-notifications') ? 'active' : ''}>
