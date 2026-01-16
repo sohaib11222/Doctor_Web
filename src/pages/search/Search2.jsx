@@ -359,16 +359,16 @@ const Search2 = () => {
                 </div>
               ) : (
                 <>
-                  <div className="row">
+              <div className="row">
                     {doctors.map((doctor) => {
                       const formatted = formatDoctor(doctor)
                       return (
                         <div key={formatted.id} className="col-md-12">
-                          <div className="card">
-                            <div className="card-body">
-                              <div className="doctor-widget">
-                                <div className="doc-info-left">
-                                  <div className="doctor-img">
+                    <div className="card">
+                      <div className="card-body">
+                        <div className="doctor-widget">
+                          <div className="doc-info-left">
+                            <div className="doctor-img">
                                     <Link to={`/doctor-profile?id=${formatted.doctorId}`}>
                                       <img 
                                         src={formatted.image} 
@@ -378,14 +378,14 @@ const Search2 = () => {
                                           e.target.src = '/assets/img/doctors/doctor-01.jpg'
                                         }}
                                       />
-                                    </Link>
-                                  </div>
-                                  <div className="doc-info-cont">
+                              </Link>
+                            </div>
+                            <div className="doc-info-cont">
                                     <h4 className="doc-name">
                                       <Link to={`/doctor-profile?id=${formatted.doctorId}`}>{formatted.name}</Link>
                                     </h4>
                                     <p className="doc-speciality">{formatted.specialty}</p>
-                                    <div className="rating">
+                              <div className="rating">
                                       {[...Array(5)].map((_, i) => (
                                         <i 
                                           key={i} 
@@ -393,23 +393,23 @@ const Search2 = () => {
                                         ></i>
                                       ))}
                                       <span className="d-inline-block average-rating">{formatted.rating.toFixed(1)}</span>
-                                    </div>
-                                    <div className="clinic-details">
+                              </div>
+                              <div className="clinic-details">
                                       <p className="doc-location" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
                                         <i className="fas fa-map-marker-alt"></i> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: 'calc(100% - 24px)' }}>{formatted.location}</span>
                                       </p>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="doc-info-right">
-                                  <div className="clini-infos">
-                                    <ul>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="doc-info-right">
+                            <div className="clini-infos">
+                              <ul>
                                       <li><i className="far fa-thumbs-up"></i> {formatted.rating > 0 ? `${Math.round(formatted.rating * 20)}%` : 'N/A'}</li>
                                       <li style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
                                         <i className="fas fa-map-marker-alt"></i> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: 'calc(100% - 24px)' }}>{formatted.location}</span>
                                       </li>
-                                    </ul>
-                                  </div>
+                              </ul>
+                            </div>
                                   <div className="d-flex align-items-center justify-content-between mb-3">
                                     <div>
                                       <p className="mb-1">Consultation Fees</p>
@@ -420,21 +420,21 @@ const Search2 = () => {
                                       {formatted.available ? 'Available' : 'Unavailable'}
                                     </span>
                                   </div>
-                                  <div className="clinic-booking">
+                            <div className="clinic-booking">
                                     <Link className="view-pro-btn" to={`/doctor-profile?id=${formatted.doctorId}`}>View Profile</Link>
                                     <Link className="btn btn-primary" to={`/booking?doctorId=${formatted.doctorId}`}>Book Appointment</Link>
-                                  </div>
-                                </div>
-                              </div>
                             </div>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </div>
                       )
                     })}
                   </div>
                   {pagination.pages > 1 && (
-                    <div className="col-md-12">
-                      <div className="text-center mb-4">
+                <div className="col-md-12">
+                  <div className="text-center mb-4">
                         <div className="d-flex justify-content-center gap-2">
                           <button
                             className="btn btn-md btn-primary-gradient"
@@ -453,9 +453,9 @@ const Search2 = () => {
                           >
                             Next
                           </button>
-                        </div>
-                      </div>
-                    </div>
+                  </div>
+                </div>
+              </div>
                   )}
                 </>
               )}

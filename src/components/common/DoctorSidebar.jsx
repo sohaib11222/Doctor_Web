@@ -148,6 +148,12 @@ const DoctorSidebar = () => {
 
   return (
     <div className="profile-sidebar doctor-sidebar profile-sidebar-new">
+      <style>{`
+        .doctor-sidebar.profile-sidebar-new .profile-info-widget::after {
+          background-image: none !important;
+          background-color: white !important;
+        }
+      `}</style>
       <div className="widget-profile pro-widget-content">
         <div className="profile-info-widget">
           <Link to="/doctor-profile" className="booking-doc-img">

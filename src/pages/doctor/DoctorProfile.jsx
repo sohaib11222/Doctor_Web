@@ -1,15 +1,17 @@
 import { useState, useMemo } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 import * as doctorApi from '../../api/doctor'
 import * as favoriteApi from '../../api/favorite'
 import * as reviewsApi from '../../api/reviews'
+import { normalizeImageUrl } from '../../utils/imageUtils'
 
 const DoctorProfile = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const doctorId = searchParams.get('id')
   const [activeSection, setActiveSection] = useState('doc_bio')
@@ -85,8 +87,11 @@ const DoctorProfile = () => {
     const responseData = favoritesData.data || favoritesData
     const favorites = responseData.favorites || []
     return favorites.some(fav => {
-      const favDoctorId = typeof fav.doctorId === 'object' ? fav.doctorId._id || fav.doctorId : fav.doctorId
-      return String(favDoctorId) === String(doctorId)
+      if (!fav || !fav.doctorId) return false
+      const favDoctorId = fav.doctorId && typeof fav.doctorId === 'object' && fav.doctorId !== null 
+        ? (fav.doctorId._id || fav.doctorId) 
+        : fav.doctorId
+      return favDoctorId ? String(favDoctorId) === String(doctorId) : false
     })
   }, [favoritesData, doctorId])
 
@@ -96,8 +101,11 @@ const DoctorProfile = () => {
     const responseData = favoritesData.data || favoritesData
     const favorites = responseData.favorites || []
     const favorite = favorites.find(fav => {
-      const favDoctorId = typeof fav.doctorId === 'object' ? fav.doctorId._id || fav.doctorId : fav.doctorId
-      return String(favDoctorId) === String(doctorId)
+      if (!fav || !fav.doctorId) return false
+      const favDoctorId = fav.doctorId && typeof fav.doctorId === 'object' && fav.doctorId !== null 
+        ? (fav.doctorId._id || fav.doctorId) 
+        : fav.doctorId
+      return favDoctorId ? String(favDoctorId) === String(doctorId) : false
     })
     return favorite?._id || null
   }, [favoritesData, doctorId])
@@ -171,6 +179,77 @@ const DoctorProfile = () => {
     }
   }
 
+  // Handle share
+  const handleShare = async (e) => {
+    e.preventDefault()
+    try {
+      const profileUrl = `${window.location.origin}/doctor-profile?id=${doctorId}`
+      const doctorName = doctor?.userId?.fullName || doctor?.fullName || 'Doctor'
+      
+      if (navigator.share) {
+        await navigator.share({
+          title: `Check out ${doctorName}`,
+          text: `Check out ${doctorName} on MyDoctor`,
+          url: profileUrl,
+        })
+        toast.success('Profile shared successfully')
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(profileUrl)
+        toast.success('Profile link copied to clipboard')
+      }
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error('Error sharing:', error)
+        // Fallback: copy to clipboard
+        try {
+          const profileUrl = `${window.location.origin}/doctor-profile?id=${doctorId}`
+          await navigator.clipboard.writeText(profileUrl)
+          toast.success('Profile link copied to clipboard')
+        } catch (clipboardError) {
+          toast.error('Unable to share or copy link')
+        }
+      }
+    }
+  }
+
+  // Handle copy link
+  const handleCopyLink = async (e) => {
+    e.preventDefault()
+    try {
+      const profileUrl = `${window.location.origin}/doctor-profile?id=${doctorId}`
+      await navigator.clipboard.writeText(profileUrl)
+      toast.success('Profile link copied to clipboard')
+    } catch (error) {
+      console.error('Error copying link:', error)
+      toast.error('Unable to copy link')
+    }
+  }
+
+  // Handle chat navigation
+  const handleChat = (e) => {
+    e.preventDefault()
+    if (!user || user.role !== 'PATIENT') {
+      toast.error('Please login as a patient to chat with doctors')
+      return
+    }
+    // Navigate to patient chat page with doctorId
+    navigate(`/chat?doctorId=${doctorId}`)
+  }
+
+  // Handle view location
+  const handleViewLocation = (e) => {
+    e.preventDefault()
+    const firstClinic = doctor?.clinics?.[0]
+    if (firstClinic?.lat && firstClinic?.lng) {
+      // Navigate to map view or open in maps
+      const mapUrl = `https://www.google.com/maps?q=${firstClinic.lat},${firstClinic.lng}`
+      window.open(mapUrl, '_blank')
+    } else {
+      toast.info('This doctor has not set their clinic location coordinates')
+    }
+  }
+
   if (doctorLoading) {
     return (
       <div className="content doctor-content">
@@ -202,10 +281,12 @@ const DoctorProfile = () => {
 
   // Extract doctor information
   const doctorName = doctor.userId?.fullName || doctor.fullName || 'Unknown Doctor'
-  const doctorImage = doctor.userId?.profileImage || doctor.profileImage || '/assets/img/doctors/doc-profile-02.jpg'
+  const doctorImageRaw = doctor.userId?.profileImage || doctor.profileImage || '/assets/img/doctors/doc-profile-02.jpg'
+  const doctorImage = normalizeImageUrl(doctorImageRaw) || doctorImageRaw
   const specialization = doctor.specialization?.name || 'General'
   const rating = doctor.ratingAvg || 0
   const ratingCount = reviewCount || doctor.ratingCount || 0
+  const firstClinic = doctor?.clinics?.[0]
   
   // Render star rating
   const renderStars = (rating) => {
@@ -230,33 +311,79 @@ const DoctorProfile = () => {
     <div className="content doctor-content" style={{ padding: '20px 0' }}>
       <div className="container">
       {/* Doctor Widget */}
-      <div className="card doc-profile-card">
-        <div className="card-body">
-          <div className="doctor-widget doctor-profile-two">
-            <div className="doc-info-left">
-              <div className="doctor-img">
-                <img src={doctorImage} className="img-fluid" alt={doctorName} />
+      <div className="card doc-profile-card" style={{ 
+        borderRadius: '16px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+        border: 'none',
+        overflow: 'hidden'
+      }}>
+        <div className="card-body" style={{ padding: '24px' }}>
+          <div className="doctor-widget doctor-profile-two" style={{ 
+            display: 'flex',
+            gap: '24px',
+            alignItems: 'flex-start'
+          }}>
+            <div className="doc-info-left" style={{ 
+              display: 'flex',
+              gap: '20px',
+              flex: '1'
+            }}>
+              <div className="doctor-img" style={{ 
+                width: '150px', 
+                height: '150px', 
+                minWidth: '150px',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+              }}>
+                <img 
+                  src={doctorImage} 
+                  className="img-fluid" 
+                  alt={doctorName}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block'
+                  }}
+                />
               </div>
               <div className="doc-info-cont">
                 <span className="badge doc-avail-badge"><i className="fa-solid fa-circle"></i>Available </span>
                 <h4 className="doc-name">
                   {doctorName} 
-                  <img src="/assets/img/icons/badge-check.svg" alt="Img" />
+                  {doctor?.isVerified && (
+                    <img src="/assets/img/icons/badge-check.svg" alt="Verified" style={{ marginLeft: '8px' }} />
+                  )}
                   <span className="badge doctor-role-badge"><i className="fa-solid fa-circle"></i>{specialization}</span>
                 </h4>
                 <p>{doctor.title || 'Medical Professional'}</p>
                 <p className="address-detail">
                   <span className="loc-icon"><i className="feather-map-pin"></i></span>
-                  {doctor.clinics?.[0] 
-                    ? `${doctor.clinics[0].address || ''}, ${doctor.clinics[0].city || ''}, ${doctor.clinics[0].state || ''}`.trim()
+                  {firstClinic 
+                    ? `${firstClinic.address || ''}, ${firstClinic.city || ''}, ${firstClinic.state || ''}`.trim()
                     : 'Location not available'
                   }
-                  <span className="view-text">( View Location )</span>
+                  {firstClinic?.lat && firstClinic?.lng && (
+                    <a 
+                      href="#" 
+                      onClick={handleViewLocation}
+                      className="view-text"
+                      style={{ 
+                        marginLeft: '8px',
+                        color: '#0d6efd',
+                        textDecoration: 'none',
+                        fontWeight: '500'
+                      }}
+                    >
+                      <i className="feather-map-pin" style={{ marginRight: '4px' }}></i>View Location
+                    </a>
+                  )}
                 </p>
               </div>
             </div>
-            <div className="doc-info-right">
-              <ul className="doctors-activities">
+            <div className="doc-info-right" style={{ flex: '1' }}>
+              <ul className="doctors-activities" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 <li>
                   <div className="hospital-info">
                     <span className="list-icon"><img src="/assets/img/icons/watch-icon.svg" alt="Img" /></span>
@@ -273,8 +400,24 @@ const DoctorProfile = () => {
                         <i className={`feather-heart ${isFavorited ? 'filled' : ''}`} style={{ color: isFavorited ? '#f44336' : 'inherit' }}></i>
                       </a>
                     </li>
-                    <li><a href="#"><i className="feather-share-2"></i></a></li>
-                    <li><a href="#"><i className="feather-link"></i></a></li>
+                    <li>
+                      <a 
+                        href="javascript:void(0)" 
+                        onClick={handleShare}
+                        title="Share doctor profile"
+                      >
+                        <i className="feather-share-2"></i>
+                      </a>
+                    </li>
+                    <li>
+                      <a 
+                        href="javascript:void(0)" 
+                        onClick={handleCopyLink}
+                        title="Copy profile link"
+                      >
+                        <i className="feather-link"></i>
+                      </a>
+                    </li>
                   </ul>
                 </li>
                 <li>
@@ -297,32 +440,116 @@ const DoctorProfile = () => {
                     <a href="#review" className="d-inline-block average-rating">{ratingCount} {ratingCount === 1 ? 'Review' : 'Reviews'}</a>
                   </div>
                   <ul className="contact-doctors">
-                    <li><Link to="/doctor/chat"><span><img src="/assets/img/icons/device-message2.svg" alt="Img" /></span>Chat</Link></li>
-                    <li><Link to="/voice-call"><span className="bg-violet"><i className="feather-phone-forwarded"></i></span>Audio Call</Link></li>
-                    <li><Link to="/video-call"><span className="bg-indigo"><i className="fa-solid fa-video"></i></span>Video Call</Link></li>
+                    <li>
+                      <a 
+                        href="javascript:void(0)" 
+                        onClick={handleChat}
+                        style={{ textDecoration: 'none', color: 'inherit' }}
+                      >
+                        <span><img src="/assets/img/icons/device-message2.svg" alt="Chat" /></span>Chat
+                      </a>
+                    </li>
                   </ul>
                 </li>
               </ul>
             </div>
           </div>
-          <div className="doc-profile-card-bottom">
-            <ul>
-              <li>
-                <span className="bg-blue"><img src="/assets/img/icons/calendar3.svg" alt="Img" /></span>
-                {ratingCount > 0 ? `${ratingCount}+ Reviews` : 'No Reviews Yet'}
+          <div className="doc-profile-card-bottom" style={{ 
+            marginTop: '24px',
+            paddingTop: '24px',
+            borderTop: '1px solid #e0e0e0'
+          }}>
+            <ul style={{ 
+              listStyle: 'none', 
+              padding: 0, 
+              margin: 0,
+              display: 'flex',
+              gap: '16px',
+              flexWrap: 'wrap',
+              marginBottom: '20px'
+            }}>
+              <li style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '12px 16px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '10px',
+                flex: '1',
+                minWidth: '200px'
+              }}>
+                <span className="bg-blue" style={{ 
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <img src="/assets/img/icons/calendar3.svg" alt="Reviews" style={{ width: '20px', height: '20px' }} />
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                  {ratingCount > 0 ? `${ratingCount}+ Reviews` : 'No Reviews Yet'}
+                </span>
               </li>
-              <li>
-                <span className="bg-dark-blue"><img src="/assets/img/icons/bullseye.svg" alt="Img" /></span>
-                {experienceYears > 0 ? `In Practice for ${experienceYears} ${experienceYears === 1 ? 'Year' : 'Years'}` : 'Experience Not Available'}
-              </li>
-              <li>
-                <span className="bg-green"><img src="/assets/img/icons/bookmark-star.svg" alt="Img" /></span>
-                {awardsCount > 0 ? `${awardsCount}+ Awards` : 'No Awards Listed'}
+              {/* <li style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '12px 16px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '10px',
+                flex: '1',
+                minWidth: '200px'
+              }}>
+                <span className="bg-dark-blue" style={{ 
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <img src="/assets/img/icons/bullseye.svg" alt="Experience" style={{ width: '20px', height: '20px' }} />
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                  {experienceYears > 0 ? `In Practice for ${experienceYears} ${experienceYears === 1 ? 'Year' : 'Years'}` : 'Experience Not Available'}
+                </span>
+              </li> */}
+              <li style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '12px 16px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '10px',
+                flex: '1',
+                minWidth: '200px'
+              }}>
+                <span className="bg-green" style={{ 
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <img src="/assets/img/icons/bookmark-star.svg" alt="Awards" style={{ width: '20px', height: '20px' }} />
+                </span>
+                <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                  {awardsCount > 0 ? `${awardsCount}+ Awards` : 'No Awards Listed'}
+                </span>
               </li>
             </ul>
-            <div className="bottom-book-btn">
-              <p>
-                <span>
+            <div className="bottom-book-btn" style={{ 
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingTop: '20px',
+              borderTop: '1px solid #e0e0e0'
+            }}>
+              <p style={{ margin: 0, fontSize: '15px', color: '#666' }}>
+                <span style={{ fontWeight: '600', color: '#0d6efd' }}>
                   Price : 
                   {doctor.consultationFees?.clinic && doctor.consultationFees?.online 
                     ? ` $${doctor.consultationFees.clinic} - $${doctor.consultationFees.online}`
@@ -335,7 +562,21 @@ const DoctorProfile = () => {
                 </span> for a Session
               </p>
               <div className="clinic-booking">
-                <Link className="apt-btn" to={`/booking?doctorId=${doctorId}`}>Book Appointment</Link>
+                <Link 
+                  className="apt-btn" 
+                  to={`/booking?doctorId=${doctorId}`}
+                  style={{
+                    padding: '12px 32px',
+                    borderRadius: '10px',
+                    fontWeight: '600',
+                    textDecoration: 'none',
+                    display: 'inline-block',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 12px rgba(13, 110, 253, 0.3)'
+                  }}
+                >
+                  Book Appointment
+                </Link>
               </div>
             </div>
           </div>

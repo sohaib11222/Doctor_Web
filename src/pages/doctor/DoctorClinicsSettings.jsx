@@ -256,9 +256,9 @@ const DoctorClinicsSettings = () => {
                   <li className="nav-item">
                     <Link className="nav-link" to="/doctor-awards-settings">Awards</Link>
                   </li>
-                  <li className="nav-item">
+                  {/* <li className="nav-item">
                     <Link className="nav-link" to="/doctor-insurance-settings">Insurances</Link>
-                  </li>
+                  </li> */}
                   <li className="nav-item">
                     <Link className="nav-link active" to="/doctor-clinics-settings">Clinics</Link>
                   </li>
@@ -398,6 +398,48 @@ const DoctorClinicsSettings = () => {
                                         onChange={(e) => handleClinicChange(index, 'address', e.target.value)}
                                         placeholder="Full address"
                                       />
+                                    </div>
+                                  </div>
+                                  <div className="col-md-12">
+                                    <div className="form-wrap">
+                                      <label className="col-form-label">Location Coordinates (Optional)</label>
+                                      <p className="text-muted small mb-2">Enter latitude and longitude for map integration</p>
+                                      <div className="row">
+                                        <div className="col-md-6">
+                                          <label className="col-form-label small">Latitude</label>
+                                          <input 
+                                            type="number" 
+                                            step="any"
+                                            className="form-control"
+                                            value={clinic.lat !== null && clinic.lat !== undefined ? clinic.lat : ''}
+                                            onChange={(e) => {
+                                              const value = e.target.value.trim()
+                                              const numValue = value === '' ? null : parseFloat(value)
+                                              if (value === '' || (!isNaN(numValue) && numValue >= -90 && numValue <= 90)) {
+                                                handleClinicChange(index, 'lat', numValue)
+                                              }
+                                            }}
+                                            placeholder="e.g., 40.7128"
+                                          />
+                                        </div>
+                                        <div className="col-md-6">
+                                          <label className="col-form-label small">Longitude</label>
+                                          <input 
+                                            type="number" 
+                                            step="any"
+                                            className="form-control"
+                                            value={clinic.lng !== null && clinic.lng !== undefined ? clinic.lng : ''}
+                                            onChange={(e) => {
+                                              const value = e.target.value.trim()
+                                              const numValue = value === '' ? null : parseFloat(value)
+                                              if (value === '' || (!isNaN(numValue) && numValue >= -180 && numValue <= 180)) {
+                                                handleClinicChange(index, 'lng', numValue)
+                                              }
+                                            }}
+                                            placeholder="e.g., -74.0060"
+                                          />
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
                                   <div className="col-md-12">

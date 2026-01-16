@@ -169,9 +169,9 @@ const DoctorAwardsSettings = () => {
                   <li className="nav-item">
                     <Link className="nav-link active" to="/doctor-awards-settings">Awards</Link>
                   </li>
-                  <li className="nav-item">
+                  {/* <li className="nav-item">
                     <Link className="nav-link" to="/doctor-insurance-settings">Insurances</Link>
-                  </li>
+                  </li> */}
                   <li className="nav-item">
                     <Link className="nav-link" to="/doctor-clinics-settings">Clinics</Link>
                   </li>

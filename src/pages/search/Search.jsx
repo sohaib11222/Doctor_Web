@@ -174,9 +174,12 @@ const Search = () => {
     const responseData = favoritesData.data || favoritesData
     const favorites = responseData.favorites || []
     return new Set(favorites.map(fav => {
-      const doctorId = typeof fav.doctorId === 'object' ? fav.doctorId._id || fav.doctorId : fav.doctorId
-      return String(doctorId)
-    }))
+      if (!fav || !fav.doctorId) return null
+      const doctorId = fav.doctorId && typeof fav.doctorId === 'object' && fav.doctorId !== null 
+        ? (fav.doctorId._id || fav.doctorId) 
+        : fav.doctorId
+      return doctorId ? String(doctorId) : null
+    }).filter(Boolean))
   }, [favoritesData])
 
   // Create a map of favoriteId by doctorId for easy removal
@@ -186,8 +189,13 @@ const Search = () => {
     const favorites = responseData.favorites || []
     const map = {}
     favorites.forEach(fav => {
-      const doctorId = typeof fav.doctorId === 'object' ? fav.doctorId._id || fav.doctorId : fav.doctorId
-      map[String(doctorId)] = fav._id
+      if (!fav || !fav.doctorId) return
+      const doctorId = fav.doctorId && typeof fav.doctorId === 'object' && fav.doctorId !== null 
+        ? (fav.doctorId._id || fav.doctorId) 
+        : fav.doctorId
+      if (doctorId && fav._id) {
+        map[String(doctorId)] = fav._id
+      }
     })
     return map
   }, [favoritesData])

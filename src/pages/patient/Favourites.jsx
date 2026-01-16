@@ -52,7 +52,10 @@ const Favourites = () => {
   // Fetch doctor profiles for favorites (to get full details)
   const doctorIds = useMemo(() => {
     return favorites.map(fav => {
-      const doctorId = typeof fav.doctorId === 'object' ? fav.doctorId._id || fav.doctorId : fav.doctorId
+      if (!fav || !fav.doctorId) return null
+      const doctorId = fav.doctorId && typeof fav.doctorId === 'object' && fav.doctorId !== null 
+        ? (fav.doctorId._id || fav.doctorId) 
+        : fav.doctorId
       return doctorId
     }).filter(Boolean)
   }, [favorites])
@@ -87,12 +90,30 @@ const Favourites = () => {
   // Combine favorites with doctor profiles
   const favoritesWithDetails = useMemo(() => {
     return favorites.map(favorite => {
-      const doctorId = typeof favorite.doctorId === 'object' 
-        ? favorite.doctorId._id || favorite.doctorId 
+      if (!favorite || !favorite.doctorId) {
+        return {
+          ...favorite,
+          doctorId: null,
+          doctor: {
+            userId: {
+              fullName: 'Unknown Doctor',
+              profileImage: '/assets/img/doctors/doctor-thumb-01.jpg'
+            },
+            specialization: { name: 'General' },
+            ratingAvg: 0,
+            clinics: []
+          }
+        }
+      }
+      
+      const doctorId = favorite.doctorId && typeof favorite.doctorId === 'object' && favorite.doctorId !== null 
+        ? (favorite.doctorId._id || favorite.doctorId) 
         : favorite.doctorId
       
       const doctorProfile = doctorProfilesMap[doctorId]
-      const doctor = favorite.doctorId || {}
+      const doctor = favorite.doctorId && typeof favorite.doctorId === 'object' && favorite.doctorId !== null
+        ? favorite.doctorId
+        : {}
       
       return {
         ...favorite,
@@ -107,7 +128,7 @@ const Favourites = () => {
           clinics: doctorProfile?.clinics || []
         }
       }
-    })
+    }).filter(fav => fav.doctorId) // Filter out favorites with null doctorId
   }, [favorites, doctorProfilesMap])
 
   // Filter favorites by search query

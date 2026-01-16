@@ -17,12 +17,12 @@ const ChangePassword = () => {
                 <li className="nav-item" role="presentation">
                   <Link className="nav-link active" to="/change-password">Change Password</Link>
                 </li>
-                <li className="nav-item" role="presentation">
+                {/* <li className="nav-item" role="presentation">
                   <Link className="nav-link" to="/two-factor-authentication">2 Factor Authentication</Link>
                 </li>
                 <li className="nav-item" role="presentation">
                   <Link className="nav-link" to="/delete-account">Delete Account</Link>
-                </li>
+                </li> */}
               </ul>
             </nav>
             <div className="card">

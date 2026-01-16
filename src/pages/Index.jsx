@@ -186,9 +186,12 @@ const Index = () => {
     const responseData = favoritesData.data || favoritesData
     const favorites = responseData.favorites || []
     return new Set(favorites.map(fav => {
-      const doctorId = typeof fav.doctorId === 'object' ? fav.doctorId._id || fav.doctorId : fav.doctorId
-      return String(doctorId)
-    }))
+      if (!fav || !fav.doctorId) return null
+      const doctorId = fav.doctorId && typeof fav.doctorId === 'object' && fav.doctorId !== null 
+        ? (fav.doctorId._id || fav.doctorId) 
+        : fav.doctorId
+      return doctorId ? String(doctorId) : null
+    }).filter(Boolean))
   }, [favoritesData])
 
   // Create a map of favoriteId by doctorId for easy removal
@@ -198,8 +201,13 @@ const Index = () => {
     const favorites = responseData.favorites || []
     const map = {}
     favorites.forEach(fav => {
-      const doctorId = typeof fav.doctorId === 'object' ? fav.doctorId._id || fav.doctorId : fav.doctorId
-      map[String(doctorId)] = fav._id
+      if (!fav || !fav.doctorId) return
+      const doctorId = fav.doctorId && typeof fav.doctorId === 'object' && fav.doctorId !== null 
+        ? (fav.doctorId._id || fav.doctorId) 
+        : fav.doctorId
+      if (doctorId && fav._id) {
+        map[String(doctorId)] = fav._id
+      }
     })
     return map
   }, [favoritesData])
@@ -345,7 +353,7 @@ const Index = () => {
         if (specializations.length > 0 && !carouselInstances.current['.spciality-slider']) {
           initCarousel('.spciality-slider', {
             loop: specializations.length > 5,
-        margin: 30,
+        margin: 15,
         nav: true,
         dots: false,
         responsive: {
@@ -668,22 +676,101 @@ const Index = () => {
                 </div>
               </div>
             ) : specializations.length > 0 ? (
-              specializations.slice(0, 8).map((specialization, index) => (
-                <div key={specialization._id || specialization.id || index} className="spaciality-item">
-                <div className="spaciality-img">
-                    <img src={getSpecializationImage(index)} alt={specialization.name} />
-                  <span className="spaciality-icon">
-                      <img src={getSpecializationIcon(index)} alt={specialization.name} />
-                  </span>
-                </div>
-                <h6>
-                    <Link to={`/search?specialization=${specialization._id || specialization.id}`}>
-                      {specialization.name}
-                    </Link>
-                </h6>
-                  <p className="mb-0">{specialization.doctorCount || '0'} Doctors</p>
-              </div>
-              ))
+              specializations.slice(0, 8).map((specialization, index) => {
+                // Use icon from database if available for both background and center icon
+                const databaseIconUrl = specialization.icon 
+                  ? normalizeImageUrl(specialization.icon) 
+                  : null
+                
+                // Background placeholder: use database icon, fallback to default image
+                const backgroundImageUrl = databaseIconUrl || getSpecializationImage(index)
+                
+                // Center circle icon: use database icon, fallback to default icon
+                // Always ensure we have a valid icon URL
+                const centerIconUrl = databaseIconUrl || getSpecializationIcon(index)
+                
+                return (
+                  <div 
+                    key={specialization._id || specialization.id || index} 
+                    className="spaciality-item"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      width: '100%'
+                    }}
+                  >
+                    <div 
+                      className="spaciality-img"
+                      style={{
+                        width: '175px',
+                        height: '202px',
+                        minWidth: '175px',
+                        maxWidth: '175px',
+                        minHeight: '202px',
+                        maxHeight: '202px',
+                        overflow: 'hidden',
+                        margin: '0 auto'
+                      }}
+                    >
+                      <img 
+                        src={backgroundImageUrl} 
+                        alt={specialization.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          objectPosition: 'center'
+                        }}
+                        onError={(e) => {
+                          // Fallback to default background image if database icon fails to load
+                          e.target.src = getSpecializationImage(index)
+                        }}
+                      />
+                      <span className="spaciality-icon">
+                        {centerIconUrl ? (
+                          <img 
+                            src={centerIconUrl} 
+                            alt={specialization.name}
+                            style={{
+                              width: '40px',
+                              height: '40px',
+                              objectFit: 'contain',
+                              display: 'block'
+                            }}
+                            onError={(e) => {
+                              // Fallback to default icon if database icon fails to load
+                              const fallbackIcon = getSpecializationIcon(index)
+                              if (e.target.src !== fallbackIcon) {
+                                e.target.src = fallbackIcon
+                              }
+                            }}
+                          />
+                        ) : (
+                          <img 
+                            src={getSpecializationIcon(index)} 
+                            alt={specialization.name}
+                            style={{
+                              width: '40px',
+                              height: '40px',
+                              objectFit: 'contain',
+                              display: 'block'
+                            }}
+                          />
+                        )}
+                      </span>
+                    </div>
+                    <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                      <h6 style={{ marginBottom: '4px', textAlign: 'center' }}>
+                        <Link to={`/search?specialization=${specialization._id || specialization.id}`} style={{ textAlign: 'center' }}>
+                          {specialization.name}
+                        </Link>
+                      </h6>
+                      <p className="mb-0" style={{ textAlign: 'center' }}>{specialization.doctorCount || '0'} Doctors</p>
+                    </div>
+                  </div>
+                )
+              })
             ) : (
               <div className="text-center py-5">
                 <p>No specializations available</p>

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../contexts/AuthContext'
 import * as profileApi from '../../api/profile'
 import { useUnreadNotificationsCount } from '../../queries/notificationQueries'
+import { normalizeImageUrl } from '../../utils/imageUtils'
 
 const PatientSidebar = () => {
   const location = useLocation()
@@ -27,7 +28,8 @@ const PatientSidebar = () => {
   
   // Get patient info
   const patientName = userProfile.fullName || user?.fullName || 'Patient'
-  const profileImage = userProfile.profileImage || user?.profileImage || '/assets/img/doctors-dashboard/profile-06.jpg'
+  const profileImageRaw = userProfile.profileImage || user?.profileImage || '/assets/img/doctors-dashboard/profile-06.jpg'
+  const profileImage = normalizeImageUrl(profileImageRaw) || profileImageRaw
   const gender = userProfile.gender || ''
   const dob = userProfile.dob ? new Date(userProfile.dob) : null
   
@@ -63,6 +65,12 @@ const PatientSidebar = () => {
 
   return (
     <div className="profile-sidebar patient-sidebar profile-sidebar-new">
+      <style>{`
+        .profile-sidebar-new .profile-info-widget::after {
+          background-image: none !important;
+          background-color: white !important;
+        }
+      `}</style>
       <div className="widget-profile pro-widget-content">
         <div className="profile-info-widget">
           <Link to="/profile-settings" className="booking-doc-img">

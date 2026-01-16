@@ -40,8 +40,25 @@ const Reviews = () => {
       console.error('Reviews Error:', reviewsError)
     }
   }, [reviewsData, reviewsError, reviews, pagination])
-  const overallRating = doctorProfile?.data?.ratingAvg || 0
-  const ratingCount = doctorProfile?.data?.ratingCount || 0
+  
+  // Calculate overall rating - use doctorProfile ratingAvg if available and > 0, otherwise calculate from reviews
+  const calculateOverallRating = () => {
+    const profileRating = doctorProfile?.data?.ratingAvg
+    // If profile has a valid rating (> 0), use it (it's the overall average from all reviews)
+    if (profileRating && profileRating > 0) {
+      return profileRating
+    }
+    // Otherwise, calculate from the current page's reviews as fallback
+    if (reviews && reviews.length > 0) {
+      const sum = reviews.reduce((acc, review) => acc + (review.rating || 0), 0)
+      return sum / reviews.length
+    }
+    return 0
+  }
+  
+  const overallRating = calculateOverallRating()
+  // Use pagination total from reviews API, fallback to doctorProfile ratingCount, or actual reviews length
+  const ratingCount = pagination?.total || doctorProfile?.data?.ratingCount || reviews.length || 0
 
   // Format date
   const formatDate = (dateString) => {

@@ -561,9 +561,9 @@ const PatientDashboard = () => {
                           <li className="nav-item">
                             <a className="nav-link" href="#medical-tab" data-bs-toggle="tab">Medical Records</a>
                           </li>
-                          <li className="nav-item">
+                          {/* <li className="nav-item">
                             <a className="nav-link" href="#prsc-tab" data-bs-toggle="tab">Prescriptions</a>
-                          </li>
+                          </li> */}
                           <li className="nav-item">
                             <a className="nav-link" href="#invoice-tab" data-bs-toggle="tab">Invoices</a>
                           </li>
