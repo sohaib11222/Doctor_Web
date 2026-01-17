@@ -48,18 +48,6 @@ const Footer = () => {
                     </ul>
                   </div>
                 </div>
-                <div className="col-lg-3 col-md-3">
-                  <div className="footer-widget footer-menu">
-                    <h6 className="footer-title">Utilites</h6>
-                    <ul>
-                      <li><Link to="/pricing">Pricing</Link></li>
-                      <li><Link to="/contact-us">Contact</Link></li>
-                      <li><Link to="/contact-us">Request A Quote</Link></li>
-                      <li><Link to="/pricing">Premium Membership</Link></li>
-                      <li><Link to="/faq">FAQ</Link></li>
-                    </ul>
-                  </div>
-                </div>
               </div>
             </div>
             <div className="col-lg-4 col-md-7">

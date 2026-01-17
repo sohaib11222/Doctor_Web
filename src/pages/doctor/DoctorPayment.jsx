@@ -47,35 +47,79 @@ const DoctorPayment = () => {
     return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
-  // Get status badge class
-  const getStatusBadgeClass = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'APPROVED':
-      case 'COMPLETED':
-        return 'badge badge-green status-badge'
-      case 'PENDING':
-        return 'badge badge-yellow status-badge'
-      case 'REJECTED':
-        return 'badge badge-red status-badge'
-      default:
-        return 'badge badge-grey status-badge'
+  // Get status badge
+  const getStatusBadge = (status) => {
+    const statusUpper = (status || '').toUpperCase()
+    
+    if (statusUpper === 'APPROVED' || statusUpper === 'COMPLETED') {
+      return (
+        <span 
+          className="badge badge-success" 
+          style={{
+            backgroundColor: '#28a745',
+            color: '#fff',
+            padding: '6px 12px',
+            borderRadius: '4px',
+            fontSize: '13px',
+            fontWeight: '500'
+          }}
+        >
+          {statusUpper === 'APPROVED' ? 'Approved' : 'Completed'}
+        </span>
+      )
     }
-  }
-
-  // Get status text
-  const getStatusText = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'APPROVED':
-        return 'Approved'
-      case 'COMPLETED':
-        return 'Completed'
-      case 'PENDING':
-        return 'Pending'
-      case 'REJECTED':
-        return 'Rejected'
-      default:
-        return status || 'N/A'
+    
+    if (statusUpper === 'PENDING') {
+      return (
+        <span 
+          className="badge badge-warning" 
+          style={{
+            backgroundColor: '#ffc107',
+            color: '#000',
+            padding: '6px 12px',
+            borderRadius: '4px',
+            fontSize: '13px',
+            fontWeight: '500'
+          }}
+        >
+          Pending
+        </span>
+      )
     }
+    
+    if (statusUpper === 'REJECTED') {
+      return (
+        <span 
+          className="badge badge-danger" 
+          style={{
+            backgroundColor: '#dc3545',
+            color: '#fff',
+            padding: '6px 12px',
+            borderRadius: '4px',
+            fontSize: '13px',
+            fontWeight: '500'
+          }}
+        >
+          Rejected
+        </span>
+      )
+    }
+    
+    return (
+      <span 
+        className="badge badge-secondary" 
+        style={{
+          backgroundColor: '#6c757d',
+          color: '#fff',
+          padding: '6px 12px',
+          borderRadius: '4px',
+          fontSize: '13px',
+          fontWeight: '500'
+        }}
+      >
+        {status || 'N/A'}
+      </span>
+    )
   }
 
   // Handle withdrawal request
@@ -192,9 +236,7 @@ const DoctorPayment = () => {
                           <td>{withdrawal.paymentMethod || 'N/A'}</td>
                           <td>${(withdrawal.amount || 0).toFixed(2)}</td>
                           <td>
-                            <span className={getStatusBadgeClass(withdrawal.status)}>
-                              {getStatusText(withdrawal.status)}
-                            </span>
+                            {getStatusBadge(withdrawal.status)}
                           </td>
                         </tr>
                       ))}
