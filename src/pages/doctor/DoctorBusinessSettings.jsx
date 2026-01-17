@@ -1,13 +1,44 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 import * as profileApi from '../../api/profile'
+import * as weeklyScheduleApi from '../../api/weeklySchedule'
+import * as subscriptionApi from '../../api/subscription'
+import { getNextTabPath } from '../../utils/profileSettingsTabs'
+import AddTimingsModal from '../../components/common/AddTimingsModal'
+import BuySubscriptionModal from '../../components/common/BuySubscriptionModal'
 
 const DoctorBusinessSettings = () => {
+  const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const [showTimingsModal, setShowTimingsModal] = useState(false)
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
+
+  // Fetch weekly schedule to check if timings are set
+  const { data: weeklySchedule } = useQuery({
+    queryKey: ['weeklySchedule'],
+    queryFn: async () => {
+      const response = await weeklyScheduleApi.getWeeklySchedule()
+      return response.data || response
+    },
+    enabled: !!user,
+    retry: 1
+  })
+
+  // Fetch subscription to check if active subscription exists
+  const { data: mySubscription } = useQuery({
+    queryKey: ['mySubscription'],
+    queryFn: async () => {
+      const response = await subscriptionApi.getMySubscription()
+      return response.data || response
+    },
+    enabled: !!user,
+    retry: 1
+  })
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
   
@@ -61,9 +92,63 @@ const DoctorBusinessSettings = () => {
   // Update doctor profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: (data) => profileApi.updateDoctorProfile(data),
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       queryClient.invalidateQueries(['doctorProfile'])
       toast.success('Business hours updated successfully!')
+      
+      // Check if profile is still incomplete and navigate to next tab
+      // Note: Business Hours is the last tab, so we'll navigate to dashboard if profile is complete
+      try {
+        const updatedProfile = await queryClient.fetchQuery({
+          queryKey: ['doctorProfile'],
+          queryFn: () => profileApi.getDoctorProfile(),
+        })
+        const profileData = updatedProfile?.data || updatedProfile
+        const isProfileCompleted = profileData?.profileCompleted === true
+        
+        if (isProfileCompleted) {
+          // Profile is complete, check if timings are set
+          const schedule = weeklySchedule || { days: [] }
+          const hasTimings = schedule.days && schedule.days.some(day => 
+            day.timeSlots && day.timeSlots.length > 0
+          )
+          
+          // Check if subscription is active
+          const subscription = mySubscription || {}
+          const hasActiveSubscription = subscription.hasActiveSubscription === true || 
+            (subscription.subscriptionPlan && subscription.subscriptionExpiresAt && 
+             new Date(subscription.subscriptionExpiresAt) > new Date())
+          
+          if (!hasActiveSubscription) {
+            // Show subscription modal after a delay
+            setTimeout(() => {
+              setShowSubscriptionModal(true)
+            }, 1500)
+          } else if (!hasTimings) {
+            // Show timings modal after a delay
+            setTimeout(() => {
+              setShowTimingsModal(true)
+            }, 1000)
+          } else {
+            // Navigate to dashboard
+            setTimeout(() => {
+              navigate('/doctor/dashboard')
+            }, 500)
+          }
+        } else {
+          // Still incomplete, but this is the last tab, so stay here
+          // Or navigate to dashboard anyway
+          setTimeout(() => {
+            navigate('/doctor/dashboard')
+          }, 500)
+        }
+      } catch (error) {
+        console.error('Error checking profile completion:', error)
+        // Navigate to dashboard anyway
+        setTimeout(() => {
+          navigate('/doctor/dashboard')
+        }, 500)
+      }
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update business hours'
@@ -180,6 +265,9 @@ const DoctorBusinessSettings = () => {
                     <Link className="nav-link" to="/doctor-profile-settings">Basic Details</Link>
                   </li>
                   <li className="nav-item">
+                    <Link className="nav-link" to="/doctor-specialities">Specialties & Services</Link>
+                  </li>
+                  <li className="nav-item">
                     <Link className="nav-link" to="/doctor-experience-settings">Experience</Link>
                   </li>
                   <li className="nav-item">
@@ -188,9 +276,6 @@ const DoctorBusinessSettings = () => {
                   <li className="nav-item">
                     <Link className="nav-link" to="/doctor-awards-settings">Awards</Link>
                   </li>
-                  {/* <li className="nav-item">
-                    <Link className="nav-link" to="/doctor-insurance-settings">Insurances</Link>
-                  </li> */}
                   <li className="nav-item">
                     <Link className="nav-link" to="/doctor-clinics-settings">Clinics</Link>
                   </li>
@@ -343,6 +428,16 @@ const DoctorBusinessSettings = () => {
           </div>
         </div>
       </div>
+      {/* Add Timings Modal */}
+      <AddTimingsModal 
+        show={showTimingsModal} 
+        onClose={() => setShowTimingsModal(false)} 
+      />
+      {/* Buy Subscription Modal */}
+      <BuySubscriptionModal 
+        show={showSubscriptionModal} 
+        onClose={() => setShowSubscriptionModal(false)} 
+      />
     </div>
   )
 }

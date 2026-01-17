@@ -3,6 +3,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../contexts/AuthContext'
 import * as profileApi from '../../api/profile'
+import * as weeklyScheduleApi from '../../api/weeklySchedule'
+import * as subscriptionApi from '../../api/subscription'
+import * as appointmentApi from '../../api/appointments'
 import { useUnreadNotificationsCount } from '../../queries/notificationQueries'
 import { toast } from 'react-toastify'
 
@@ -146,6 +149,65 @@ const DoctorSidebar = () => {
   // Fetch unread notifications count
   const { data: unreadNotificationsCount = 0 } = useUnreadNotificationsCount()
 
+  // Fetch pending appointment requests count
+  const { data: pendingAppointmentsData } = useQuery({
+    queryKey: ['doctorPendingAppointmentsCount'],
+    queryFn: async () => {
+      const response = await appointmentApi.listAppointments({ status: 'PENDING', limit: 1 })
+      return response.data || response
+    },
+    enabled: !!user,
+    retry: 1,
+    refetchInterval: 30000 // Refetch every 30 seconds to keep count updated
+  })
+
+  // Extract pending appointments count
+  const pendingAppointmentsCount = useMemo(() => {
+    if (!pendingAppointmentsData) return 0
+    const data = pendingAppointmentsData.data || pendingAppointmentsData
+    return data.pagination?.total || data.appointments?.length || 0
+  }, [pendingAppointmentsData])
+
+  // Fetch weekly schedule to check if timings are set
+  const { data: weeklySchedule } = useQuery({
+    queryKey: ['weeklySchedule'],
+    queryFn: async () => {
+      const response = await weeklyScheduleApi.getWeeklySchedule()
+      return response.data || response
+    },
+    enabled: !!user,
+    retry: 1
+  })
+
+  // Fetch subscription to check if active subscription exists
+  const { data: mySubscription } = useQuery({
+    queryKey: ['mySubscription'],
+    queryFn: async () => {
+      const response = await subscriptionApi.getMySubscription()
+      return response.data || response
+    },
+    enabled: !!user,
+    retry: 1
+  })
+
+  // Check if timings are set
+  const hasTimings = useMemo(() => {
+    if (!weeklySchedule) return false
+    const schedule = weeklySchedule.data || weeklySchedule
+    return schedule.days && schedule.days.some(day => 
+      day.timeSlots && day.timeSlots.length > 0
+    )
+  }, [weeklySchedule])
+
+  // Check if subscription is active
+  const hasActiveSubscription = useMemo(() => {
+    if (!mySubscription) return false
+    const subscription = mySubscription.data || mySubscription
+    return subscription.hasActiveSubscription === true || 
+      (subscription.subscriptionPlan && subscription.subscriptionExpiresAt && 
+       new Date(subscription.subscriptionExpiresAt) > new Date())
+  }, [mySubscription])
+
   return (
     <div className="profile-sidebar doctor-sidebar profile-sidebar-new">
       <style>{`
@@ -234,7 +296,9 @@ const DoctorSidebar = () => {
               <Link to="/doctor-request">
                 <i className="fa-solid fa-calendar-check"></i>
                 <span>Requests</span>
-                {/* <small className="unread-msg">2</small> */}
+                {pendingAppointmentsCount > 0 && (
+                  <small className="unread-msg">{pendingAppointmentsCount > 99 ? '99+' : pendingAppointmentsCount}</small>
+                )}
               </Link>
             </li>
             <li className={isActive(['/appointments', '/doctor-appointments-grid', '/doctor-appointment-details', '/doctor-upcoming-appointment', '/doctor-completed-appointment', '/doctor-cancelled-appointment', '/doctor-appointment-start']) ? 'active' : ''}>
@@ -247,18 +311,17 @@ const DoctorSidebar = () => {
               <Link to="/available-timings">
                 <i className="fa-solid fa-calendar-day"></i>
                 <span>Available Timings</span>
+                {!hasTimings && (
+                  <i className="fa-solid fa-exclamation-triangle text-danger ms-2" 
+                     style={{ fontSize: '14px' }} 
+                     title="No available timings set. Please add timings to allow patients to book appointments."></i>
+                )}
               </Link>
             </li>
             <li className={isActive(['/my-patients', '/patient-profile']) ? 'active' : ''}>
               <Link to="/my-patients">
                 <i className="fa-solid fa-user-injured"></i>
                 <span>My Patients</span>
-              </Link>
-            </li>
-            <li className={isActive('/doctor-specialities') ? 'active' : ''}>
-              <Link to="/doctor-specialities">
-                <i className="fa-solid fa-clock"></i>
-                <span>Specialties & Services</span>
               </Link>
             </li>
             <li className={isActive('/reviews') ? 'active' : ''}>
@@ -331,6 +394,11 @@ const DoctorSidebar = () => {
               <Link to="/doctor/subscription-plans">
                 <i className="fa-solid fa-crown"></i>
                 <span>Subscription</span>
+                {!hasActiveSubscription && (
+                  <i className="fa-solid fa-exclamation-triangle text-danger ms-2" 
+                     style={{ fontSize: '14px' }} 
+                     title="No active subscription. Please purchase a subscription plan to allow patients to book appointments."></i>
+                )}
               </Link>
             </li>
             <li className={isActive(['/doctor-profile-settings', '/doctor-experience-settings', '/doctor-education-settings', '/doctor-awards-settings', '/doctor-insurance-settings', '/doctor-clinics-settings', '/doctor-business-settings']) ? 'active' : ''}>

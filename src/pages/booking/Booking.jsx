@@ -359,6 +359,12 @@ const Booking = () => {
       return
     }
 
+    // Check if doctor profile is completed
+    if (doctor && doctor.profileCompleted === false) {
+      toast.error('This doctor\'s profile is incomplete. Appointments cannot be booked until the profile is completed.')
+      return
+    }
+
     const appointmentData = {
       doctorId: formData.doctorId,
       patientId: user._id,

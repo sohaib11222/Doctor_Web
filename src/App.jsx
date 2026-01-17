@@ -276,7 +276,7 @@ function App() {
             } />
             <Route path="/doctor-specialities" element={
               <ProtectedRoute role="DOCTOR" requireApproved={true}>
-                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Speciality & Services", li2: "Speciality & Services" }}><DoctorSpecialities /></DashboardLayout>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorSpecialities /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/reviews" element={

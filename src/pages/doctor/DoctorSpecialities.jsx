@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 import * as specializationApi from '../../api/specialization'
 import * as profileApi from '../../api/profile'
+import { getNextTabPath } from '../../utils/profileSettingsTabs'
 
 const DoctorSpecialities = () => {
+  const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const queryClient = useQueryClient()
 
@@ -39,9 +43,36 @@ const DoctorSpecialities = () => {
   // Update doctor profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: (data) => profileApi.updateDoctorProfile(data),
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       queryClient.invalidateQueries(['doctorProfile'])
       toast.success('Specialization and services updated successfully!')
+      
+      // Check if profile is still incomplete and navigate to next tab
+      try {
+        const updatedProfile = await queryClient.fetchQuery({
+          queryKey: ['doctorProfile'],
+          queryFn: () => profileApi.getDoctorProfile(),
+        })
+        const profileData = updatedProfile?.data || updatedProfile
+        const isProfileCompleted = profileData?.profileCompleted === true
+        
+        if (!isProfileCompleted) {
+          const nextTabPath = getNextTabPath(location.pathname)
+          if (nextTabPath) {
+            setTimeout(() => {
+              navigate(nextTabPath)
+            }, 500)
+          }
+        }
+      } catch (error) {
+        console.error('Error checking profile completion:', error)
+        const nextTabPath = getNextTabPath(location.pathname)
+        if (nextTabPath) {
+          setTimeout(() => {
+            navigate(nextTabPath)
+          }, 500)
+        }
+      }
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update'
@@ -144,12 +175,53 @@ const DoctorSpecialities = () => {
   }
 
   return (
-    <>
-      <div className="dashboard-header">
-        <h3>Speciality & Services</h3>
-      </div>
+    <div className="content doctor-content">
+      <div className="container">
+        <div className="row">
+          <div className="col-lg-4 col-xl-3 theiaStickySidebar">
+            {/* DoctorSidebar will be rendered by DashboardLayout */}
+          </div>
+          <div className="col-lg-12 col-xl-12">
+            {/* Profile Settings */}
+            <div className="dashboard-header">
+              <h3>Profile Settings</h3>
+            </div>
 
-      <form onSubmit={handleSave}>
+            {/* Settings List */}
+            <div className="setting-tab">
+              <div className="appointment-tabs">
+                <ul className="nav">
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/doctor-profile-settings">Basic Details</Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link active" to="/doctor-specialities">Specialties & Services</Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/doctor-experience-settings">Experience</Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/doctor-education-settings">Education</Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/doctor-awards-settings">Awards</Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/doctor-clinics-settings">Clinics</Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/doctor-business-settings">Business Hours</Link>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            {/* /Settings List */}
+
+            <div className="dashboard-header border-0 mb-0">
+              <h3>Speciality & Services</h3>
+            </div>
+
+            <form onSubmit={handleSave}>
         <div className="accordions" id="list-accord">
           {/* Speciality Item */}
           <div className="user-accordion-item">
@@ -328,7 +400,10 @@ const DoctorSpecialities = () => {
           </button>
         </div>
       </form>
-    </>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 

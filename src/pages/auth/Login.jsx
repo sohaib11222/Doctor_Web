@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
+import { useQuery } from '@tanstack/react-query'
+import * as profileApi from '../../api/profile'
+import ProfileIncompleteModal from '../../components/common/ProfileIncompleteModal'
 
 const schema = yup.object({
   email: yup.string().email('Invalid email').required('Email is required'),
@@ -13,8 +16,40 @@ const schema = yup.object({
 
 const Login = () => {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, user } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
+
+  // Fetch doctor profile to check completion status (only for doctors)
+  const { data: doctorProfile, isLoading: profileLoading } = useQuery({
+    queryKey: ['doctorProfile'],
+    queryFn: () => profileApi.getDoctorProfile(),
+    enabled: !!user && user.role === 'DOCTOR',
+    retry: 1
+  })
+
+  // Check profile completion after login
+  useEffect(() => {
+    // Only check after profile has loaded
+    if (user && user.role === 'DOCTOR' && !profileLoading) {
+      const profileData = doctorProfile?.data || doctorProfile
+      // Only show modal if profile is explicitly incomplete (false) or doesn't exist
+      if (!profileData) {
+        // Profile doesn't exist yet, show modal
+        const timer = setTimeout(() => {
+          setShowProfileModal(true)
+        }, 1500)
+        return () => clearTimeout(timer)
+      } else if (profileData.profileCompleted === false || profileData.profileCompleted === undefined || profileData.profileCompleted === null) {
+        // Profile exists but is incomplete
+        const timer = setTimeout(() => {
+          setShowProfileModal(true)
+        }, 1500)
+        return () => clearTimeout(timer)
+      }
+      // If profileCompleted is true, don't show modal
+    }
+  }, [user, doctorProfile, profileLoading])
   
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema)
@@ -131,6 +166,13 @@ const Login = () => {
           </div>
         </div>
       </div>
+      {/* Profile Incomplete Modal */}
+      {user && user.role === 'DOCTOR' && (
+        <ProfileIncompleteModal 
+          show={showProfileModal} 
+          onClose={() => setShowProfileModal(false)} 
+        />
+      )}
     </div>
   )
 }

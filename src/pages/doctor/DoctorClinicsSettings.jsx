@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 import * as profileApi from '../../api/profile'
 import api from '../../api/axios'
+import { getNextTabPath } from '../../utils/profileSettingsTabs'
 
 const DoctorClinicsSettings = () => {
+  const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const clinicCounterRef = useRef(0)
@@ -57,9 +60,36 @@ const DoctorClinicsSettings = () => {
   // Update doctor profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: (data) => profileApi.updateDoctorProfile(data),
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       queryClient.invalidateQueries(['doctorProfile'])
       toast.success('Clinics updated successfully!')
+      
+      // Check if profile is still incomplete and navigate to next tab
+      try {
+        const updatedProfile = await queryClient.fetchQuery({
+          queryKey: ['doctorProfile'],
+          queryFn: () => profileApi.getDoctorProfile(),
+        })
+        const profileData = updatedProfile?.data || updatedProfile
+        const isProfileCompleted = profileData?.profileCompleted === true
+        
+        if (!isProfileCompleted) {
+          const nextTabPath = getNextTabPath(location.pathname)
+          if (nextTabPath) {
+            setTimeout(() => {
+              navigate(nextTabPath)
+            }, 500)
+          }
+        }
+      } catch (error) {
+        console.error('Error checking profile completion:', error)
+        const nextTabPath = getNextTabPath(location.pathname)
+        if (nextTabPath) {
+          setTimeout(() => {
+            navigate(nextTabPath)
+          }, 500)
+        }
+      }
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update clinics'
@@ -248,6 +278,9 @@ const DoctorClinicsSettings = () => {
                     <Link className="nav-link" to="/doctor-profile-settings">Basic Details</Link>
                   </li>
                   <li className="nav-item">
+                    <Link className="nav-link" to="/doctor-specialities">Specialties & Services</Link>
+                  </li>
+                  <li className="nav-item">
                     <Link className="nav-link" to="/doctor-experience-settings">Experience</Link>
                   </li>
                   <li className="nav-item">
@@ -256,9 +289,6 @@ const DoctorClinicsSettings = () => {
                   <li className="nav-item">
                     <Link className="nav-link" to="/doctor-awards-settings">Awards</Link>
                   </li>
-                  {/* <li className="nav-item">
-                    <Link className="nav-link" to="/doctor-insurance-settings">Insurances</Link>
-                  </li> */}
                   <li className="nav-item">
                     <Link className="nav-link active" to="/doctor-clinics-settings">Clinics</Link>
                   </li>

@@ -438,10 +438,40 @@ const DoctorAppointments = () => {
                     {appointment.status === 'PENDING' && (
                       <li className="appointment-start">
                         <button
-                          className="start-link"
+                          className="start-link btn btn-outline-success"
                           onClick={() => handleAccept(appointment._id)}
                           disabled={acceptMutation.isLoading}
+                          style={{
+                            border: '1px solid #28a745',
+                            color: '#28a745',
+                            backgroundColor: 'transparent',
+                            padding: '8px 16px',
+                            borderRadius: '6px',
+                            fontWeight: '500',
+                            fontSize: '14px',
+                            cursor: acceptMutation.isLoading ? 'not-allowed' : 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: 'all 0.3s ease',
+                            opacity: acceptMutation.isLoading ? 0.6 : 1,
+                            minWidth: '100px'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!acceptMutation.isLoading) {
+                              e.target.style.backgroundColor = '#28a745'
+                              e.target.style.color = '#fff'
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!acceptMutation.isLoading) {
+                              e.target.style.backgroundColor = 'transparent'
+                              e.target.style.color = '#28a745'
+                            }
+                          }}
                         >
+                          <i className="fa-solid fa-check"></i>
                           {acceptMutation.isLoading ? 'Processing...' : 'Accept'}
                         </button>
                       </li>

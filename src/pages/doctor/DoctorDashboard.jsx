@@ -1,12 +1,51 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../contexts/AuthContext'
 import * as doctorApi from '../../api/doctor'
+import * as profileApi from '../../api/profile'
+import * as weeklyScheduleApi from '../../api/weeklySchedule'
+import * as subscriptionApi from '../../api/subscription'
+import ProfileIncompleteModal from '../../components/common/ProfileIncompleteModal'
+import AddTimingsModal from '../../components/common/AddTimingsModal'
+import BuySubscriptionModal from '../../components/common/BuySubscriptionModal'
 
 const DoctorDashboard = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showTimingsModal, setShowTimingsModal] = useState(false)
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
+
+  // Fetch doctor profile to check completion status
+  const { data: doctorProfile, isLoading: profileLoading } = useQuery({
+    queryKey: ['doctorProfile'],
+    queryFn: () => profileApi.getDoctorProfile(),
+    enabled: !!user,
+    retry: 1
+  })
+
+  // Fetch weekly schedule to check if timings are set
+  const { data: weeklySchedule, isLoading: scheduleLoading } = useQuery({
+    queryKey: ['weeklySchedule'],
+    queryFn: async () => {
+      const response = await weeklyScheduleApi.getWeeklySchedule()
+      return response.data || response
+    },
+    enabled: !!user,
+    retry: 1
+  })
+
+  // Fetch subscription to check if active subscription exists
+  const { data: mySubscription, isLoading: subscriptionLoading } = useQuery({
+    queryKey: ['mySubscription'],
+    queryFn: async () => {
+      const response = await subscriptionApi.getMySubscription()
+      return response.data || response
+    },
+    enabled: !!user,
+    retry: 1
+  })
 
   // Fetch dashboard statistics
   const { data: dashboardData, isLoading, error, isError } = useQuery({
@@ -16,6 +55,56 @@ const DoctorDashboard = () => {
     refetchInterval: 30000, // Refetch every 30 seconds
     retry: 1
   })
+
+  // Check profile completion and show modal if incomplete
+  useEffect(() => {
+    // Only check after profile has loaded (not loading and data exists or is null)
+    if (user && user.role === 'DOCTOR' && !profileLoading) {
+      const profileData = doctorProfile?.data || doctorProfile
+      // Only show modal if profile is explicitly incomplete (false) or doesn't exist
+      // Don't show if profileCompleted is true
+      if (!profileData) {
+        // Profile doesn't exist yet, show modal
+        const timer = setTimeout(() => {
+          setShowProfileModal(true)
+        }, 1000)
+        return () => clearTimeout(timer)
+      } else if (profileData.profileCompleted === false || profileData.profileCompleted === undefined || profileData.profileCompleted === null) {
+        // Profile exists but is incomplete
+        const timer = setTimeout(() => {
+          setShowProfileModal(true)
+        }, 1000)
+        return () => clearTimeout(timer)
+      } else if (profileData.profileCompleted === true && !scheduleLoading && !subscriptionLoading) {
+        // Profile is complete, check if subscription is active (only after both have loaded)
+        const subscription = mySubscription?.data || mySubscription
+        const hasActiveSubscription = subscription?.hasActiveSubscription === true || 
+          (subscription?.subscriptionPlan && subscription?.subscriptionExpiresAt && 
+           new Date(subscription.subscriptionExpiresAt) > new Date())
+        
+        // Check if timings are set
+        const schedule = weeklySchedule?.data || weeklySchedule
+        const hasTimings = schedule && schedule.days && schedule.days.some(day => 
+          day.timeSlots && day.timeSlots.length > 0
+        )
+        
+        if (!hasActiveSubscription) {
+          // Show subscription modal after a delay
+          const timer = setTimeout(() => {
+            setShowSubscriptionModal(true)
+          }, 2500)
+          return () => clearTimeout(timer)
+        } else if (!hasTimings) {
+          // Show timings modal after a delay
+          const timer = setTimeout(() => {
+            setShowTimingsModal(true)
+          }, 2000)
+          return () => clearTimeout(timer)
+        }
+      }
+      // If profileCompleted is true, subscription is active, and timings are set, don't show any modal
+    }
+  }, [user, doctorProfile, profileLoading, weeklySchedule, scheduleLoading, mySubscription, subscriptionLoading])
 
   // Extract dashboard data from response
   const dashboard = useMemo(() => {
@@ -259,6 +348,11 @@ const DoctorDashboard = () => {
   // Note: This would need to be fetched separately or included in dashboard API
   const recentTransactions = [] // Placeholder - would need separate API call
 
+  // Check if profile is incomplete
+  const doctorData = doctorProfile?.data || doctorProfile || {}
+  // Only consider profile complete if explicitly true, otherwise show banner
+  const isProfileCompleted = doctorData.profileCompleted === true && !profileLoading
+
   return (
     <div className="content">
       <div className="container">
@@ -267,6 +361,20 @@ const DoctorDashboard = () => {
             {/* Sidebar is handled by DashboardLayout */}
           </div>
           <div className="col-lg-12 col-xl-12">
+            {/* Profile Incomplete Banner */}
+            {!isProfileCompleted && (
+              <div className="alert alert-warning alert-dismissible fade show" role="alert" style={{ marginBottom: '20px' }}>
+                <div className="d-flex align-items-center">
+                  <i className="fa-solid fa-exclamation-triangle me-2" style={{ fontSize: '20px' }}></i>
+                  <div className="flex-grow-1">
+                    <strong>Profile Incomplete!</strong> Your profile is not complete. Please complete your profile to start accepting appointments.
+                    <Link to="/doctor-profile-settings" className="alert-link ms-2">
+                      Complete Profile Now
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="row">
               {/* Statistics Cards */}
               <div className="col-xl-4 d-flex">
@@ -622,6 +730,21 @@ const DoctorDashboard = () => {
           </div>
         </div>
       </div>
+      {/* Profile Incomplete Modal */}
+      <ProfileIncompleteModal 
+        show={showProfileModal} 
+        onClose={() => setShowProfileModal(false)} 
+      />
+      {/* Add Timings Modal */}
+      <AddTimingsModal 
+        show={showTimingsModal} 
+        onClose={() => setShowTimingsModal(false)} 
+      />
+      {/* Buy Subscription Modal */}
+      <BuySubscriptionModal 
+        show={showSubscriptionModal} 
+        onClose={() => setShowSubscriptionModal(false)} 
+      />
     </div>
   )
 }

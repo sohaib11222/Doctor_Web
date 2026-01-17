@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 import * as profileApi from '../../api/profile'
 import api from '../../api/axios'
+import { getNextTabPath } from '../../utils/profileSettingsTabs'
 
 const DoctorProfileSettings = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const queryClient = useQueryClient()
 
@@ -58,6 +60,8 @@ const DoctorProfileSettings = () => {
         // Update user in context if needed
       }
       toast.success('Profile updated successfully!')
+      // Navigation is handled by updateDoctorProfileMutation if both are updated
+      // If only user profile is updated, we don't navigate (Basic Details tab)
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update profile'
@@ -68,10 +72,40 @@ const DoctorProfileSettings = () => {
   // Update doctor profile mutation
   const updateDoctorProfileMutation = useMutation({
     mutationFn: (data) => profileApi.updateDoctorProfile(data),
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       queryClient.invalidateQueries(['doctorProfile'])
       queryClient.invalidateQueries(['userProfile', user?._id])
       toast.success('Doctor profile updated successfully!')
+      
+      // Check if profile is still incomplete and navigate to next tab
+      try {
+        const updatedProfile = await queryClient.fetchQuery({
+          queryKey: ['doctorProfile'],
+          queryFn: () => profileApi.getDoctorProfile(),
+        })
+        const profileData = updatedProfile?.data || updatedProfile
+        const isProfileCompleted = profileData?.profileCompleted === true
+        
+        // Only navigate if profile is still incomplete
+        if (!isProfileCompleted) {
+          const nextTabPath = getNextTabPath(location.pathname)
+          if (nextTabPath) {
+            // Small delay to show success message before navigation
+            setTimeout(() => {
+              navigate(nextTabPath)
+            }, 500)
+          }
+        }
+      } catch (error) {
+        console.error('Error checking profile completion:', error)
+        // Still try to navigate even if check fails
+        const nextTabPath = getNextTabPath(location.pathname)
+        if (nextTabPath) {
+          setTimeout(() => {
+            navigate(nextTabPath)
+          }, 500)
+        }
+      }
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update doctor profile'
@@ -107,29 +141,53 @@ const DoctorProfileSettings = () => {
 
   // Initialize form data when profiles are loaded
   useEffect(() => {
-    if (userProfile?.data) {
-      const user = userProfile.data
-      setUserProfileData({
-        fullName: user.fullName || '',
-        phone: user.phone || '',
-        profileImage: user.profileImage || ''
-      })
-      setProfileImagePreview(user.profileImage || '')
+    console.log('UserProfile Data:', userProfile)
+    if (userProfile) {
+      // Axios interceptor returns response.data, so userProfile is already { success, message, data } or { data }
+      const userData = userProfile.data || userProfile
+      console.log('User Data:', userData)
+      
+      if (userData) {
+        const profileImage = userData.profileImage || ''
+        setUserProfileData({
+          fullName: userData.fullName || '',
+          phone: userData.phone || '',
+          profileImage: profileImage
+        })
+        // Set preview - use relative URL for preview if it's a full URL, extract relative part
+        if (profileImage) {
+          if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
+            // Extract relative path from full URL
+            const urlObj = new URL(profileImage)
+            setProfileImagePreview(urlObj.pathname)
+          } else {
+            setProfileImagePreview(profileImage)
+          }
+        } else {
+          setProfileImagePreview('')
+        }
+      }
     }
   }, [userProfile])
 
   useEffect(() => {
-    if (doctorProfile?.data) {
-      const profile = doctorProfile.data
-      setDoctorProfileData({
-        title: profile.title || '',
-        biography: profile.biography || '',
-        memberships: profile.memberships || [],
-        consultationFees: {
-          clinic: profile.consultationFees?.clinic || '',
-          online: profile.consultationFees?.online || ''
-        }
-      })
+    console.log('DoctorProfile Data:', doctorProfile)
+    if (doctorProfile) {
+      // Axios interceptor returns response.data, so doctorProfile is already { success, message, data } or { data }
+      const profileData = doctorProfile.data || doctorProfile
+      console.log('Profile Data:', profileData)
+      
+      if (profileData) {
+        setDoctorProfileData({
+          title: profileData.title || '',
+          biography: profileData.biography || '',
+          memberships: profileData.memberships || [],
+          consultationFees: {
+            clinic: profileData.consultationFees?.clinic || '',
+            online: profileData.consultationFees?.online || ''
+          }
+        })
+      }
     }
   }, [doctorProfile])
 
@@ -340,6 +398,9 @@ const DoctorProfileSettings = () => {
                 <ul className="nav">
                   <li className="nav-item">
                     <Link className="nav-link active" to="/doctor-profile-settings">Basic Details</Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/doctor-specialities">Specialties & Services</Link>
                   </li>
                   <li className="nav-item">
                     <Link className="nav-link" to="/doctor-experience-settings">Experience</Link>

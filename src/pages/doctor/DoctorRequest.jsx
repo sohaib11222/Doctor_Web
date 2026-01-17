@@ -26,6 +26,7 @@ const DoctorRequest = () => {
     mutationFn: (appointmentId) => appointmentApi.acceptAppointment(appointmentId),
     onSuccess: () => {
       queryClient.invalidateQueries(['doctorPendingAppointments'])
+      queryClient.invalidateQueries(['doctorPendingAppointmentsCount'])
       queryClient.invalidateQueries(['doctorAppointments'])
       toast.success('Appointment accepted successfully!')
     },
@@ -40,6 +41,7 @@ const DoctorRequest = () => {
     mutationFn: ({ appointmentId, reason }) => appointmentApi.rejectAppointment(appointmentId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries(['doctorPendingAppointments'])
+      queryClient.invalidateQueries(['doctorPendingAppointmentsCount'])
       queryClient.invalidateQueries(['doctorAppointments'])
       toast.success('Appointment rejected successfully!')
       setRejectModal({ show: false, appointmentId: null, reason: '' })
@@ -203,18 +205,72 @@ const DoctorRequest = () => {
                 <ul className="request-action">
                   <li>
                     <button 
-                      className="accept-link" 
+                      className="accept-link btn btn-outline-success" 
                       onClick={() => handleAccept(appointment._id)}
                       disabled={acceptMutation.isPending}
+                      style={{
+                        border: '1px solid #28a745',
+                        color: '#28a745',
+                        backgroundColor: 'transparent',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        fontWeight: '500',
+                        fontSize: '14px',
+                        cursor: acceptMutation.isPending ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'all 0.3s ease',
+                        opacity: acceptMutation.isPending ? 0.6 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!acceptMutation.isPending) {
+                          e.target.style.backgroundColor = '#28a745'
+                          e.target.style.color = '#fff'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!acceptMutation.isPending) {
+                          e.target.style.backgroundColor = 'transparent'
+                          e.target.style.color = '#28a745'
+                        }
+                      }}
                     >
                       <i className="fa-solid fa-check"></i>Accept
                     </button>
                   </li>
                   <li>
                     <button 
-                      className="reject-link" 
+                      className="reject-link btn btn-outline-danger" 
                       onClick={() => handleReject(appointment._id)}
                       disabled={rejectMutation.isPending}
+                      style={{
+                        border: '1px solid #dc3545',
+                        color: '#dc3545',
+                        backgroundColor: 'transparent',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        fontWeight: '500',
+                        fontSize: '14px',
+                        cursor: rejectMutation.isPending ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'all 0.3s ease',
+                        opacity: rejectMutation.isPending ? 0.6 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!rejectMutation.isPending) {
+                          e.target.style.backgroundColor = '#dc3545'
+                          e.target.style.color = '#fff'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!rejectMutation.isPending) {
+                          e.target.style.backgroundColor = 'transparent'
+                          e.target.style.color = '#dc3545'
+                        }
+                      }}
                     >
                       <i className="fa-solid fa-xmark"></i>Reject
                     </button>

@@ -284,7 +284,8 @@ const Search = () => {
 
   // Get rating
   const getRating = (doctor) => {
-    return doctor.doctorProfile?.ratingAvg || doctor.rating?.average || 0
+    // The listDoctors API returns ratingAvg directly on the doctor object
+    return doctor.ratingAvg || doctor.doctorProfile?.ratingAvg || doctor.rating?.average || 0
   }
 
   // Normalize image URL
