@@ -123,7 +123,7 @@ const DoctorPayment = () => {
                   </div>
                   <button className="btn" disabled><i className="fa-solid fa-gear"></i>Configure</button>
                 </div>
-                <div className="stripe-box active">
+                {/* <div className="stripe-box active">
                   <div className="stripe-img">
                     <img src="/assets/img/icons/paypal.svg" alt="img" />
                   </div>
@@ -133,7 +133,7 @@ const DoctorPayment = () => {
                   >
                     <i className="fa-solid fa-gear"></i>Configure
                   </button>
-                </div>
+                </div> */}
               </div>
               <div className="mt-3">
                 <div className="d-flex justify-content-between align-items-center p-3 bg-light rounded">

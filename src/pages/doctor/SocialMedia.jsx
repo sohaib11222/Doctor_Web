@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
@@ -204,7 +205,17 @@ const SocialMedia = () => {
           
           <div className="col-lg-12 col-xl-12">
             <div className="dashboard-header">
-              <h3>Social Media</h3>
+              <div className="d-flex align-items-center mb-2">
+                <Link 
+                  to="/doctor/dashboard" 
+                  className="btn btn-sm btn-outline-secondary me-2"
+                  style={{ minWidth: '40px', padding: '4px 8px' }}
+                  title="Back to Dashboard"
+                >
+                  <i className="fa-solid fa-chevron-left"></i>
+                </Link>
+                <h3 className="mb-0">Social Media</h3>
+              </div>
             </div>
             <form onSubmit={handleSubmit} className="social-media-form">
               {socialPlatforms.map((platform) => (

@@ -190,7 +190,17 @@ const PharmacyOrders = () => {
           <div className="col-lg-4 col-xl-3 theiaStickySidebar"></div>
           <div className="col-lg-12 col-xl-12">
             <div className="dashboard-header">
-              <h3>Pharmacy Orders</h3>
+              <div className="d-flex align-items-center mb-2">
+                <Link 
+                  to="/doctor/dashboard" 
+                  className="btn btn-sm btn-outline-secondary me-2"
+                  style={{ minWidth: '40px', padding: '4px 8px' }}
+                  title="Back to Dashboard"
+                >
+                  <i className="fa-solid fa-chevron-left"></i>
+                </Link>
+                <h3 className="mb-0">Pharmacy Orders</h3>
+              </div>
             </div>
 
             {/* Filter Tabs */}

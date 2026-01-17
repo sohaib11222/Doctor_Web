@@ -213,11 +213,21 @@ const BlogCreateEdit = () => {
           <div className="col-lg-12 col-xl-12">
             <div className="dashboard-header">
               <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <h3>{isEdit ? 'Edit Blog Post' : 'Create New Blog Post'}</h3>
-                  <p className="text-muted mb-0">
-                    {isEdit ? 'Update your blog post' : 'Share your knowledge with the community'}
-                  </p>
+                <div className="d-flex align-items-center">
+                  <Link 
+                    to="/doctor/dashboard" 
+                    className="btn btn-sm btn-outline-secondary me-2"
+                    style={{ minWidth: '40px', padding: '4px 8px' }}
+                    title="Back to Dashboard"
+                  >
+                    <i className="fa-solid fa-chevron-left"></i>
+                  </Link>
+                  <div>
+                    <h3 className="mb-0">{isEdit ? 'Edit Blog Post' : 'Create New Blog Post'}</h3>
+                    <p className="text-muted mb-0">
+                      {isEdit ? 'Update your blog post' : 'Share your knowledge with the community'}
+                    </p>
+                  </div>
                 </div>
                 <Link to="/blog" className="btn btn-outline-secondary">
                   <i className="fe fe-arrow-left me-2"></i>

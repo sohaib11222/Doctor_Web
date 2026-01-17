@@ -179,7 +179,7 @@ const Header = () => {
                 <div className="col-md-3">
                   <div className="cart-logo">
                     <Link to="/">
-                      <img src="/assets/img/logo.svg" className="img-fluid" alt="Logo" />
+                      <img src="/assets/img/doctor_final.png" className="img-fluid" alt="Logo" />
                     </Link>
                   </div>
                 </div>
@@ -245,15 +245,7 @@ const Header = () => {
                 </span>
               </a>
               <Link to="/" className="navbar-brand logo">
-                {location.pathname === '/index-2' || location.pathname === '/index-11' ? (
-                  <img src="/assets/img/logo.png" className="img-fluid" alt="Logo" />
-                ) : location.pathname === '/index-6' ? (
-                  <img src="/assets/img/footer-logo.png" className="img-fluid" alt="Logo" />
-                ) : location.pathname === '/index-7' ? (
-                  <img src="/assets/img/veterinary-home-logo.svg" className="img-fluid" alt="Logo" />
-                ) : (
-                  <img src="/assets/img/logo.svg" className="img-fluid" alt="Logo" />
-                )}
+                <img src="/assets/img/doctor_final.png" className="img-fluid" alt="Logo" />
               </Link>
             </div>
 
@@ -276,7 +268,7 @@ const Header = () => {
             <div className={`main-menu-wrapper ${isMenuOpen ? 'menu-opened' : ''}`}>
               <div className="menu-header">
                 <Link to="/" className="menu-logo">
-                  <img src="/assets/img/logo.svg" className="img-fluid" alt="Logo" />
+                  <img src="/assets/img/doctor_final.png" className="img-fluid" alt="Logo" />
                 </Link>
                 <a id="menu_close" className="menu-close" href="javascript:void(0);" onClick={() => setIsMenuOpen(false)}>
                   <i className="fas fa-times"></i>

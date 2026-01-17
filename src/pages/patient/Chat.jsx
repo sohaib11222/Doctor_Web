@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
@@ -12,6 +12,7 @@ const Chat = () => {
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [newMessage, setNewMessage] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -20,11 +21,13 @@ const Chat = () => {
   const doctorIdFromUrl = searchParams.get('doctorId')
   const appointmentIdFromUrl = searchParams.get('appointmentId')
 
-  // Fetch patient's appointments to get conversations
+  // Fetch patient's appointments to get conversations with long polling
   const { data: appointmentsData, isLoading: appointmentsLoading, refetch: refetchAppointments } = useQuery({
     queryKey: ['patientAppointments'],
     queryFn: () => appointmentApi.listAppointments({ status: 'CONFIRMED', limit: 100 }),
-    enabled: !!user
+    enabled: !!user,
+    refetchInterval: 5000, // Poll every 5 seconds for new conversations
+    refetchIntervalInBackground: true
   })
 
   // Extract appointments
@@ -50,14 +53,16 @@ const Chat = () => {
     }))
   }, [appointments])
 
-  // Fetch messages for selected conversation
+  // Fetch messages for selected conversation with long polling
   const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = useQuery({
-    queryKey: ['patientConversationMessages', selectedConversation?._id],
+    queryKey: ['patientConversationMessages', selectedConversation?.conversationId],
     queryFn: () => {
       if (!selectedConversation?.conversationId) return null
       return chatApi.getMessages(selectedConversation.conversationId)
     },
-    enabled: !!selectedConversation?.conversationId
+    enabled: !!selectedConversation?.conversationId,
+    refetchInterval: 2000, // Poll every 2 seconds for real-time updates
+    refetchIntervalInBackground: true // Continue polling even when tab is in background
   })
 
   // Extract messages
@@ -67,9 +72,15 @@ const Chat = () => {
     return Array.isArray(responseData) ? responseData : (responseData.messages || [])
   }, [messagesData])
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive (only scroll messages container, not entire page)
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesContainerRef.current) {
+      // Scroll only the messages container, not the entire page
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    } else if (messagesEndRef.current) {
+      // Fallback: scroll the end element into view within its container
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
   }
 
   useEffect(() => {
@@ -306,6 +317,7 @@ const Chat = () => {
           gap: 24px;
           height: calc(100vh - 192px);
           max-height: calc(100vh - 192px);
+          position: relative;
         }
         .chat-list-sidebar {
           width: 400px;
@@ -316,10 +328,12 @@ const Chat = () => {
           display: flex;
           flex-direction: column;
           overflow: hidden;
+          height: 100%;
         }
         .chat-list-header {
           padding: 12px;
           border-bottom: 1px solid #e5e5e5;
+          flex-shrink: 0;
         }
         .chat-list-header h4 {
           font-size: 20px;
@@ -438,6 +452,7 @@ const Chat = () => {
           flex-direction: column;
           overflow: hidden;
           min-width: 0;
+          height: 100%;
         }
         .chat-details-header {
           padding: 15px;
@@ -446,6 +461,10 @@ const Chat = () => {
           justify-content: space-between;
           align-items: center;
           flex-shrink: 0;
+          position: sticky;
+          top: 0;
+          background: #fff;
+          z-index: 10;
         }
         .chat-details-user {
           display: flex;
@@ -571,6 +590,9 @@ const Chat = () => {
           gap: 12px;
           flex-shrink: 0;
           background: #fff;
+          position: sticky;
+          bottom: 0;
+          z-index: 10;
         }
         .chat-input-field {
           flex: 1;
@@ -621,6 +643,15 @@ const Chat = () => {
           .chat-list-sidebar {
             width: 100%;
             max-height: 400px;
+            position: relative;
+            height: auto;
+          }
+          .chat-details-area {
+            margin-left: 0;
+            position: relative;
+            height: auto;
+            max-height: none;
+            margin-top: 24px;
           }
         }
       `}</style>
@@ -631,7 +662,17 @@ const Chat = () => {
               {/* Left Sidebar - Chat List */}
               <div className="chat-list-sidebar">
                 <div className="chat-list-header">
-                  <h4>All Chats</h4>
+                  <div className="d-flex align-items-center mb-2">
+                    <Link 
+                      to="/patient/dashboard" 
+                      className="btn btn-sm btn-outline-secondary me-2"
+                      style={{ minWidth: '40px', padding: '4px 8px' }}
+                      title="Back to Dashboard"
+                    >
+                      <i className="fa-solid fa-chevron-left"></i>
+                    </Link>
+                    <h4 className="mb-0">All Chats</h4>
+                  </div>
                   <div className="chat-search-box">
                     <span className="form-control-feedback">
                       <i className="fa-solid fa-magnifying-glass"></i>
@@ -714,7 +755,7 @@ const Chat = () => {
                       </div>
                     </div>
 
-                    <div className="chat-messages-area">
+                    <div className="chat-messages-area" ref={messagesContainerRef}>
                       {messagesLoading ? (
                         <div className="text-center py-5">
                           <div className="spinner-border text-primary" role="status">

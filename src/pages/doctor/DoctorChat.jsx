@@ -11,6 +11,7 @@ const DoctorChat = () => {
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [newMessage, setNewMessage] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -30,14 +31,16 @@ const DoctorChat = () => {
   const patientIdFromUrl = searchParams.get('patientId')
   const appointmentIdFromUrl = searchParams.get('appointmentId')
 
-  // Fetch all conversations
+  // Fetch all conversations with long polling
   const { data: conversationsData, isLoading: conversationsLoading, refetch: refetchConversations } = useQuery({
     queryKey: ['doctorPatientConversations'],
     queryFn: () => chatApi.getConversations(),
-    enabled: !!user
+    enabled: !!user,
+    refetchInterval: 5000, // Poll every 5 seconds for new conversations
+    refetchIntervalInBackground: true
   })
 
-  // Fetch messages for selected conversation
+  // Fetch messages for selected conversation with long polling
   const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = useQuery({
     queryKey: ['conversationMessages', selectedConversation?._id],
     queryFn: async () => {
@@ -46,7 +49,9 @@ const DoctorChat = () => {
       console.log('Fetched messages:', response)
       return response
     },
-    enabled: !!selectedConversation?._id
+    enabled: !!selectedConversation?._id,
+    refetchInterval: 2000, // Poll every 2 seconds for real-time updates
+    refetchIntervalInBackground: true // Continue polling even when tab is in background
   })
 
   // Fetch unread count
@@ -260,8 +265,15 @@ const DoctorChat = () => {
     }
   }, [selectedConversation?._id])
 
+  // Auto-scroll to bottom when new messages arrive (only scroll messages container, not entire page)
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesContainerRef.current) {
+      // Scroll only the messages container, not the entire page
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    } else if (messagesEndRef.current) {
+      // Fallback: scroll the end element into view within its container
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
   }
 
   const handleSelectConversation = (conversation) => {
@@ -379,6 +391,7 @@ const DoctorChat = () => {
           gap: 24px;
           height: calc(100vh - 192px);
           max-height: calc(100vh - 192px);
+          position: relative;
         }
         .chat-list-sidebar {
           width: 400px;
@@ -389,10 +402,12 @@ const DoctorChat = () => {
           display: flex;
           flex-direction: column;
           overflow: hidden;
+          height: 100%;
         }
         .chat-list-header {
           padding: 12px;
           border-bottom: 1px solid #e5e5e5;
+          flex-shrink: 0;
         }
         .chat-list-header h4 {
           font-size: 20px;
@@ -525,6 +540,7 @@ const DoctorChat = () => {
           flex-direction: column;
           overflow: hidden;
           min-width: 0;
+          height: 100%;
         }
         .chat-details-header {
           padding: 15px;
@@ -533,6 +549,10 @@ const DoctorChat = () => {
           justify-content: space-between;
           align-items: center;
           flex-shrink: 0;
+          position: sticky;
+          top: 0;
+          background: #fff;
+          z-index: 10;
         }
         .chat-details-user {
           display: flex;
@@ -654,25 +674,9 @@ const DoctorChat = () => {
           gap: 12px;
           flex-shrink: 0;
           background: #fff;
-        }
-        .chat-input-actions {
-          display: flex;
-          gap: 8px;
-        }
-        .chat-input-actions button {
-          width: 36px;
-          height: 36px;
-          border: none;
-          background: transparent;
-          border-radius: 50%;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #666;
-        }
-        .chat-input-actions button:hover {
-          background: #f5f5f5;
+          position: sticky;
+          bottom: 0;
+          z-index: 10;
         }
         .chat-input-field {
           flex: 1;
@@ -708,8 +712,14 @@ const DoctorChat = () => {
           .chat-list-sidebar {
             width: 100%;
             max-height: 400px;
+            position: relative;
+            height: auto;
           }
           .chat-details-area {
+            margin-left: 0;
+            position: relative;
+            height: auto;
+            max-height: none;
             display: none;
           }
           .chat-details-area.show {
@@ -724,7 +734,17 @@ const DoctorChat = () => {
               {/* Left Sidebar - Chat List */}
               <div className="chat-list-sidebar">
                 <div className="chat-list-header">
-                  <h4>All Chats</h4>
+                  <div className="d-flex align-items-center mb-2">
+                    <Link 
+                      to="/doctor/dashboard" 
+                      className="btn btn-sm btn-outline-secondary me-2"
+                      style={{ minWidth: '40px', padding: '4px 8px' }}
+                      title="Back to Dashboard"
+                    >
+                      <i className="fa-solid fa-chevron-left"></i>
+                    </Link>
+                    <h4 className="mb-0">All Chats</h4>
+                  </div>
                   <div className="chat-search-box">
                     <span className="form-control-feedback">
                       <i className="fa-solid fa-magnifying-glass"></i>
@@ -821,7 +841,7 @@ const DoctorChat = () => {
                       </div>
                     </div>
 
-                    <div className="chat-messages-area">
+                    <div className="chat-messages-area" ref={messagesContainerRef}>
                       {messagesLoading ? (
                         <div className="text-center py-5">
                           <div className="spinner-border" role="status">
@@ -882,43 +902,28 @@ const DoctorChat = () => {
                     </div>
 
                     {/* Chat Input Area */}
-                    <div className="chat-input-area">
-                      <div className="chat-input-actions">
-                        <button type="button" title="More options">
-                          <i className="fa-solid fa-ellipsis-vertical"></i>
-                        </button>
-                        <button type="button" title="Emoji">
-                          <i className="fa-regular fa-face-smile"></i>
-                        </button>
-                        <button type="button" title="Voice message">
-                          <i className="fa-solid fa-microphone"></i>
-                        </button>
-                      </div>
-                      <form onSubmit={handleSendMessage} style={{ flex: 1, display: 'flex', gap: '12px' }}>
-                        <input
-                          type="text"
-                          className="chat-input-field"
-                          placeholder="Type your message here..."
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          disabled={sendMessageMutation.isLoading}
-                        />
-                        <button
-                          type="submit"
-                          className="chat-send-button"
-                          title="Send"
-                          disabled={!newMessage.trim() || sendMessageMutation.isLoading}
-                        >
-                          {sendMessageMutation.isLoading ? (
-                            <span className="spinner-border spinner-border-sm" role="status">
-                              <span className="visually-hidden">Sending...</span>
-                            </span>
-                          ) : (
-                            <i className="fa-solid fa-paper-plane"></i>
-                          )}
-                        </button>
-                      </form>
-                    </div>
+                    <form className="chat-input-area" onSubmit={handleSendMessage}>
+                      <input
+                        type="text"
+                        className="chat-input-field"
+                        placeholder="Type your message here..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        disabled={sendMessageMutation.isLoading}
+                      />
+                      <button
+                        type="submit"
+                        className="chat-send-button"
+                        disabled={!newMessage.trim() || sendMessageMutation.isLoading}
+                        title="Send"
+                      >
+                        {sendMessageMutation.isLoading ? (
+                          <i className="fa-solid fa-spinner fa-spin"></i>
+                        ) : (
+                          <i className="fa-solid fa-paper-plane"></i>
+                        )}
+                      </button>
+                    </form>
                   </>
                 ) : (
                   <div

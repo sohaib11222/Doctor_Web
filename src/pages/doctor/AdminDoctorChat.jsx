@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
@@ -6,8 +7,10 @@ import * as chatApi from '../../api/chat'
 
 const AdminDoctorChat = () => {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [newMessage, setNewMessage] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -23,14 +26,16 @@ const AdminDoctorChat = () => {
     return () => window.removeEventListener('error', errorHandler)
   }, [])
 
-  // Fetch all conversations (admin-doctor only for this page)
+  // Fetch all conversations (admin-doctor only for this page) with long polling
   const { data: conversationsData, isLoading: conversationsLoading, refetch: refetchConversations } = useQuery({
     queryKey: ['adminDoctorConversations'],
     queryFn: () => chatApi.getConversations(),
-    enabled: !!user
+    enabled: !!user,
+    refetchInterval: 5000, // Poll every 5 seconds for new conversations
+    refetchIntervalInBackground: true
   })
 
-  // Fetch messages for selected conversation
+  // Fetch messages for selected conversation with long polling
   const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = useQuery({
     queryKey: ['conversationMessages', selectedConversation?._id],
     queryFn: async () => {
@@ -39,7 +44,9 @@ const AdminDoctorChat = () => {
       console.log('Fetched messages:', response)
       return response
     },
-    enabled: !!selectedConversation?._id
+    enabled: !!selectedConversation?._id,
+    refetchInterval: 2000, // Poll every 2 seconds for real-time updates
+    refetchIntervalInBackground: true // Continue polling even when tab is in background
   })
 
   // Fetch unread count
@@ -210,8 +217,15 @@ const AdminDoctorChat = () => {
     }
   }, [selectedConversation?._id])
 
+  // Auto-scroll to bottom when new messages arrive (only scroll messages container, not entire page)
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesContainerRef.current) {
+      // Scroll only the messages container, not the entire page
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    } else if (messagesEndRef.current) {
+      // Fallback: scroll the end element into view within its container
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
   }
 
   const handleSelectConversation = (conversation) => {
@@ -287,8 +301,20 @@ const AdminDoctorChat = () => {
           </div>
           <div className="col-lg-12 col-xl-12">
             <div className="dashboard-header">
-              <h3>Admin Messages</h3>
-              <p className="text-muted">Communicate with platform administrators</p>
+              <div className="d-flex align-items-center mb-3">
+                <Link 
+                  to="/doctor/dashboard" 
+                  className="btn btn-sm btn-outline-secondary me-3"
+                  style={{ minWidth: '40px' }}
+                  title="Back to Dashboard"
+                >
+                  <i className="fa-solid fa-chevron-left"></i>
+                </Link>
+                <div>
+                  <h3 className="mb-0">Admin Messages</h3>
+                  <p className="text-muted mb-0">Communicate with platform administrators</p>
+                </div>
+              </div>
               <p className="text-muted small">
                 <strong>Note:</strong> Admin conversations appear here once an administrator starts a conversation with you, 
                 or you can send a message to start a new conversation.
@@ -342,7 +368,7 @@ const AdminDoctorChat = () => {
                                 style={{ cursor: 'pointer' }}
                               >
                                 <div className="d-flex align-items-center">
-                                  <div className="avatar avatar-sm me-3 position-relative">
+                                  {/* <div className="avatar avatar-sm me-3 position-relative">
                                     <img
                                       src={admin?.profileImage || '/assets/img/doctors/doctor-thumb-01.jpg'}
                                       alt={admin?.fullName || 'Admin'}
@@ -352,7 +378,7 @@ const AdminDoctorChat = () => {
                                         e.target.src = '/assets/img/doctors/doctor-thumb-01.jpg'
                                       }}
                                     />
-                                  </div>
+                                  </div> */}
                                   <div className="flex-grow-1">
                                     <h6 className="mb-1">{admin?.fullName || 'Admin'}</h6>
                                     <p className="text-muted small mb-0 text-truncate" style={{ maxWidth: '150px' }}>
@@ -380,7 +406,7 @@ const AdminDoctorChat = () => {
                       <>
                         <div className="chat-header p-3 border-bottom">
                           <div className="d-flex align-items-center">
-                            <div className="avatar avatar-sm me-3 position-relative">
+                            {/* <div className="avatar avatar-sm me-3 position-relative">
                               <img
                                 src={
                                   selectedConversation.adminId?.profileImage ||
@@ -393,7 +419,7 @@ const AdminDoctorChat = () => {
                                   e.target.src = '/assets/img/doctors/doctor-thumb-01.jpg'
                                 }}
                               />
-                            </div>
+                            </div> */}
                             <div>
                               <h6 className="mb-0">
                                 {selectedConversation.adminId?.fullName || 'Admin'}
@@ -404,6 +430,7 @@ const AdminDoctorChat = () => {
                         </div>
 
                         <div
+                          ref={messagesContainerRef}
                           className="chat-messages p-3"
                           style={{ height: '400px', overflowY: 'auto' }}
                         >
@@ -430,21 +457,26 @@ const AdminDoctorChat = () => {
                                 >
                                   <div
                                     className={`message-bubble ${
-                                      isDoctor ? 'bg-primary text-white' : 'bg-light'
+                                      isDoctor ? 'bg-primary' : 'bg-light'
                                     }`}
                                     style={{
                                       maxWidth: '70%',
                                       padding: '10px 15px',
                                       borderRadius: '15px',
-                                      wordWrap: 'break-word'
+                                      wordWrap: 'break-word',
+                                      backgroundColor: isDoctor ? '#2196F3' : '#f5f5f5',
+                                      color: isDoctor ? '#ffffff' : '#0A0A0A'
                                     }}
                                   >
-                                    <p className="mb-1">{msg.message}</p>
+                                    <p className="mb-1" style={{ color: isDoctor ? '#ffffff' : '#0A0A0A', margin: 0 }}>
+                                      {msg.message}
+                                    </p>
                                     <span
-                                      className={`message-time small ${
-                                        isDoctor ? 'text-white-50' : 'text-muted'
-                                      }`}
-                                      style={{ fontSize: '11px' }}
+                                      className="message-time small"
+                                      style={{ 
+                                        fontSize: '11px',
+                                        color: isDoctor ? 'rgba(255, 255, 255, 0.8)' : '#999'
+                                      }}
                                     >
                                       {formatMessageTime(msg.createdAt)}
                                     </span>
@@ -456,33 +488,69 @@ const AdminDoctorChat = () => {
                           <div ref={messagesEndRef} />
                         </div>
 
-                        <div className="chat-input p-3 border-top">
-                          <form onSubmit={handleSendMessage}>
-                            <div className="input-group">
-                              <input
-                                type="text"
-                                className="form-control"
-                                placeholder="Type your message..."
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                disabled={sendMessageMutation.isLoading}
-                              />
-                              <button
-                                className="btn btn-primary"
-                                type="submit"
-                                disabled={!newMessage.trim() || sendMessageMutation.isLoading}
-                              >
-                                {sendMessageMutation.isLoading ? (
-                                  <span className="spinner-border spinner-border-sm" role="status">
-                                    <span className="visually-hidden">Sending...</span>
-                                  </span>
-                                ) : (
-                                  <i className="fe fe-send"></i>
-                                )}
-                              </button>
-                            </div>
-                          </form>
-                        </div>
+                        <form className="chat-input-area" onSubmit={handleSendMessage} style={{
+                          padding: '15px',
+                          borderTop: '1px solid #e5e5e5',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          flexShrink: 0,
+                          background: '#fff',
+                          position: 'sticky',
+                          bottom: 0,
+                          zIndex: 10
+                        }}>
+                          <input
+                            type="text"
+                            className="chat-input-field"
+                            placeholder="Type your message here..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            disabled={sendMessageMutation.isLoading}
+                            style={{
+                              flex: 1,
+                              padding: '10px 16px',
+                              border: '1px solid #e5e5e5',
+                              borderRadius: '24px',
+                              fontSize: '14px'
+                            }}
+                          />
+                          <button
+                            type="submit"
+                            className="chat-send-button"
+                            disabled={!newMessage.trim() || sendMessageMutation.isLoading}
+                            title="Send"
+                            style={{
+                              width: '40px',
+                              height: '40px',
+                              border: 'none',
+                              background: sendMessageMutation.isLoading || !newMessage.trim() ? '#ccc' : '#2196F3',
+                              borderRadius: '50%',
+                              color: '#fff',
+                              cursor: sendMessageMutation.isLoading || !newMessage.trim() ? 'not-allowed' : 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'background 0.3s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!sendMessageMutation.isLoading && newMessage.trim()) {
+                                e.target.style.background = '#1976D2'
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!sendMessageMutation.isLoading && newMessage.trim()) {
+                                e.target.style.background = '#2196F3'
+                              }
+                            }}
+                          >
+                            {sendMessageMutation.isLoading ? (
+                              <i className="fa-solid fa-spinner fa-spin"></i>
+                            ) : (
+                              <i className="fa-solid fa-paper-plane"></i>
+                            )}
+                          </button>
+                        </form>
                       </>
                     ) : (
                       <div

@@ -111,9 +111,19 @@ const BlogList = () => {
           <div className="col-lg-12 col-xl-12">
             <div className="dashboard-header">
               <div className="d-flex justify-content-between align-items-center">
-                <div>
-                  <h3>My Blog Posts</h3>
-                  <p className="text-muted mb-0">Manage your blog posts</p>
+                <div className="d-flex align-items-center">
+                  <Link 
+                    to="/doctor/dashboard" 
+                    className="btn btn-sm btn-outline-secondary me-2"
+                    style={{ minWidth: '40px', padding: '4px 8px' }}
+                    title="Back to Dashboard"
+                  >
+                    <i className="fa-solid fa-chevron-left"></i>
+                  </Link>
+                  <div>
+                    <h3 className="mb-0">My Blog Posts</h3>
+                    <p className="text-muted mb-0">Manage your blog posts</p>
+                  </div>
                 </div>
                 <Link to="/blog/create" className="btn btn-primary">
                   <i className="fa fa-plus me-2"></i>
