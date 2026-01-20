@@ -15,7 +15,7 @@ const PatientEmail = () => {
             {[1, 2, 3].map((i) => (
               <div key={i} className="onboard-item text-center">
                 <div className="onboard-content">
-                  <h3>Welcome to myDoctor</h3>
+                  <h3>Welcome to Mydoctor+</h3>
                   <p>
                     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
                     incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.

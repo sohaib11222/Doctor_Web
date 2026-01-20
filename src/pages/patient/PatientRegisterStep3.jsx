@@ -88,7 +88,7 @@ const PatientRegisterStep3 = () => {
                 </div>
               </div>
               <div className="login-bottom-copyright">
-                <span>© {currentYear} myDoctor. All rights reserved.</span>
+                <span>© {currentYear} Mydoctor+. All rights reserved.</span>
               </div>
             </div>
           </div>

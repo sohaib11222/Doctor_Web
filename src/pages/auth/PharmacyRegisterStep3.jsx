@@ -133,7 +133,7 @@ const PharmacyRegisterStep3 = () => {
                   </div>
                 </div>
                 <div className="login-bottom-copyright">
-                  <span>© {new Date().getFullYear()} myDoctor. All rights reserved.</span>
+                  <span>© {new Date().getFullYear()} Mydoctor+. All rights reserved.</span>
                 </div>
               </div>
             </div>

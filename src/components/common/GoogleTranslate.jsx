@@ -181,18 +181,37 @@ const GoogleTranslate = () => {
   return (
     <>
       <style>{`
-        /* Hide Google Translate banner that appears at top */
+        /* Google Translate banner handling - keep it visible but ensure header adjusts */
         .goog-te-banner-frame {
-          display: none !important;
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          z-index: 9998 !important;
+          height: auto !important;
         }
         .goog-te-banner-frame.skiptranslate {
-          display: none !important;
+          display: block !important;
         }
-        body {
-          top: 0 !important;
-        }
+        
+        /* When banner is present, adjust body */
         body.top {
           padding-top: 0 !important;
+        }
+        
+        /* Ensure header adjusts when banner is visible - this is critical */
+        body.top .header,
+        body.top .header-fixed,
+        body.top .header-custom,
+        body.top header {
+          margin-top: 42px !important;
+          transition: margin-top 0.3s ease !important;
+        }
+        
+        /* Also handle pharmacy top header */
+        body.top .top-header {
+          margin-top: 42px !important;
+          transition: margin-top 0.3s ease !important;
         }
         
         /* Style the translate element - fixed position in header area */

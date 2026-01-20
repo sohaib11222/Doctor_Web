@@ -28,7 +28,20 @@ const DoctorProfile = () => {
   const doctor = useMemo(() => {
     if (!doctorData) return null
     const responseData = doctorData.data || doctorData
-    return Array.isArray(responseData) ? responseData[0] : responseData
+    const extracted = Array.isArray(responseData) ? responseData[0] : responseData
+    
+    // Debug logging for insurance data
+    if (import.meta.env.DEV && extracted) {
+      console.log('🔍 DoctorProfile - Doctor Data:', {
+        convenzionato: extracted.convenzionato,
+        insuranceCompanies: extracted.insuranceCompanies,
+        insuranceCompaniesLength: extracted.insuranceCompanies?.length,
+        insuranceCompaniesType: typeof extracted.insuranceCompanies,
+        isArray: Array.isArray(extracted.insuranceCompanies)
+      })
+    }
+    
+    return extracted
   }, [doctorData])
 
   // Fetch doctor reviews (public endpoint)
@@ -189,7 +202,7 @@ const DoctorProfile = () => {
       if (navigator.share) {
         await navigator.share({
           title: `Check out ${doctorName}`,
-          text: `Check out ${doctorName} on MyDoctor`,
+          text: `Check out ${doctorName} on Mydoctor+`,
           url: profileUrl,
         })
         toast.success('Profile shared successfully')
@@ -349,7 +362,25 @@ const DoctorProfile = () => {
                 />
               </div>
               <div className="doc-info-cont">
-                <span className="badge doc-avail-badge"><i className="fa-solid fa-circle"></i>Available </span>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                  <span className="badge doc-avail-badge"><i className="fa-solid fa-circle"></i>Available </span>
+                  {doctor?.convenzionato === true && (
+                    <span className="badge" style={{ 
+                      backgroundColor: '#28a745', 
+                      color: '#fff',
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <i className="fa-solid fa-shield-halved"></i>
+                      Convenzionato
+                    </span>
+                  )}
+                </div>
                 <h4 className="doc-name">
                   {doctorName} 
                   {doctor?.isVerified && (
@@ -541,6 +572,68 @@ const DoctorProfile = () => {
                 </span>
               </li>
             </ul>
+            {/* Insurance Companies Display - Show prominently if doctor accepts insurance */}
+            {doctor?.convenzionato === true && doctor?.insuranceCompanies && doctor.insuranceCompanies.length > 0 && (
+              <div style={{ 
+                marginTop: '20px',
+                padding: '20px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '12px',
+                border: '1px solid #e9ecef'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                  <i className="fa-solid fa-shield-halved" style={{ color: '#28a745', fontSize: '20px' }}></i>
+                  <h5 style={{ margin: 0, color: '#28a745', fontWeight: '600' }}>Accepts Insurance</h5>
+                </div>
+                <p style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>
+                  This doctor accepts the following insurance companies:
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+                  {doctor.insuranceCompanies.map((insurance, index) => {
+                    const insuranceId = insurance._id || insurance.id || insurance
+                    const insuranceName = insurance.name || 'Insurance Company'
+                    const logoUrl = normalizeImageUrl(insurance.logo)
+                    
+                    return (
+                      <div 
+                        key={insuranceId || index} 
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          backgroundColor: '#fff',
+                          borderRadius: '8px',
+                          border: '1px solid #dee2e6',
+                          minWidth: '150px'
+                        }}
+                      >
+                        {logoUrl ? (
+                          <img
+                            src={logoUrl}
+                            alt={insuranceName}
+                            style={{
+                              width: '30px',
+                              height: '30px',
+                              objectFit: 'contain'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                            }}
+                          />
+                        ) : (
+                          <i className="fa-solid fa-shield-halved" style={{ color: '#6c757d', fontSize: '18px' }}></i>
+                        )}
+                        <span style={{ fontSize: '13px', fontWeight: '500', color: '#333' }}>
+                          {insuranceName}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            
             <div className="bottom-book-btn" style={{ 
               display: 'flex',
               justifyContent: 'space-between',
@@ -685,6 +778,19 @@ const DoctorProfile = () => {
               Review
             </a>
           </li>
+          {doctor?.convenzionato === true && doctor?.insuranceCompanies && doctor.insuranceCompanies.length > 0 && (
+            <li className={activeSection === 'insurance' ? 'active' : ''}>
+              <a 
+                href="#insurance" 
+                onClick={(e) => {
+                  e.preventDefault()
+                  setActiveSection('insurance')
+                }}
+              >
+                Accepted Insurance
+              </a>
+            </li>
+          )}
           {doctor.products && doctor.products.length > 0 && (
             <li className={activeSection === 'products' ? 'active' : ''}>
               <a 
@@ -901,6 +1007,80 @@ const DoctorProfile = () => {
               <p className="text-muted">Membership information not available.</p>
             )}
           </div>
+
+          {/* Accepted Insurance Companies */}
+          {doctor?.convenzionato === true && doctor?.insuranceCompanies && doctor.insuranceCompanies.length > 0 && (
+            <div 
+              className={`doc-information-details ${activeSection === 'insurance' ? '' : 'd-none'}`} 
+              id="insurance"
+            >
+              <div className="detail-title">
+                <h4>Accepted Insurance Companies</h4>
+                <p className="text-muted mb-3">This doctor accepts the following insurance companies:</p>
+              </div>
+              <div className="row">
+                {doctor.insuranceCompanies.map((insurance, index) => {
+                  const insuranceId = insurance._id || insurance.id || insurance
+                  const insuranceName = insurance.name || 'Insurance Company'
+                  const logoUrl = normalizeImageUrl(insurance.logo)
+                  
+                  return (
+                    <div key={insuranceId || index} className="col-md-3 col-sm-4 col-6 mb-3">
+                      <div className="card insurance-company-card h-100" style={{
+                        border: '1px solid #e9ecef',
+                        borderRadius: '8px',
+                        padding: '15px',
+                        textAlign: 'center',
+                        transition: 'all 0.2s',
+                        backgroundColor: '#fff'
+                      }}>
+                        <div className="insurance-logo-wrapper" style={{
+                          height: '80px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginBottom: '10px'
+                        }}>
+                          {logoUrl ? (
+                            <img
+                              src={logoUrl}
+                              alt={insuranceName}
+                              style={{
+                                maxWidth: '100%',
+                                maxHeight: '70px',
+                                objectFit: 'contain'
+                              }}
+                              onError={(e) => {
+                                e.target.style.display = 'none'
+                                e.target.nextSibling.style.display = 'flex'
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className="insurance-placeholder"
+                            style={{
+                              display: logoUrl ? 'none' : 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              height: '70px',
+                              width: '100%',
+                              backgroundColor: '#f8f9fa',
+                              borderRadius: '4px'
+                            }}
+                          >
+                            <i className="fa-solid fa-shield-halved fa-2x text-muted"></i>
+                          </div>
+                        </div>
+                        <h6 className="mb-0" style={{ fontSize: '14px', fontWeight: '500' }}>
+                          {insuranceName}
+                        </h6>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Reviews */}
           <div 

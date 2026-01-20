@@ -34,6 +34,11 @@ export const PROFILE_SETTINGS_TABS = [
     key: 'clinics'
   },
   {
+    path: '/doctor-insurance-settings',
+    name: 'Insurance',
+    key: 'insurance'
+  },
+  {
     path: '/doctor-business-settings',
     name: 'Business Hours',
     key: 'business'

@@ -210,11 +210,11 @@ const DoctorExperienceSettings = () => {
                   <li className="nav-item">
                     <Link className="nav-link" to="/doctor-awards-settings">Awards</Link>
                   </li>
-                  {/* <li className="nav-item">
-                    <Link className="nav-link" to="/doctor-insurance-settings">Insurances</Link>
-                  </li> */}
                   <li className="nav-item">
                     <Link className="nav-link" to="/doctor-clinics-settings">Clinics</Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link className="nav-link" to="/doctor-insurance-settings">Insurance</Link>
                   </li>
                   <li className="nav-item">
                     <Link className="nav-link" to="/doctor-business-settings">Business Hours</Link>

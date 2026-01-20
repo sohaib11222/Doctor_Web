@@ -53,7 +53,7 @@ const Footer = () => {
             <div className="col-lg-4 col-md-7">
               <div className="footer-widget">
                 <h6 className="footer-title">Newsletter</h6>
-                <p className="mb-2">Subscribe & Stay Updated from the myDoctor</p>
+                <p className="mb-2">Subscribe & Stay Updated from the Mydoctor+</p>
                 <div className="subscribe-input">
                   <form action="#">
                     <input type="email" className="form-control" placeholder="Enter Email Address" />
@@ -88,7 +88,7 @@ const Footer = () => {
         <div className="container">
           <div className="copyright">
             <div className="copyright-text">
-              <p className="mb-0">Copyright © {new Date().getFullYear()} myDoctor. All Rights Reserved</p>
+              <p className="mb-0">Copyright © {new Date().getFullYear()} Mydoctor+. All Rights Reserved</p>
             </div>
             <div className="copyright-menu">
               <ul className="policy-menu">
@@ -124,7 +124,7 @@ const Footer = () => {
                     <Link to="/"><img src="/assets/img/logo.svg" alt="logo" /></Link>
                   </div>
                   <div className="footer-about-content">
-                    <p>Effortlessly schedule your medical appointments with myDoctor. Connect with healthcare professionals, manage appointments & prioritize your well being</p>
+                    <p>Effortlessly schedule your medical appointments with Mydoctor+. Connect with healthcare professionals, manage appointments & prioritize your well being</p>
                   </div>
                 </div>
               </div>
@@ -197,7 +197,7 @@ const Footer = () => {
               <div className="row">
                 <div className="col-md-6 col-lg-6">
                   <div className="copyright-text">
-                    <p className="mb-0">Copyright © {new Date().getFullYear()} myDoctor. All Rights Reserved</p>
+                    <p className="mb-0">Copyright © {new Date().getFullYear()} Mydoctor+. All Rights Reserved</p>
                   </div>
                 </div>
                 <div className="col-md-6 col-lg-6">

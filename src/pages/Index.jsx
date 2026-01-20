@@ -7,6 +7,7 @@ import * as doctorApi from '../api/doctor'
 import * as specializationApi from '../api/specialization'
 import * as reviewsApi from '../api/reviews'
 import * as favoriteApi from '../api/favorite'
+import * as insuranceApi from '../api/insurance'
 
 const Index = () => {
   const navigate = useNavigate()
@@ -41,6 +42,24 @@ const Index = () => {
     queryFn: () => doctorApi.listDoctors({ limit: 4, page: 1 }),
     enabled: !!doctorsData
   })
+
+  // Fetch active insurance companies
+  const { data: insuranceCompaniesData, isLoading: insuranceLoading } = useQuery({
+    queryKey: ['activeInsuranceCompanies'],
+    queryFn: () => insuranceApi.getActiveInsuranceCompanies()
+  })
+
+  // Extract insurance companies - handle both direct array and wrapped response
+  const insuranceCompanies = useMemo(() => {
+    if (!insuranceCompaniesData) return []
+    // If it's already an array, return it
+    if (Array.isArray(insuranceCompaniesData)) return insuranceCompaniesData
+    // If it has a data property, extract it
+    if (insuranceCompaniesData.data) {
+      return Array.isArray(insuranceCompaniesData.data) ? insuranceCompaniesData.data : []
+    }
+    return []
+  }, [insuranceCompaniesData])
 
   // Extract data
   const specializations = useMemo(() => {
@@ -290,10 +309,11 @@ const Index = () => {
     { id: 4, name: 'Sofia Doe', location: 'United States', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&auto=format', title: 'Excellent Service', text: 'I had a wonderful experience the staff was friendly and attentive, and Dr. Smith took the time to explain everything clearly.' },
   ]
 
-  const companies = [
-    'company-01.svg', 'company-02.svg', 'company-03.svg', 'company-04.svg',
-    'company-05.svg', 'company-06.svg', 'company-07.svg', 'company-08.svg'
-  ]
+  // Removed hardcoded companies - now using insurance companies from database
+  // const companies = [
+  //   'company-01.svg', 'company-02.svg', 'company-03.svg', 'company-04.svg',
+  //   'company-05.svg', 'company-06.svg', 'company-07.svg', 'company-08.svg'
+  // ]
 
   // Destroy carousel instance safely
   const destroyCarousel = (selector) => {
@@ -364,6 +384,26 @@ const Index = () => {
       })
         }
 
+        // Insurance Companies Slider - only initialize once
+        if (insuranceCompanies.length > 0 && !carouselInstances.current['.insurance-companies-slider']) {
+          initCarousel('.insurance-companies-slider', {
+            loop: insuranceCompanies.length > 5,
+            margin: 30,
+            nav: true,
+            dots: false,
+            autoplay: true,
+            autoplayTimeout: 3000,
+            autoplayHoverPause: true,
+            responsive: {
+              0: { items: 2 },
+              576: { items: 3 },
+              768: { items: 4 },
+              992: { items: 5 },
+              1200: { items: 6 }
+            }
+          })
+        }
+
         // Testimonials Slider - only initialize once
         if (!carouselInstances.current['.testimonials-slider']) {
           initCarousel('.testimonials-slider', {
@@ -379,27 +419,27 @@ const Index = () => {
       })
         }
 
-        // Company Slider - only initialize once
-        if (!carouselInstances.current['.company-slider']) {
+        // Company Slider (now shows insurance companies) - only initialize once
+        if (insuranceCompanies.length > 0 && !carouselInstances.current['.company-slider']) {
           initCarousel('.company-slider', {
-        loop: true,
-        margin: 30,
-        nav: false,
-        dots: false,
-        autoplay: true,
-        autoplayTimeout: 3000,
-        responsive: {
-          0: { items: 2 },
-          600: { items: 4 },
-          1000: { items: 6 }
+            loop: insuranceCompanies.length > 5,
+            margin: 30,
+            nav: false,
+            dots: false,
+            autoplay: true,
+            autoplayTimeout: 3000,
+            responsive: {
+              0: { items: 2 },
+              600: { items: 4 },
+              1000: { items: 6 }
+            }
+          })
         }
-      })
-    }
       }, 200)
 
       return () => clearTimeout(timer)
   }
-  }, [specializations.length])
+      }, [specializations.length, insuranceCompanies.length])
 
   // Initialize doctors slider once when data is ready
   useEffect(() => {
@@ -477,6 +517,248 @@ const Index = () => {
           color: #f44336 !important;
           transition: color 0.2s;
         }
+        /* Banner section - reduce top spacing on desktop */
+        .banner-section.banner-sec-one {
+          padding-top: 40px !important;
+          padding-bottom: 60px !important;
+        }
+        .banner-section .banner-content {
+          padding-top: 40px !important;
+          padding-bottom: 40px !important;
+        }
+        .banner-section .rating-appointment {
+          margin-bottom: 1.5rem !important;
+        }
+        /* Banner heading responsive styles */
+        .banner-section .banner-content h1 {
+          font-size: 3.5rem !important;
+          font-weight: 700 !important;
+          line-height: 1.2 !important;
+          margin-bottom: 1.5rem !important;
+          margin-top: 0.5rem !important;
+        }
+        @media (max-width: 992px) {
+          .banner-section .banner-content h1 {
+            font-size: 2.5rem !important;
+          }
+        }
+        /* Search box larger styles */
+        .banner-section .search-box-one {
+          padding: 1.2rem !important;
+          border-radius: 50px !important;
+          background-color: #fff !important;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+        }
+        .banner-section .search-box-one form {
+          display: flex !important;
+          gap: 8px !important;
+          flex-wrap: nowrap !important;
+          align-items: stretch !important;
+        }
+        .banner-section .search-box-one .search-input {
+          flex: 1 1 auto !important;
+          min-width: 0 !important;
+          border-radius: 50px !important;
+          overflow: hidden !important;
+          background-color: #f8f9fa !important;
+          border: 1px solid #e9ecef !important;
+          display: flex !important;
+          align-items: center !important;
+          padding: 0 12px !important;
+        }
+        .banner-section .search-box-one .search-input i {
+          font-size: 18px !important;
+          color: #6c757d !important;
+          margin-right: 8px !important;
+          flex-shrink: 0 !important;
+        }
+        .banner-section .search-box-one .search-input .mb-0 {
+          flex: 1 1 auto !important;
+          min-width: 0 !important;
+          display: flex !important;
+          align-items: center !important;
+        }
+        .banner-section .search-box-one .form-control {
+          font-size: 13px !important;
+          padding: 12px 8px !important;
+          padding-left: 20px !important;
+          min-height: 50px !important;
+          height: auto !important;
+          border: none !important;
+          background-color: transparent !important;
+          border-radius: 50px !important;
+          width: 100% !important;
+          min-width: 0 !important;
+        }
+        .banner-section .search-box-one .form-control::placeholder {
+          color: #6c757d !important;
+          opacity: 1 !important;
+          font-size: 13px !important;
+          white-space: nowrap !important;
+          overflow: visible !important;
+          text-overflow: ellipsis !important;
+        }
+        .banner-section .search-box-one .form-control:focus {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        .banner-section .search-box-one .form-control option {
+          font-size: 13px !important;
+        }
+        .banner-section .search-box-one .form-search-btn {
+          flex: 0 0 auto !important;
+          display: flex !important;
+          align-items: stretch !important;
+        }
+        .banner-section .search-box-one .form-search-btn .btn {
+          font-size: 16px !important;
+          padding: 14px 32px !important;
+          min-height: 50px !important;
+          height: 100% !important;
+          font-weight: 600 !important;
+          white-space: nowrap !important;
+          align-self: stretch !important;
+          border-radius: 50px !important;
+        }
+        @media (max-width: 992px) {
+          .banner-section .search-box-one form {
+            flex-wrap: wrap !important;
+          }
+          .banner-section .search-box-one .search-input {
+            flex: 1 1 calc(50% - 6px) !important;
+            min-width: 150px !important;
+          }
+          .banner-section .search-box-one .form-search-btn {
+            flex: 1 1 100% !important;
+          }
+          .banner-section .search-box-one .form-search-btn .btn {
+            width: 100% !important;
+          }
+        }
+        @media (max-width: 768px) {
+          /* Header logo bigger on mobile */
+          .navbar-brand.logo img,
+          .menu-logo img {
+            max-height: 55px !important;
+            width: auto !important;
+            height: auto !important;
+            transform: scale(1.2) !important;
+          }
+          
+          .banner-section {
+            background-image: url('/assets/img/mobile_hero_background.png') !important;
+            background-size: cover !important;
+            background-position: center center !important;
+            background-repeat: no-repeat !important;
+            position: relative !important;
+            padding: 2rem 0 3rem !important;
+            min-height: auto !important;
+          }
+          .banner-section::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            z-index: 0 !important;
+          }
+          .banner-section .container {
+            position: relative !important;
+            z-index: 1 !important;
+          }
+          .banner-section .row {
+            margin: 0 !important;
+          }
+          .banner-section .col-lg-7 {
+            padding: 0 15px !important;
+            width: 100% !important;
+          }
+          .banner-section .banner-content {
+            text-align: center !important;
+          }
+          .banner-section .rating-appointment {
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin-bottom: 1.5rem !important;
+            gap: 1rem !important;
+            padding: 1.5rem !important;
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            border-radius: 55px !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+          }
+          .banner-section .rating-appointment .avatar-list-stacked {
+            margin-bottom: 0.75rem !important;
+          }
+          .banner-section .rating-appointment .avatar-list-stacked .avatar {
+            width: 70px !important;
+            height: 70px !important;
+            border: 3px solid #fff !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+            margin-left: -10px !important;
+          }
+          .banner-section .rating-appointment .avatar-list-stacked .avatar:first-child {
+            margin-left: 0 !important;
+          }
+          .banner-section .rating-appointment .avatar-list-stacked .avatar img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+          }
+          .banner-section .rating-appointment .me-2 {
+            text-align: center !important;
+            margin: 0 !important;
+          }
+          .banner-section .rating-appointment .me-2 h6 {
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+            color: #1a1a1a !important;
+            margin-bottom: 0.5rem !important;
+          }
+          .banner-section .rating-appointment .me-2 .d-flex {
+            justify-content: center !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+          }
+          .banner-section .rating-appointment .me-2 p {
+            margin: 0 !important;
+            color: #6c757d !important;
+            font-size: 0.9rem !important;
+          }
+          .banner-section .banner-content h1 {
+            font-size: 1.75rem !important;
+            line-height: 1.3 !important;
+            margin-bottom: 1.5rem !important;
+            color: #1a1a1a !important;
+            text-align: center !important;
+          }
+          .banner-section .banner-img {
+            display: none !important;
+          }
+          .banner-section .search-box-one {
+            margin-top: 1rem !important;
+            padding: 1rem !important;
+          }
+          .banner-section .search-box-one form {
+            flex-direction: column !important;
+            gap: 10px !important;
+          }
+          .banner-section .search-box-one .search-input {
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+            width: 100% !important;
+          }
+          .banner-section .search-box-one .form-search-btn {
+            flex: 1 1 100% !important;
+            width: 100% !important;
+          }
+          .banner-section .search-box-one .form-search-btn .btn {
+            width: 100% !important;
+            padding: 14px 24px !important;
+          }
+        }
       `}</style>
       {/* Home Banner */}
       <section className="banner-section banner-sec-one">
@@ -510,7 +792,12 @@ const Index = () => {
                     </div>
                   </div>
                 </div>
-                <h1 className="display-5">
+                <h1 className="display-2" style={{ 
+                  fontSize: '3.5rem', 
+                  fontWeight: '700', 
+                  lineHeight: '1.2',
+                  marginBottom: '2rem'
+                }}>
                   Discover Health: Find Your Trusted{' '}
                   <span className="banner-icon">
                     <img src="/assets/img/icons/video.svg" alt="img" />
@@ -525,7 +812,8 @@ const Index = () => {
                         <input 
                           type="text" 
                           className="form-control" 
-                          placeholder="Search doctors, clinics, hospitals, etc" 
+                          placeholder="Search doctors, clinics..." 
+                          
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -605,6 +893,131 @@ const Index = () => {
         </div>
       </section>
       {/* /Home Banner */}
+
+      {/* Quick Service Options Section */}
+      <section className="quick-service-section py-5">
+        <div className="container">
+          <div className="row g-4">
+            {/* Don't know the specialization? */}
+            <div className="col-lg-6 col-md-6 col-12">
+              <div 
+                className="quick-service-card card h-100 border-0 shadow-sm cursor-pointer"
+                onClick={() => navigate('/search')}
+                style={{
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  borderRadius: '12px',
+                  padding: '24px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)'
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.1)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'
+                }}
+              >
+                <div className="d-flex align-items-start">
+                  <div 
+                    className="quick-service-icon me-3"
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      minWidth: '60px',
+                      borderRadius: '50%',
+                      backgroundColor: '#E8F4FD',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      {/* Back person 1 */}
+                      <circle cx="10" cy="12" r="4" stroke="#0D6EFD" strokeWidth="1.5" fill="none"/>
+                      <path d="M6 18C6 16 8 14 10 14C12 14 14 16 14 18" stroke="#0D6EFD" strokeWidth="1.5" fill="none"/>
+                      <rect x="8" y="16" width="4" height="6" rx="1" stroke="#0D6EFD" strokeWidth="1.5" fill="none"/>
+                      {/* Back person 2 */}
+                      <circle cx="26" cy="12" r="4" stroke="#0D6EFD" strokeWidth="1.5" fill="none"/>
+                      <path d="M22 18C22 16 24 14 26 14C28 14 30 16 30 18" stroke="#0D6EFD" strokeWidth="1.5" fill="none"/>
+                      <rect x="24" y="16" width="4" height="6" rx="1" stroke="#0D6EFD" strokeWidth="1.5" fill="none"/>
+                      {/* Front person with cross */}
+                      <circle cx="18" cy="14" r="5" stroke="#0D6EFD" strokeWidth="1.5" fill="none"/>
+                      <path d="M13 20C13 18 15 16 18 16C21 16 23 18 23 20" stroke="#0D6EFD" strokeWidth="1.5" fill="none"/>
+                      <rect x="15" y="18" width="6" height="8" rx="1" stroke="#0D6EFD" strokeWidth="1.5" fill="none"/>
+                      {/* Cross symbol on front person */}
+                      <path d="M18 11V17M15 14H21" stroke="#0D6EFD" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </div>
+                  <div className="flex-grow-1">
+                    <h5 className="mb-2 fw-semibold">Don't know the specialization?</h5>
+                    <p className="mb-0 text-muted">
+                      Select this option and we will send your question to the most suitable specialization.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Analysis Interpretation */}
+            <div className="col-lg-6 col-md-6 col-12">
+              <div 
+                className="quick-service-card card h-100 border-0 shadow-sm cursor-pointer"
+                onClick={() => navigate('/search')}
+                style={{
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  borderRadius: '12px',
+                  padding: '24px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)'
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.1)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'
+                }}
+              >
+                <div className="d-flex align-items-start">
+                  <div 
+                    className="quick-service-icon me-3"
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      minWidth: '60px',
+                      borderRadius: '50%',
+                      backgroundColor: '#E8F4FD',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      {/* Test tube */}
+                      <path d="M12 6C12 5.4 12.4 5 13 5H19C19.6 5 20 5.4 20 6V8H12V6Z" fill="#0D6EFD"/>
+                      <rect x="12" y="8" width="8" height="18" rx="2" stroke="#0D6EFD" strokeWidth="1.5" fill="none"/>
+                      <path d="M14 12H18M14 16H18M14 20H16" stroke="#0D6EFD" strokeWidth="1.5" strokeLinecap="round"/>
+                      {/* Drop symbol */}
+                      <path d="M24 10C24 8.9 24.9 8 26 8C27.1 8 28 8.9 28 10C28 11.1 26 14 26 14C26 14 24 11.1 24 10Z" fill="#0D6EFD"/>
+                      <path d="M26 8L26 12" stroke="white" strokeWidth="1" strokeLinecap="round"/>
+                    </svg>
+                  </div>
+                  <div className="flex-grow-1">
+                    <h5 className="mb-2 fw-semibold">Analysis Interpretation</h5>
+                    <p className="mb-0 text-muted">
+                      Select this option and we will send your analyses to the most suitable doctor.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      {/* /Quick Service Options Section */}
 
       {/* List */}
       {/* <div className="list-section">
@@ -1064,7 +1477,7 @@ const Index = () => {
         <div className="container">
           <div className="section-header sec-header-one text-center aos" data-aos="fade-up">
             <span className="badge badge-primary">Testimonials</span>
-            <h2>15k Users Trust myDoctor Worldwide</h2>
+            <h2>15k Users Trust Mydoctor+ Worldwide</h2>
           </div>
           <div className="owl-carousel testimonials-slider aos" data-aos="fade-up">
             {testimonials.map((testimonial) => (
@@ -1125,21 +1538,128 @@ const Index = () => {
       </section>
       {/* /Testimonial Section */}
 
-      {/* Company Section */}
-      <section className="company-section bg-dark aos" data-aos="fade-up">
-        <div className="container">
-          <div className="section-header sec-header-one text-center">
-            <h6 className="text-light">Trusted by 5+ million people at companies like</h6>
+      {/* Insurance Companies Section */}
+      {insuranceCompanies.length > 0 && (
+        <section className="insurance-companies-section bg-light aos" data-aos="fade-up" style={{ padding: '60px 0' }}>
+          <div className="container">
+            <div className="section-header sec-header-one text-center">
+              <span className="badge badge-primary">Insurance Partners</span>
+              <h2>Accepted Insurance Companies</h2>
+              <p className="text-muted">We work with leading insurance providers to make healthcare accessible</p>
+            </div>
+            <div className="owl-carousel insurance-companies-slider">
+              {insuranceLoading ? (
+                <div className="text-center py-4">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="sr-only">Loading...</span>
+                  </div>
+                </div>
+              ) : (
+                insuranceCompanies.map((insurance) => {
+                  const logoUrl = normalizeImageUrl(insurance.logo)
+                  return (
+                    <div key={insurance._id || insurance.id} className="insurance-company-item text-center">
+                      <div className="insurance-logo-wrapper" style={{
+                        height: '100px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '15px',
+                        backgroundColor: '#fff',
+                        borderRadius: '8px',
+                        border: '1px solid #e9ecef',
+                        margin: '10px'
+                      }}>
+                        {logoUrl ? (
+                          <img
+                            src={logoUrl}
+                            alt={insurance.name}
+                            style={{
+                              maxWidth: '100%',
+                              maxHeight: '70px',
+                              objectFit: 'contain'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                              e.target.nextSibling.style.display = 'flex'
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className="insurance-placeholder"
+                          style={{
+                            display: logoUrl ? 'none' : 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '70px',
+                            width: '100%',
+                            backgroundColor: '#f8f9fa',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <i className="fa-solid fa-shield-halved fa-2x text-muted"></i>
+                        </div>
+                      </div>
+                      <h6 className="mt-2 mb-0" style={{ fontSize: '13px', color: '#666' }}>
+                        {insurance.name}
+                      </h6>
+                    </div>
+                  )
+                })
+              )}
+            </div>
           </div>
-          <div className="owl-carousel company-slider">
-            {companies.map((company, index) => (
-              <div key={index}>
-                <img src={`/assets/img/company/${company}`} alt="img" />
-              </div>
-            ))}
+        </section>
+      )}
+
+      {/* Insurance Companies Section - Replaces old fake companies section */}
+      {insuranceCompanies.length > 0 && (
+        <section className="company-section bg-dark aos" data-aos="fade-up">
+          <div className="container">
+            <div className="section-header sec-header-one text-center">
+              <h6 className="text-light">Trusted by 5+ million people with insurance partners like</h6>
+            </div>
+            <div className="owl-carousel company-slider">
+              {insuranceCompanies.map((insurance) => {
+                const logoUrl = normalizeImageUrl(insurance.logo)
+                return (
+                  <div key={insurance._id || insurance.id} className="text-center">
+                    {logoUrl ? (
+                      <img 
+                        src={logoUrl} 
+                        alt={insurance.name}
+                        style={{
+                          maxHeight: '50px',
+                          maxWidth: '150px',
+                          objectFit: 'contain',
+                          filter: 'brightness(0) invert(1)' // Make logos white on dark background
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none'
+                          e.target.nextSibling.style.display = 'flex'
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className="insurance-placeholder"
+                      style={{
+                        display: logoUrl ? 'none' : 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '50px',
+                        width: '150px',
+                        margin: '0 auto'
+                      }}
+                    >
+                      <i className="fa-solid fa-shield-halved fa-2x text-white"></i>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* FAQ Section */}
       <section className="faq-section-one">

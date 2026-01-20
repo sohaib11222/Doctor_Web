@@ -995,7 +995,7 @@ const Booking = () => {
             </div>
 
             <div className="text-center">
-              <p className="mb-0">Copyright © {new Date().getFullYear()}. All Rights Reserved, myDoctor</p>
+              <p className="mb-0">Copyright © {new Date().getFullYear()}. All Rights Reserved, Mydoctor+</p>
             </div>
           </div>
         </div>
