@@ -1613,7 +1613,7 @@ const Index = () => {
       )}
 
       {/* Insurance Companies Section - Replaces old fake companies section */}
-      {insuranceCompanies.length > 0 && (
+      {/* {insuranceCompanies.length > 0 && (
         <section className="company-section bg-dark aos" data-aos="fade-up">
           <div className="container">
             <div className="section-header sec-header-one text-center">
@@ -1659,7 +1659,7 @@ const Index = () => {
             </div>
           </div>
         </section>
-      )}
+      )} */}
 
       {/* FAQ Section */}
       <section className="faq-section-one">
