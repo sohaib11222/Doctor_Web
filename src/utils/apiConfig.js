@@ -121,6 +121,18 @@ export const API_ROUTES = {
     ADMIN_LIST: '/admin/appointments',
   },
 
+  // Reschedule Request Routes
+  RESCHEDULE_REQUEST: {
+    BASE: '/reschedule-request',
+    CREATE: '/reschedule-request',
+    LIST: '/reschedule-request',
+    GET: (id) => `/reschedule-request/${id}`,
+    APPROVE: (id) => `/reschedule-request/${id}/approve`,
+    REJECT: (id) => `/reschedule-request/${id}/reject`,
+    PAY: (id) => `/reschedule-request/${id}/pay`,
+    ELIGIBLE_APPOINTMENTS: '/reschedule-request/eligible-appointments',
+  },
+
   // Subscription Routes
   SUBSCRIPTION: {
     BASE: '/subscription',
@@ -255,6 +267,8 @@ export const API_ROUTES = {
     PRODUCT: '/upload/product',
     BLOG: '/upload/blog',
     GENERAL: '/upload/general',
+    CHAT: '/upload/chat',
+    CHAT_MULTIPLE: '/upload/chat/multiple',
   },
 
   // Order Routes

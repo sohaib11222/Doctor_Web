@@ -72,6 +72,7 @@ import DoctorAnnouncements from './pages/doctor/DoctorAnnouncements'
 import AdminDoctorChat from './pages/doctor/AdminDoctorChat'
 import DoctorChat from './pages/doctor/DoctorChat'
 import DoctorVideoCallRoom from './pages/doctor/DoctorVideoCallRoom'
+import DoctorRescheduleRequests from './pages/doctor/RescheduleRequests'
 import DoctorBlogList from './pages/doctor/BlogList'
 import DoctorProducts from './pages/doctor/DoctorProducts'
 import DoctorBlogDetails from './pages/doctor/BlogDetails'
@@ -86,6 +87,8 @@ import PatientDashboard from './pages/patient/PatientDashboard'
 import PatientProfile from './pages/patient/PatientProfile'
 import PatientAppointments from './pages/patient/PatientAppointments'
 import PatientAppointmentsGrid from './pages/patient/PatientAppointmentsGrid'
+import RequestReschedule from './pages/patient/RequestReschedule'
+import RescheduleRequests from './pages/patient/RescheduleRequests'
 import PatientUpcomingAppointment from './pages/patient/PatientUpcomingAppointment'
 import PatientCompletedAppointment from './pages/patient/PatientCompletedAppointment'
 import PatientCancelledAppointment from './pages/patient/PatientCancelledAppointment'
@@ -419,6 +422,11 @@ function App() {
                 <DoctorVideoCallRoom />
               </ProtectedRoute>
             } />
+            <Route path="/doctor/reschedule-requests" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Reschedule Requests", li2: "Reschedule Requests" }}><DoctorRescheduleRequests /></DashboardLayout>
+              </ProtectedRoute>
+            } />
 
                 {/* Patient Routes - Protected (Require PATIENT role) */}
                 <Route path="/patient/dashboard" element={
@@ -434,6 +442,16 @@ function App() {
                 <Route path="/patient-appointments" element={
                   <ProtectedRoute role="PATIENT">
                     <DashboardLayout breadcrumb={{ title: "Patient", li1: "Patient Appointments", li2: "Patient Appointments" }}><PatientAppointments /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient/request-reschedule" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Request Reschedule", li2: "Request Reschedule" }}><RequestReschedule /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient/reschedule-requests" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Reschedule Requests", li2: "Reschedule Requests" }}><RescheduleRequests /></DashboardLayout>
                   </ProtectedRoute>
                 } />
                 <Route path="/patient-appointments-grid" element={

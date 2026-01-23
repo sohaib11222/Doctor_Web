@@ -5,6 +5,8 @@ import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 import * as chatApi from '../../api/chat'
 import * as appointmentApi from '../../api/appointments'
+import { useUploadChatFile } from '../../mutations/uploadMutations'
+import { normalizeImageUrl } from '../../utils/imageUtils'
 
 const Chat = () => {
   const { user } = useAuth()
@@ -16,6 +18,9 @@ const Chat = () => {
   const [selectedConversation, setSelectedConversation] = useState(null)
   const [newMessage, setNewMessage] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedFiles, setSelectedFiles] = useState([])
+  const [uploadingFiles, setUploadingFiles] = useState(false)
+  const fileInputRef = useRef(null)
 
   // Get doctorId and appointmentId from URL params (if coming from appointment page)
   const doctorIdFromUrl = searchParams.get('doctorId')
@@ -135,9 +140,12 @@ const Chat = () => {
     }
   }
 
+  // Upload chat file mutation
+  const uploadChatFileMutation = useUploadChatFile()
+
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async ({ message }) => {
+    mutationFn: async ({ message, attachments = null }) => {
       if (!selectedConversation) {
         throw new Error('No conversation selected')
       }
@@ -170,10 +178,11 @@ const Chat = () => {
         doctorId: doctorIdStr,
         appointmentId: appointmentIdStr,
         patientId: patientIdStr,
-        message: message.substring(0, 50) + '...'
+        message: message ? message.substring(0, 50) + '...' : null,
+        attachments: attachments?.length || 0
       })
       
-      return await chatApi.sendMessageToDoctor(doctorIdStr, appointmentIdStr, message, null, patientIdStr)
+      return await chatApi.sendMessageToDoctor(doctorIdStr, appointmentIdStr, message || null, attachments, patientIdStr)
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries(['patientConversationMessages', selectedConversation?._id])
@@ -202,6 +211,74 @@ const Chat = () => {
     }
   })
 
+  // Handle file selection
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+
+    // Validate file sizes (50MB max)
+    const maxSize = 50 * 1024 * 1024
+    const oversizedFiles = files.filter(file => file.size > maxSize)
+    if (oversizedFiles.length > 0) {
+      toast.error(`Some files are too large. Maximum size is 50MB.`)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      return
+    }
+
+    setUploadingFiles(true)
+    const uploadedAttachments = []
+
+    try {
+      // Upload files one by one
+      for (const file of files) {
+        const formData = new FormData()
+        formData.append('file', file)
+
+        try {
+          const uploadResponse = await uploadChatFileMutation.mutateAsync(formData)
+          const fileUrl = uploadResponse.data?.url || uploadResponse.url
+          
+          if (fileUrl) {
+            // Determine file type
+            const fileExtension = file.name.split('.').pop()?.toLowerCase() || ''
+            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(fileExtension)
+            
+            uploadedAttachments.push({
+              type: isImage ? 'image' : 'file',
+              url: fileUrl,
+              name: file.name,
+              size: file.size
+            })
+          }
+        } catch (uploadError) {
+          console.error('Error uploading file:', uploadError)
+          toast.error(`Failed to upload ${file.name}`)
+        }
+      }
+
+      if (uploadedAttachments.length > 0) {
+        // Send message with attachments
+        sendMessageMutation.mutate({ 
+          message: newMessage.trim() || null,
+          attachments: uploadedAttachments 
+        })
+        setSelectedFiles([])
+        setNewMessage('')
+      }
+    } catch (error) {
+      console.error('Error handling files:', error)
+      toast.error('Failed to upload files')
+    } finally {
+      setUploadingFiles(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
   // Handle send message
   const handleSendMessage = (e) => {
     e.preventDefault()
@@ -211,8 +288,8 @@ const Chat = () => {
       return
     }
     
-    if (!newMessage.trim()) {
-      toast.error('Please enter a message')
+    if (!newMessage.trim() && selectedFiles.length === 0) {
+      toast.error('Please enter a message or select a file')
       return
     }
     
@@ -230,7 +307,12 @@ const Chat = () => {
       return
     }
     
-    sendMessageMutation.mutate({ message: newMessage.trim() })
+    // If files are selected, upload them first
+    if (selectedFiles.length > 0) {
+      handleFileSelect({ target: { files: selectedFiles } })
+    } else {
+      sendMessageMutation.mutate({ message: newMessage.trim() })
+    }
   }
 
   // Filter conversations by search query
@@ -594,6 +676,12 @@ const Chat = () => {
           bottom: 0;
           z-index: 10;
         }
+        .chat-attach-button {
+          flex-shrink: 0;
+        }
+        .chat-attach-button i {
+          display: block !important;
+        }
         .chat-input-field {
           flex: 1;
           padding: 10px 16px;
@@ -822,7 +910,80 @@ const Chat = () => {
                                     <span>{formatTime(message.createdAt)}</span>
                                   </div>
                                   <div className="chat-message-bubble">
-                                    {message.message}
+                                    {message.message && <div style={{ marginBottom: message.attachments?.length > 0 ? '12px' : '0' }}>{message.message}</div>}
+                                    
+                                    {/* Display attachments */}
+                                    {message.attachments && message.attachments.length > 0 && (
+                                      <div className="chat-attachments" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: message.message ? '8px' : '0' }}>
+                                        {message.attachments.map((attachment, attIndex) => {
+                                          const fileUrl = normalizeImageUrl(attachment.url) || attachment.url
+                                          const isImage = attachment.type === 'image' || 
+                                                         ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(
+                                                           attachment.url?.split('.').pop()?.toLowerCase() || ''
+                                                         )
+                                          
+                                          return (
+                                            <div key={attIndex} className="chat-attachment-item" style={{ 
+                                              maxWidth: '100%',
+                                              borderRadius: '8px',
+                                              overflow: 'hidden',
+                                              border: '1px solid #e0e0e0'
+                                            }}>
+                                              {isImage ? (
+                                                <a href={fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
+                                                  <img 
+                                                    src={fileUrl} 
+                                                    alt={attachment.name || 'Attachment'} 
+                                                    style={{ 
+                                                      maxWidth: '100%', 
+                                                      maxHeight: '300px', 
+                                                      objectFit: 'contain',
+                                                      display: 'block'
+                                                    }}
+                                                    onError={(e) => {
+                                                      e.target.style.display = 'none'
+                                                      e.target.nextSibling.style.display = 'flex'
+                                                    }}
+                                                  />
+                                                  <div style={{ display: 'none', padding: '12px', backgroundColor: '#f5f5f5', alignItems: 'center', gap: '8px' }}>
+                                                    <i className="fa-solid fa-image" style={{ fontSize: '20px', color: '#999' }}></i>
+                                                    <span style={{ fontSize: '12px', color: '#666' }}>Image preview unavailable</span>
+                                                  </div>
+                                                </a>
+                                              ) : (
+                                                <a 
+                                                  href={fileUrl} 
+                                                  target="_blank" 
+                                                  rel="noopener noreferrer"
+                                                  style={{ 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    gap: '12px', 
+                                                    padding: '12px',
+                                                    backgroundColor: '#f5f5f5',
+                                                    textDecoration: 'none',
+                                                    color: '#333'
+                                                  }}
+                                                >
+                                                  <i className="fa-solid fa-file" style={{ fontSize: '24px', color: '#2196F3' }}></i>
+                                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '14px', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                      {attachment.name || 'File'}
+                                                    </div>
+                                                    {attachment.size && (
+                                                      <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
+                                                        {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                  <i className="fa-solid fa-download" style={{ color: '#2196F3' }}></i>
+                                                </a>
+                                              )}
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -835,19 +996,70 @@ const Chat = () => {
 
                     <form className="chat-input-area" onSubmit={handleSendMessage}>
                       <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={handleFileSelect}
+                        accept="*/*"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="chat-attach-button"
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          minWidth: '40px',
+                          border: 'none',
+                          background: 'transparent',
+                          borderRadius: '50%',
+                          color: '#666',
+                          cursor: uploadingFiles ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '20px',
+                          flexShrink: 0,
+                          opacity: uploadingFiles ? 0.5 : 1,
+                          transition: 'color 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!uploadingFiles) {
+                            e.target.style.color = '#2196F3'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!uploadingFiles) {
+                            e.target.style.color = '#666'
+                          }
+                        }}
+                        title="Attach file"
+                        disabled={uploadingFiles}
+                      >
+                        <i className="fa-solid fa-paperclip" style={{ display: 'block' }}></i>
+                      </button>
+                      <input
                         type="text"
                         className="chat-input-field"
                         placeholder="Type your message here..."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
+                        disabled={uploadingFiles}
                       />
                       <button
                         type="submit"
                         className="chat-send-button"
-                        disabled={!newMessage.trim() || sendMessageMutation.isLoading}
+                        disabled={(!newMessage.trim() && selectedFiles.length === 0) || sendMessageMutation.isLoading || uploadingFiles}
                         title="Send"
                       >
-                        <i className="fa-solid fa-paper-plane"></i>
+                        {uploadingFiles ? (
+                          <div className="spinner-border spinner-border-sm" role="status">
+                            <span className="visually-hidden">Uploading...</span>
+                          </div>
+                        ) : (
+                          <i className="fa-solid fa-paper-plane"></i>
+                        )}
                       </button>
                     </form>
                   </>

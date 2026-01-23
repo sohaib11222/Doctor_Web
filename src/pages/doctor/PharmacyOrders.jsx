@@ -10,8 +10,6 @@ const PharmacyOrders = () => {
   const [page, setPage] = useState(1)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showStatusModal, setShowStatusModal] = useState(false)
-  const [showShippingModal, setShowShippingModal] = useState(false)
-  const [shippingFee, setShippingFee] = useState('')
   const limit = 10
 
   const queryParams = useMemo(() => {
@@ -60,7 +58,10 @@ const PharmacyOrders = () => {
   }, [allOrdersResponse])
 
   const updateStatusMutation = useUpdateOrderStatus()
-  const updateShippingMutation = useUpdateShippingFee()
+  const updateShippingFeeMutation = useUpdateShippingFee()
+  const [showShippingModal, setShowShippingModal] = useState(false)
+  const [shippingFee, setShippingFee] = useState('')
+  const [selectedOrderForShipping, setSelectedOrderForShipping] = useState(null)
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -76,7 +77,7 @@ const PharmacyOrders = () => {
   }
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
@@ -86,22 +87,16 @@ const PharmacyOrders = () => {
   }
 
   const formatCurrency = (amount) => {
-    if (amount === undefined || amount === null) return '$0.00'
+    if (amount === undefined || amount === null) return '€0.00'
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'EUR',
     }).format(amount)
   }
 
   const handleUpdateStatus = (order) => {
     setSelectedOrder(order)
     setShowStatusModal(true)
-  }
-
-  const handleUpdateShipping = (order) => {
-    setSelectedOrder(order)
-    setShippingFee(order.shipping?.toString() || '0')
-    setShowShippingModal(true)
   }
 
   const handleStatusChange = (status) => {
@@ -118,28 +113,33 @@ const PharmacyOrders = () => {
     )
   }
 
-  const handleShippingSubmit = (e) => {
-    e.preventDefault()
-    if (!selectedOrder) return
-    
+  const handleOpenShippingModal = (order) => {
+    setSelectedOrderForShipping(order)
+    setShippingFee(order.shipping?.toString() || order.initialShipping?.toString() || '0')
+    setShowShippingModal(true)
+  }
+
+  const handleUpdateShippingFee = () => {
+    if (!selectedOrderForShipping) return
     const fee = parseFloat(shippingFee)
     if (isNaN(fee) || fee < 0) {
-      toast.error('Please enter a valid shipping fee')
+      toast.error('Please enter a valid shipping fee (non-negative number)')
       return
     }
-
-    updateShippingMutation.mutate(
-      { orderId: selectedOrder._id, shippingFee: fee },
+    updateShippingFeeMutation.mutate(
+      { orderId: selectedOrderForShipping._id, shippingFee: fee },
       {
         onSuccess: () => {
           setShowShippingModal(false)
-          setSelectedOrder(null)
           setShippingFee('')
+          setSelectedOrderForShipping(null)
           refetch()
         }
       }
     )
   }
+
+  // Shipping fee update removed - payment is processed during checkout
 
   if (isLoading && page === 1) {
     return (
@@ -308,6 +308,16 @@ const PharmacyOrders = () => {
                             </ul>
                           </div>
 
+                          {/* Shipping Fee Status */}
+                          {order.paymentStatus === 'PENDING' && (
+                            <div className="alert alert-warning mb-3">
+                              <i className="fe fe-info me-2"></i>
+                              {order.finalShipping !== null 
+                                ? 'Shipping fee set. Waiting for patient payment.'
+                                : 'Please set shipping fee for this order.'}
+                            </div>
+                          )}
+
                           {/* Order Actions */}
                           <div className="d-flex align-items-center justify-content-end flex-wrap gap-2">
                             <Link
@@ -317,16 +327,17 @@ const PharmacyOrders = () => {
                               <i className="fe fe-eye me-1"></i>
                               View Details
                             </Link>
-                            {/* Only allow setting shipping fee if order is not paid yet */}
-                            {['PENDING', 'CONFIRMED'].includes(order.status) && 
-                             order.paymentStatus === 'PENDING' && (
+                            {/* Allow setting shipping fee if order is not paid yet */}
+                            {order.paymentStatus === 'PENDING' && (
                               <button
-                                className="btn btn-sm btn-info"
-                                onClick={() => handleUpdateShipping(order)}
-                                disabled={updateShippingMutation.isLoading}
+                                className="btn btn-sm btn-warning"
+                                onClick={() => handleOpenShippingModal(order)}
+                                disabled={updateShippingFeeMutation.isLoading}
                               >
                                 <i className="fe fe-truck me-1"></i>
-                                Set Shipping
+                                {order.finalShipping !== null && order.finalShipping !== undefined 
+                                  ? 'Update Shipping' 
+                                  : 'Set Shipping Fee'}
                               </button>
                             )}
                             {/* Only allow updating status if order is paid */}
@@ -420,8 +431,8 @@ const PharmacyOrders = () => {
         </div>
       )}
 
-      {/* Shipping Fee Modal */}
-      {showShippingModal && selectedOrder && (
+      {/* Shipping Fee Update Modal */}
+      {showShippingModal && selectedOrderForShipping && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog">
             <div className="modal-content">
@@ -432,48 +443,67 @@ const PharmacyOrders = () => {
                   className="btn-close"
                   onClick={() => {
                     setShowShippingModal(false)
-                    setSelectedOrder(null)
                     setShippingFee('')
+                    setSelectedOrderForShipping(null)
                   }}
                 ></button>
               </div>
-              <form onSubmit={handleShippingSubmit}>
-                <div className="modal-body">
-                  <p>Set shipping fee for order #{selectedOrder.orderNumber}:</p>
-                  <div className="mb-3">
-                    <label className="form-label">Shipping Fee ($)</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      value={shippingFee}
-                      onChange={(e) => setShippingFee(e.target.value)}
-                      min="0"
-                      step="0.01"
-                      required
-                    />
+              <div className="modal-body">
+                <p>Set the final shipping fee for order #{selectedOrderForShipping.orderNumber}:</p>
+                <div className="mb-3">
+                  <label className="form-label">Current Shipping Fee</label>
+                  <div className="form-control-plaintext">
+                    {formatCurrency(selectedOrderForShipping.shipping || selectedOrderForShipping.initialShipping || 0)}
+                    {selectedOrderForShipping.initialShipping && selectedOrderForShipping.initialShipping !== selectedOrderForShipping.shipping && (
+                      <small className="text-muted d-block">
+                        Initial estimate: {formatCurrency(selectedOrderForShipping.initialShipping)}
+                      </small>
+                    )}
                   </div>
                 </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setShowShippingModal(false)
-                      setSelectedOrder(null)
-                      setShippingFee('')
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={updateShippingMutation.isLoading}
-                  >
-                    {updateShippingMutation.isLoading ? 'Updating...' : 'Update Shipping Fee'}
-                  </button>
+                <div className="mb-3">
+                  <label htmlFor="shippingFee" className="form-label">New Shipping Fee ($)</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="shippingFee"
+                    min="0"
+                    step="0.01"
+                    value={shippingFee}
+                    onChange={(e) => setShippingFee(e.target.value)}
+                    placeholder="Enter shipping fee"
+                  />
+                  <small className="text-muted">
+                    Subtotal: {formatCurrency(selectedOrderForShipping.subtotal)} + Tax: {formatCurrency(selectedOrderForShipping.tax)} + Shipping = New Total
+                  </small>
                 </div>
-              </form>
+                {shippingFee && !isNaN(parseFloat(shippingFee)) && (
+                  <div className="alert alert-info">
+                    <strong>New Total:</strong> {formatCurrency(selectedOrderForShipping.subtotal + selectedOrderForShipping.tax + parseFloat(shippingFee))}
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowShippingModal(false)
+                    setShippingFee('')
+                    setSelectedOrderForShipping(null)
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleUpdateShippingFee}
+                  disabled={updateShippingFeeMutation.isLoading || !shippingFee || isNaN(parseFloat(shippingFee))}
+                >
+                  {updateShippingFeeMutation.isLoading ? 'Updating...' : 'Update Shipping Fee'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

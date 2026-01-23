@@ -65,7 +65,7 @@ const SubscriptionPlans = () => {
 
   // Format expiration date
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
   }
@@ -166,7 +166,7 @@ const SubscriptionPlans = () => {
                   <div className="d-flex align-items-center justify-content-between">
                     <div>
                       <h5 className="mb-1">
-                        Current Plan: {currentSubscription.subscriptionPlan.name || 'N/A'}
+                        Current Plan: {currentSubscription.subscriptionPlan.name || '—'}
                       </h5>
                       <p className="text-muted mb-0">
                         {currentSubscription.hasActiveSubscription ? (
@@ -330,7 +330,7 @@ const SubscriptionPlans = () => {
                             onChange={(e) => setPaymentMethod(e.target.value)}
                           />
                           <label className="form-check-label" htmlFor="paypal">
-                            <i className="fe fe-dollar-sign me-2"></i>
+                            <i className="fe fe-credit-card me-2"></i>
                             PayPal
                           </label>
                         </div>

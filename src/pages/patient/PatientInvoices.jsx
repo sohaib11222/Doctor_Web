@@ -45,7 +45,7 @@ const PatientInvoices = () => {
 
   // Format date
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-GB', { 
       day: '2-digit', 
@@ -55,11 +55,11 @@ const PatientInvoices = () => {
   }
 
   // Format currency
-  const formatCurrency = (amount, currency = 'USD') => {
-    if (!amount) return '$0.00'
+  const formatCurrency = (amount, currency = 'EUR') => {
+    if (!amount) return '€0.00'
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD'
+      currency: currency || 'EUR'
     }).format(amount)
   }
 
@@ -155,7 +155,7 @@ const PatientInvoices = () => {
                       <tbody>
                         {filteredTransactions.map((transaction) => {
                           const doctor = transaction.relatedAppointmentId?.doctorId
-                          const doctorName = transaction.doctorName || doctor?.fullName || 'N/A'
+                          const doctorName = transaction.doctorName || doctor?.fullName || '—'
                           const doctorImage = doctor?.profileImage || '/assets/img/doctors/doctor-thumb-01.jpg'
                           const appointmentDate = transaction.relatedAppointmentId?.appointmentDate
                           const appointmentNumber = transaction.relatedAppointmentId?.appointmentNumber
@@ -194,7 +194,7 @@ const PatientInvoices = () => {
                                 )}
                               </td>
                               <td>
-                                {appointmentDate ? formatDate(appointmentDate) : 'N/A'}
+                                {appointmentDate ? formatDate(appointmentDate) : '—'}
                                 {appointmentNumber && (
                                   <div className="text-muted small">#{appointmentNumber}</div>
                                 )}
@@ -205,7 +205,7 @@ const PatientInvoices = () => {
                               </td>
                               <td>
                                 <span className={`badge ${getStatusBadge(transaction.status)}`}>
-                                  {transaction.status || 'N/A'}
+                                  {transaction.status || '—'}
                                 </span>
                               </td>
                               <td>
@@ -331,7 +331,7 @@ const PatientInvoices = () => {
                         <strong>Status:</strong>
                         <p>
                           <span className={`badge ${getStatusBadge(viewTransaction.status)}`}>
-                            {viewTransaction.status || 'N/A'}
+                            {viewTransaction.status || '—'}
                           </span>
                         </p>
                       </div>
@@ -351,7 +351,7 @@ const PatientInvoices = () => {
                         <div className="row mb-3">
                           <div className="col-md-6">
                             <strong>Appointment Number:</strong>
-                            <p>{viewTransaction.relatedAppointmentId.appointmentNumber || 'N/A'}</p>
+                            <p>{viewTransaction.relatedAppointmentId.appointmentNumber || '—'}</p>
                           </div>
                           <div className="col-md-6">
                             <strong>Appointment Date:</strong>
@@ -365,7 +365,7 @@ const PatientInvoices = () => {
                               <p>
                                 {typeof viewTransaction.relatedAppointmentId.doctorId === 'object' 
                                   ? viewTransaction.relatedAppointmentId.doctorId.fullName 
-                                  : 'N/A'}
+                                  : '—'}
                               </p>
                             </div>
                           </div>
@@ -379,7 +379,7 @@ const PatientInvoices = () => {
                       </div>
                       <div className="col-md-6">
                         <strong>Payment Method:</strong>
-                        <p>{viewTransaction.provider || 'N/A'}</p>
+                        <p>{viewTransaction.provider || '—'}</p>
                       </div>
                     </div>
                     {viewTransaction.providerReference && (

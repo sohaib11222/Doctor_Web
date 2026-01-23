@@ -96,7 +96,7 @@ const PatientDashboard = () => {
 
   // Format date
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-GB', { 
       day: '2-digit', 
@@ -107,7 +107,7 @@ const PatientDashboard = () => {
 
   // Format date and time
   const formatDateTime = (dateString, timeString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     const date = new Date(dateString)
     const dateStr = date.toLocaleDateString('en-GB', { 
       day: '2-digit', 
@@ -118,11 +118,11 @@ const PatientDashboard = () => {
   }
 
   // Format currency
-  const formatCurrency = (amount, currency = 'USD') => {
-    if (!amount) return '$0.00'
+  const formatCurrency = (amount, currency = 'EUR') => {
+    if (!amount) return '€0.00'
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD'
+      currency: currency || 'EUR'
     }).format(amount)
   }
 
@@ -138,12 +138,12 @@ const PatientDashboard = () => {
     if (statusUpper === 'CANCELLED' || statusUpper === 'REJECTED') {
       return <span className="badge badge-xs p-2 badge-soft-danger inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>{status}</span>
     }
-    return <span className="badge badge-xs p-2 badge-soft-secondary inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>{status || 'N/A'}</span>
+    return <span className="badge badge-xs p-2 badge-soft-secondary inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>{status || '—'}</span>
   }
 
   // Get appointment type display
   const getAppointmentType = (bookingType) => {
-    if (!bookingType) return 'N/A'
+    if (!bookingType) return '—'
     const type = bookingType.toUpperCase()
     if (type === 'ONLINE') return 'Video call'
     if (type === 'VISIT') return 'Clinic Visit'
@@ -507,7 +507,7 @@ const PatientDashboard = () => {
                                 </div>
                                 <span className="bg-orange badge">
                                   <i className={appointment.bookingType === 'ONLINE' ? 'isax isax-video5' : 'isax isax-hospital5'} me-1></i>
-                                  {appointment.appointmentTime || 'N/A'}
+                                  {appointment.appointmentTime || '—'}
                                 </span>
                               </div>
                               <div className="appointment-date-info">
@@ -515,7 +515,7 @@ const PatientDashboard = () => {
                                 <ul>
                                   <li>
                                     <span><i className="isax isax-clock5"></i></span>
-                                    Time : {appointment.appointmentTime || 'N/A'}
+                                    Time : {appointment.appointmentTime || '—'}
                                   </li>
                                   {appointment.clinicName && (
                                     <li>
@@ -700,7 +700,7 @@ const PatientDashboard = () => {
                                               <span>{doctorName}</span>
                                             </h2>
                                           </td>
-                                          <td>{record.description || 'N/A'}</td>
+                                          <td>{record.description || '—'}</td>
                                           <td>
                                             <div className="action-item">
                                               <a href={record.fileUrl} target="_blank" rel="noopener noreferrer" title="View">
@@ -817,7 +817,7 @@ const PatientDashboard = () => {
                                     transactions.slice(0, 5).map((transaction) => {
                                       const doctor = transaction.relatedAppointmentId?.doctorId
                                       const doctorName = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor.fullName : 
-                                                       transaction.doctorName || 'N/A'
+                                                       transaction.doctorName || '—'
                                       const doctorImage = (doctor && typeof doctor === 'object' && doctor !== null) ? (doctor.profileImage || '/assets/img/doctors-dashboard/doctor-profile-img.jpg') : '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
                                       const doctorId = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor._id : transaction.relatedAppointmentId?.doctorId
                                       const appointmentDate = transaction.relatedAppointmentId?.appointmentDate
@@ -848,7 +848,7 @@ const PatientDashboard = () => {
                                               <span className="text-muted">N/A</span>
                                             )}
                                           </td>
-                                          <td>{appointmentDate ? formatDate(appointmentDate) : 'N/A'}</td>
+                                          <td>{appointmentDate ? formatDate(appointmentDate) : '—'}</td>
                                           <td>{formatDate(transaction.createdAt)}</td>
                                           <td>{formatCurrency(transaction.amount, transaction.currency)}</td>
                                           <td>

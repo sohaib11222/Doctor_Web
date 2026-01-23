@@ -482,7 +482,7 @@ const DoctorProducts = () => {
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'EUR'
     }).format(price || 0)
   }
 
@@ -666,7 +666,7 @@ const DoctorProducts = () => {
                                 )}
                               </div>
                             )}
-                            {!product.category && <span className="text-muted">N/A</span>}
+                            {!product.category && <span className="text-muted">—</span>}
                           </td>
                           <td>
                             <div>

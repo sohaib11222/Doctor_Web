@@ -5,7 +5,7 @@ import * as balanceApi from '../../api/balance'
 
 const DoctorPayment = () => {
   const queryClient = useQueryClient()
-  const [withdrawModal, setWithdrawModal] = useState({ show: false, amount: '', paymentMethod: 'PAYPAL', paymentDetails: '' })
+  const [withdrawModal, setWithdrawModal] = useState({ show: false, amount: '', paymentMethod: 'STRIPE', paymentDetails: '' })
   const [currentPage, setCurrentPage] = useState(1)
 
   // Fetch user balance
@@ -32,7 +32,7 @@ const DoctorPayment = () => {
       queryClient.invalidateQueries(['withdrawalRequests'])
       queryClient.invalidateQueries(['userBalance'])
       toast.success('Withdrawal request submitted successfully!')
-      setWithdrawModal({ show: false, amount: '', paymentMethod: 'PAYPAL', paymentDetails: '' })
+      setWithdrawModal({ show: false, amount: '', paymentMethod: 'STRIPE', paymentDetails: '' })
     },
     onError: (error) => {
       const errorMessage = error?.response?.data?.message || error?.message || 'Failed to submit withdrawal request'
@@ -42,7 +42,7 @@ const DoctorPayment = () => {
 
   // Format date
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   }
@@ -117,7 +117,7 @@ const DoctorPayment = () => {
           fontWeight: '500'
         }}
       >
-        {status || 'N/A'}
+        {status || '—'}
       </span>
     )
   }
@@ -161,29 +161,23 @@ const DoctorPayment = () => {
                 <p>All the earning will be sent to below selected payout method</p>
               </div>
               <div className="stripe-wrapper">
-                <div className="stripe-box">
+                <div className="stripe-box active">
                   <div className="stripe-img">
                     <img src="/assets/img/icons/stripe.svg" alt="img" />
                   </div>
-                  <button className="btn" disabled><i className="fa-solid fa-gear"></i>Configure</button>
-                </div>
-                {/* <div className="stripe-box active">
-                  <div className="stripe-img">
-                    <img src="/assets/img/icons/paypal.svg" alt="img" />
-                  </div>
                   <button 
                     className="btn" 
-                    onClick={() => setWithdrawModal({ ...withdrawModal, show: true, paymentMethod: 'PAYPAL' })}
+                    onClick={() => setWithdrawModal({ ...withdrawModal, show: true, paymentMethod: 'STRIPE' })}
                   >
                     <i className="fa-solid fa-gear"></i>Configure
                   </button>
-                </div> */}
+                </div>
               </div>
               <div className="mt-3">
                 <div className="d-flex justify-content-between align-items-center p-3 bg-light rounded">
                   <div>
                     <p className="mb-1 text-muted">Available Balance</p>
-                    <h4 className="mb-0">${balance.toFixed(2)}</h4>
+                    <h4 className="mb-0">€{balance.toFixed(2)}</h4>
                   </div>
                   <button 
                     className="btn btn-primary"
@@ -226,6 +220,8 @@ const DoctorPayment = () => {
                         <th>Date</th>
                         <th>Payment Method</th>
                         <th>Amount</th>
+                        <th>Fee</th>
+                        <th>Total Deducted</th>
                         <th>Status</th>
                       </tr>
                     </thead>
@@ -233,8 +229,40 @@ const DoctorPayment = () => {
                       {withdrawals.map((withdrawal) => (
                         <tr key={withdrawal._id}>
                           <td>{formatDate(withdrawal.requestedAt || withdrawal.createdAt)}</td>
-                          <td>{withdrawal.paymentMethod || 'N/A'}</td>
-                          <td>${(withdrawal.amount || 0).toFixed(2)}</td>
+                          <td>{withdrawal.paymentMethod || '—'}</td>
+                          <td>
+                            <strong>€{(withdrawal.amount || 0).toFixed(2)}</strong>
+                            {withdrawal.netAmount !== null && withdrawal.netAmount !== undefined && (
+                              <small className="d-block text-muted">
+                                You receive: ${withdrawal.netAmount.toFixed(2)}
+                              </small>
+                            )}
+                          </td>
+                          <td>
+                            {withdrawal.withdrawalFeePercent !== null && withdrawal.withdrawalFeePercent !== undefined ? (
+                              <>
+                                <span className="text-muted">
+                                  {withdrawal.withdrawalFeePercent}%
+                                </span>
+                                {withdrawal.withdrawalFeeAmount !== null && withdrawal.withdrawalFeeAmount !== undefined && (
+                                  <small className="d-block text-muted">
+                                    €{withdrawal.withdrawalFeeAmount.toFixed(2)}
+                                  </small>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-muted">No fee</span>
+                            )}
+                          </td>
+                          <td>
+                            {withdrawal.totalDeducted !== null && withdrawal.totalDeducted !== undefined ? (
+                              <strong className="text-danger">
+                                ${withdrawal.totalDeducted.toFixed(2)}
+                              </strong>
+                            ) : (
+                              <span>€{(withdrawal.amount || 0).toFixed(2)}</span>
+                            )}
+                          </td>
                           <td>
                             {getStatusBadge(withdrawal.status)}
                           </td>
@@ -308,7 +336,7 @@ const DoctorPayment = () => {
                 <button 
                   type="button" 
                   className="btn-close" 
-                  onClick={() => setWithdrawModal({ show: false, amount: '', paymentMethod: 'PAYPAL', paymentDetails: '' })}
+                  onClick={() => setWithdrawModal({ show: false, amount: '', paymentMethod: 'STRIPE', paymentDetails: '' })}
                 ></button>
               </div>
               <div className="modal-body">
@@ -341,18 +369,16 @@ const DoctorPayment = () => {
                     value={withdrawModal.paymentMethod}
                     onChange={(e) => setWithdrawModal({ ...withdrawModal, paymentMethod: e.target.value })}
                   >
-                    <option value="PAYPAL">PayPal</option>
-                    <option value="BANK">Bank Transfer</option>
                     <option value="STRIPE">Stripe</option>
+                    <option value="BANK">Bank Transfer</option>
                   </select>
                 </div>
                 <div className="form-group mb-3">
                   <label>
                     Payment Details <span className="text-danger">*</span>
                     <small className="text-muted d-block">
-                      {withdrawModal.paymentMethod === 'PAYPAL' && 'Enter your PayPal email'}
+                      {withdrawModal.paymentMethod === 'STRIPE' && 'Enter Stripe account details (Account ID or email)'}
                       {withdrawModal.paymentMethod === 'BANK' && 'Enter bank account details'}
-                      {withdrawModal.paymentMethod === 'STRIPE' && 'Enter Stripe account details'}
                     </small>
                   </label>
                   <textarea
@@ -368,7 +394,7 @@ const DoctorPayment = () => {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => setWithdrawModal({ show: false, amount: '', paymentMethod: 'PAYPAL', paymentDetails: '' })}
+                  onClick={() => setWithdrawModal({ show: false, amount: '', paymentMethod: 'STRIPE', paymentDetails: '' })}
                 >
                   Cancel
                 </button>

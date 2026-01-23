@@ -103,8 +103,11 @@ const AvailableTimings = () => {
 
   // Update appointment duration mutation
   const updateDurationMutation = useMutation({
-    mutationFn: (duration) =>
-      weeklyScheduleApi.updateAppointmentDuration(duration),
+    mutationFn: (data) => {
+      // Accept either { duration: number } or just number for backward compatibility
+      const duration = typeof data === 'object' ? data.duration : data
+      return weeklyScheduleApi.updateAppointmentDuration(duration)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['weeklySchedule'])
       toast.success('Appointment duration updated successfully!')
@@ -196,7 +199,14 @@ const AvailableTimings = () => {
 
   // Handle duration change
   const handleDurationChange = (duration) => {
-    updateDurationMutation.mutate(parseInt(duration))
+    const durationValue = parseInt(duration)
+    // Validate duration is one of the allowed values
+    if (![15, 30, 45, 60].includes(durationValue)) {
+      toast.error('Invalid duration. Please select 15, 30, 45, or 60 minutes.')
+      return
+    }
+    // Send duration value - mutation will handle wrapping it in { duration: ... }
+    updateDurationMutation.mutate(durationValue)
   }
 
   // Render day tabs

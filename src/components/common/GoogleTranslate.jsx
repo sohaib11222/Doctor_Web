@@ -194,7 +194,12 @@ const GoogleTranslate = () => {
           display: block !important;
         }
         
-        /* When banner is present, adjust body */
+        /* Remove body padding-top when Google Translate is NOT active */
+        body:not(.top) {
+          padding-top: 0 !important;
+        }
+        
+        /* When banner is present, adjust body - remove any padding Google Translate might add */
         body.top {
           padding-top: 0 !important;
         }
@@ -208,10 +213,23 @@ const GoogleTranslate = () => {
           transition: margin-top 0.3s ease !important;
         }
         
-        /* Also handle pharmacy top header */
+        /* When Google Translate is NOT active, ensure header has no margin-top */
+        body:not(.top) .header,
+        body:not(.top) .header-fixed,
+        body:not(.top) .header-custom,
+        body:not(.top) header {
+          margin-top: 0 !important;
+        }
+        
+        /* Also handle pharmacy top header - only when Google Translate is active */
         body.top .top-header {
           margin-top: 42px !important;
           transition: margin-top 0.3s ease !important;
+        }
+        
+        /* Pharmacy top header - no margin when Google Translate is NOT active */
+        body:not(.top) .top-header {
+          margin-top: 0 !important;
         }
         
         /* Style the translate element - fixed position in header area */

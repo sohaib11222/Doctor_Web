@@ -184,31 +184,31 @@ const DoctorDashboard = () => {
 
   // Format date
   const formatDate = (date) => {
-    if (!date) return 'N/A'
+    if (!date) return '—'
     const d = new Date(date)
     return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   // Format date and time
   const formatDateTime = (date, time) => {
-    if (!date) return 'N/A'
+    if (!date) return '—'
     const d = new Date(date)
     const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
     return time ? `${dateStr} ${time}` : dateStr
   }
 
   // Format currency
-  const formatCurrency = (amount, currency = 'USD') => {
-    if (amount === null || amount === undefined) return '$0'
+  const formatCurrency = (amount, currency = 'EUR') => {
+    if (amount === null || amount === undefined) return '€0'
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD'
+      currency: currency || 'EUR'
     }).format(amount)
   }
 
   // Get relative time
   const getRelativeTime = (date) => {
-    if (!date) return 'N/A'
+    if (!date) return '—'
     const now = new Date()
     const d = new Date(date)
     const diffMs = now - d
@@ -410,7 +410,7 @@ const DoctorDashboard = () => {
                       <h6>Revenue</h6>
                       <h4>{formatCurrency(stats.revenue)}</h4>
                       <span className="text-success">
-                        <i className="fa-solid fa-dollar-sign"></i>
+                        <i className="fa-solid fa-euro-sign"></i>
                         From Appointments
                       </span>
                     </div>
@@ -575,7 +575,7 @@ const DoctorDashboard = () => {
                                     {patientName}
                                   </Link>
                                 </h5>
-                                <span>Patient ID : {patientId?.slice(-6).toUpperCase() || 'N/A'}</span>
+                                <span>Patient ID : {patientId?.slice(-6).toUpperCase() || '—'}</span>
                                 <div className="date-info">
                                   <p>
                                     Last Appointment<br />

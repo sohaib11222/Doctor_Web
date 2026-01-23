@@ -1,23 +1,23 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useOrder } from '../../queries'
-import { usePayForOrder } from '../../mutations'
+import { usePayForOrder, useCancelOrder } from '../../mutations'
 import { toast } from 'react-toastify'
 import BASE_URL from '../../utils/apiConfig'
 
 const OrderDetails = () => {
   const { orderId } = useParams()
   const navigate = useNavigate()
-  const [paymentMethod, setPaymentMethod] = useState('DUMMY')
-
   const { data: orderResponse, isLoading, error, refetch } = useOrder(orderId)
   const payMutation = usePayForOrder()
+  const cancelMutation = useCancelOrder()
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
   // Handle both response.data and direct data (axios interceptor already returns response.data)
   const order = orderResponse?.data || orderResponse
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
@@ -29,10 +29,10 @@ const OrderDetails = () => {
   }
 
   const formatCurrency = (amount) => {
-    if (amount === undefined || amount === null) return '$0.00'
+    if (amount === undefined || amount === null) return '€0.00'
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'EUR',
     }).format(amount)
   }
 
@@ -61,25 +61,7 @@ const OrderDetails = () => {
     return `${baseUrl}${imagePath}`
   }
 
-  const handlePay = () => {
-    if (!order) return
-
-    const amountToPay = order.requiresPaymentUpdate && order.initialTotal
-      ? order.total - order.initialTotal
-      : order.total
-
-    if (window.confirm(`Pay ${formatCurrency(amountToPay)} for this order?`)) {
-      payMutation.mutate(
-        { orderId: order._id, paymentMethod },
-        {
-          onSuccess: () => {
-            refetch()
-            toast.success('Payment processed successfully!')
-          }
-        }
-      )
-    }
-  }
+  // Payment is now processed during checkout, so handlePay is not needed
 
   if (isLoading) {
     return (
@@ -126,11 +108,35 @@ const OrderDetails = () => {
   const pharmacy = typeof order.pharmacyId === 'object' ? order.pharmacyId : null
   const pharmacyName = pharmacy?.name || 'Pharmacy'
   const shippingAddress = order.shippingAddress
-  const amountToPay = order.requiresPaymentUpdate && order.initialTotal
-    ? order.total - order.initialTotal
-    : order.total
-  const showPaymentButton = (order.paymentStatus === 'PENDING' || order.paymentStatus === 'PARTIAL') &&
-    order.finalShipping !== null && order.finalShipping !== undefined
+  
+  // Show payment button if order is pending and shipping fee is set
+  const showPaymentButton = order.paymentStatus === 'PENDING' && order.finalShipping !== null && order.finalShipping !== undefined
+
+  const handlePay = () => {
+    if (!order) return
+    payMutation.mutate(
+      { orderId: order._id, paymentMethod: 'DUMMY' },
+      {
+        onSuccess: () => {
+          refetch()
+        }
+      }
+    )
+  }
+
+  const handleCancel = () => {
+    if (!order) return
+    cancelMutation.mutate(order._id, {
+      onSuccess: () => {
+        setShowCancelConfirm(false)
+        refetch()
+        navigate('/order-history')
+      }
+    })
+  }
+
+  // Patient can cancel order if it's not paid yet
+  const canCancel = order && order.paymentStatus === 'PENDING' && order.status !== 'CANCELLED'
 
   return (
     <div className="content">
@@ -162,22 +168,16 @@ const OrderDetails = () => {
             </div>
 
             {/* Payment Status Alerts */}
-            {order.requiresPaymentUpdate && (
-              <div className="alert alert-warning" role="alert">
+            {order.paymentStatus === 'PENDING' && order.finalShipping === null && (
+              <div className="alert alert-info mb-4">
                 <i className="fe fe-info me-2"></i>
-                <strong>Shipping Fee Updated</strong>
-                <p className="mb-0 mt-2">
-                  The shipping fee has been updated. Please pay the additional {formatCurrency(amountToPay)} to proceed.
-                </p>
+                Waiting for pharmacy owner to set shipping fee. You will be able to pay once the shipping fee is set.
               </div>
             )}
-            {(order.finalShipping === null || order.finalShipping === undefined) && (
-              <div className="alert alert-info" role="alert">
-                <i className="fe fe-info me-2"></i>
-                <strong>Waiting for Shipping Fee</strong>
-                <p className="mb-0 mt-2">
-                  The pharmacy owner is setting the shipping fee. You will be able to pay once the shipping fee is confirmed.
-                </p>
+            {order.paymentStatus === 'PENDING' && order.finalShipping !== null && (
+              <div className="alert alert-warning mb-4">
+                <i className="fe fe-alert-circle me-2"></i>
+                Shipping fee has been set. Please complete payment to confirm your order.
               </div>
             )}
 
@@ -257,34 +257,14 @@ const OrderDetails = () => {
                   <span>{formatCurrency(order.tax)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
-                  <div>
-                    <span>Shipping</span>
-                    {order.finalShipping !== null && order.finalShipping !== order.initialShipping && (
-                      <small className="text-muted d-block">
-                        Updated from {formatCurrency(order.initialShipping || 0)}
-                      </small>
-                    )}
-                  </div>
+                  <span>Shipping</span>
                   <span>{formatCurrency(order.shipping)}</span>
                 </div>
-                {order.requiresPaymentUpdate && order.initialTotal && (
-                  <div className="d-flex justify-content-between mb-2">
-                    <span>Already Paid</span>
-                    <span>{formatCurrency(order.initialTotal)}</span>
-                  </div>
-                )}
                 <hr />
-                {order.requiresPaymentUpdate ? (
-                  <div className="d-flex justify-content-between">
-                    <strong>Amount Due</strong>
-                    <strong className="text-warning">{formatCurrency(amountToPay)}</strong>
-                  </div>
-                ) : (
-                  <div className="d-flex justify-content-between">
-                    <strong>Total</strong>
-                    <strong>{formatCurrency(order.total)}</strong>
-                  </div>
-                )}
+                <div className="d-flex justify-content-between">
+                  <strong>Total</strong>
+                  <strong>{formatCurrency(order.total)}</strong>
+                </div>
               </div>
             </div>
 
@@ -339,22 +319,20 @@ const OrderDetails = () => {
 
             {/* Payment Section */}
             {showPaymentButton && (
-              <div className="card">
+              <div className="card mb-4">
                 <div className="card-header">
                   <h4 className="card-title mb-0">Payment</h4>
                 </div>
                 <div className="card-body">
-                  <div className="mb-3">
-                    <label className="form-label">Payment Method</label>
-                    <select
-                      className="form-select"
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                    >
-                      <option value="DUMMY">Test Payment (Dummy)</option>
-                      <option value="CARD">Credit Card</option>
-                      <option value="PAYPAL">PayPal</option>
-                    </select>
+                  <div className="alert alert-info mb-3">
+                    <strong>Total Amount to Pay:</strong> {formatCurrency(order.total)}
+                    {order.initialTotal && order.initialTotal !== order.total && (
+                      <div className="mt-2">
+                        <small>
+                          Updated from initial estimate of {formatCurrency(order.initialTotal)}
+                        </small>
+                      </div>
+                    )}
                   </div>
                   <button
                     className="btn btn-primary btn-lg w-100"
@@ -364,11 +342,30 @@ const OrderDetails = () => {
                     {payMutation.isLoading ? (
                       <>
                         <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                        Processing...
+                        Processing Payment...
                       </>
                     ) : (
-                      `Pay ${formatCurrency(amountToPay)}`
+                      <>
+                        <i className="fe fe-credit-card me-2"></i>
+                        Pay {formatCurrency(order.total)}
+                      </>
                     )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Cancel Order Section */}
+            {canCancel && (
+              <div className="card mb-4">
+                <div className="card-body">
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => setShowCancelConfirm(true)}
+                    disabled={cancelMutation.isLoading}
+                  >
+                    <i className="fe fe-x me-2"></i>
+                    Cancel Order
                   </button>
                 </div>
               </div>
@@ -376,6 +373,45 @@ const OrderDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Cancel Order</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowCancelConfirm(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to cancel order #{order.orderNumber}?</p>
+                <p className="text-muted">This action cannot be undone.</p>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowCancelConfirm(false)}
+                >
+                  No, Keep Order
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleCancel}
+                  disabled={cancelMutation.isLoading}
+                >
+                  {cancelMutation.isLoading ? 'Cancelling...' : 'Yes, Cancel Order'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

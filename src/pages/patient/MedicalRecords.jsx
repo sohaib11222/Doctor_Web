@@ -174,7 +174,7 @@ const MedicalRecords = () => {
 
   // Format date
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-GB', { 
       day: '2-digit', 

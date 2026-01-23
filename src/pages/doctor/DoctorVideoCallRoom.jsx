@@ -10,6 +10,7 @@ import {
 } from '@stream-io/video-react-sdk'
 import { useAuth } from '../../contexts/AuthContext'
 import { useVideoCall } from '../../hooks/useVideoCall'
+import { useAppointment } from '../../queries/appointmentQueries'
 import { toast } from 'react-toastify'
 import * as videoApi from '../../api/video'
 
@@ -19,12 +20,63 @@ const DoctorVideoCallRoom = () => {
   const appointmentId = searchParams.get('appointmentId')
   const { user } = useAuth()
   
+  // Fetch appointment details to check time window
+  const { data: appointmentData, isLoading: appointmentLoading } = useAppointment(appointmentId)
+  const appointment = appointmentData?.data || appointmentData
+  
   const { client, call, loading, error, startCall, endCall } = useVideoCall(appointmentId)
   const [callStarted, setCallStarted] = useState(false)
   const startCallRef = useRef(false) // Use ref to prevent multiple calls
   const [isCallActive, setIsCallActive] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const [timeValidationError, setTimeValidationError] = useState(null)
   const pendingNavigation = useRef(null)
+
+  // Check appointment time window before starting call
+  const checkAppointmentTime = () => {
+    if (!appointment) return { isValid: false, message: 'Appointment not found' }
+
+    const now = new Date()
+    const appointmentStartDateTime = new Date(appointment.appointmentDate)
+    const [startHours, startMinutes] = appointment.appointmentTime.split(':').map(Number)
+    appointmentStartDateTime.setHours(startHours, startMinutes, 0, 0)
+    
+    // Calculate end time
+    const duration = appointment.appointmentDuration || 30
+    let appointmentEndDateTime
+    if (appointment.appointmentEndTime) {
+      const [endHours, endMinutes] = appointment.appointmentEndTime.split(':').map(Number)
+      appointmentEndDateTime = new Date(appointment.appointmentDate)
+      appointmentEndDateTime.setHours(endHours, endMinutes, 0, 0)
+    } else {
+      appointmentEndDateTime = new Date(appointmentStartDateTime.getTime() + duration * 60 * 1000)
+    }
+
+    if (now < appointmentStartDateTime) {
+      return {
+        isValid: false,
+        message: `Video call is only available during the scheduled appointment time. Your appointment starts at ${appointmentStartDateTime.toLocaleString()}.`,
+        startTime: appointmentStartDateTime,
+        endTime: appointmentEndDateTime
+      }
+    }
+
+    if (now > appointmentEndDateTime) {
+      return {
+        isValid: false,
+        message: `The appointment time has passed. The appointment window was from ${appointmentStartDateTime.toLocaleString()} to ${appointmentEndDateTime.toLocaleString()}. Video call is no longer available.`,
+        startTime: appointmentStartDateTime,
+        endTime: appointmentEndDateTime
+      }
+    }
+
+    return {
+      isValid: true,
+      message: null,
+      startTime: appointmentStartDateTime,
+      endTime: appointmentEndDateTime
+    }
+  }
 
   useEffect(() => {
     console.log('🔍 [DoctorVideoCallRoom] useEffect triggered:', {

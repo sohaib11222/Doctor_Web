@@ -6,6 +6,7 @@ import * as profileApi from '../../api/profile'
 import * as weeklyScheduleApi from '../../api/weeklySchedule'
 import * as subscriptionApi from '../../api/subscription'
 import * as appointmentApi from '../../api/appointments'
+import * as rescheduleApi from '../../api/rescheduleRequest'
 import { useUnreadNotificationsCount } from '../../queries/notificationQueries'
 import { toast } from 'react-toastify'
 
@@ -168,6 +169,27 @@ const DoctorSidebar = () => {
     return data.pagination?.total || data.appointments?.length || 0
   }, [pendingAppointmentsData])
 
+  // Fetch pending reschedule requests count
+  const { data: pendingRescheduleRequestsData } = useQuery({
+    queryKey: ['doctorPendingRescheduleRequestsCount'],
+    queryFn: async () => {
+      const response = await rescheduleApi.listRescheduleRequests({ status: 'PENDING' })
+      return response.data || response
+    },
+    enabled: !!user,
+    retry: 1,
+    refetchInterval: 30000 // Refetch every 30 seconds to keep count updated
+  })
+
+  // Extract pending reschedule requests count
+  const pendingRescheduleRequestsCount = useMemo(() => {
+    if (!pendingRescheduleRequestsData) return 0
+    const requests = Array.isArray(pendingRescheduleRequestsData) 
+      ? pendingRescheduleRequestsData 
+      : (pendingRescheduleRequestsData.data || [])
+    return requests.length || 0
+  }, [pendingRescheduleRequestsData])
+
   // Fetch weekly schedule to check if timings are set
   const { data: weeklySchedule } = useQuery({
     queryKey: ['weeklySchedule'],
@@ -305,6 +327,15 @@ const DoctorSidebar = () => {
               <Link to="/appointments">
                 <i className="fa-solid fa-calendar-days"></i>
                 <span>Appointments</span>
+              </Link>
+            </li>
+            <li className={isActive('/doctor/reschedule-requests') ? 'active' : ''}>
+              <Link to="/doctor/reschedule-requests">
+                <i className="fa-solid fa-calendar-xmark"></i>
+                <span>Reschedule Requests</span>
+                {pendingRescheduleRequestsCount > 0 && (
+                  <small className="unread-msg">{pendingRescheduleRequestsCount > 99 ? '99+' : pendingRescheduleRequestsCount}</small>
+                )}
               </Link>
             </li>
             <li className={isActive('/available-timings') ? 'active' : ''}>

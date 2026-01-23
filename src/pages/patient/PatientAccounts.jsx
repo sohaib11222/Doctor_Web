@@ -93,7 +93,7 @@ const PatientAccounts = () => {
 
   // Format date
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-GB', { 
       day: '2-digit', 
@@ -103,11 +103,11 @@ const PatientAccounts = () => {
   }
 
   // Format currency
-  const formatCurrency = (amount, currency = 'USD') => {
-    if (!amount) return '$0.00'
+  const formatCurrency = (amount, currency = 'EUR') => {
+    if (!amount) return '€0.00'
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD'
+      currency: currency || 'EUR'
     }).format(amount)
   }
 
@@ -123,7 +123,7 @@ const PatientAccounts = () => {
     if (statusUpper === 'REJECTED' || statusUpper === 'FAILED') {
       return <span className="badge badge-danger-transparent inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>{status}</span>
     }
-    return <span className="badge badge-secondary-transparent inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>{status || 'N/A'}</span>
+    return <span className="badge badge-secondary-transparent inline-flex align-items-center"><i className="fa-solid fa-circle me-1 fs-5"></i>{status || '—'}</span>
   }
 
   return (
@@ -326,9 +326,8 @@ const PatientAccounts = () => {
                         onChange={(e) => setWithdrawFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
                         required
                       >
-                        <option value="BANK">Bank Transfer</option>
-                        <option value="PAYPAL">PayPal</option>
                         <option value="STRIPE">Stripe</option>
+                        <option value="BANK">Bank Transfer</option>
                         <option value="OTHER">Other</option>
                       </select>
                     </div>
@@ -337,7 +336,7 @@ const PatientAccounts = () => {
                       <textarea 
                         className="form-control" 
                         rows="3"
-                        placeholder="Enter account number, PayPal email, or other payment details..."
+                        placeholder="Enter Stripe account details, bank account number, or other payment details..."
                         value={withdrawFormData.paymentDetails}
                         onChange={(e) => setWithdrawFormData(prev => ({ ...prev, paymentDetails: e.target.value }))}
                         required

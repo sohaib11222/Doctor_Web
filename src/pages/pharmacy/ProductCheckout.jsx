@@ -103,8 +103,12 @@ const ProductCheckout = () => {
       {
         onSuccess: (data) => {
           clearCart()
-          toast.success('Order created successfully! The pharmacy owner will set the shipping fee.')
+          toast.success('Order created successfully! The pharmacy owner will set the shipping fee, then you can complete payment.')
           navigate(`/order-details/${data.data._id}`)
+        },
+        onError: (error) => {
+          const errorMessage = error.response?.data?.message || error.message || 'Failed to create order'
+          toast.error(errorMessage)
         }
       }
     )

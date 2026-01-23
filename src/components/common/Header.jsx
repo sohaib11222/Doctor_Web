@@ -200,16 +200,35 @@ const Header = () => {
     <>
       {/* Add CSS to handle Google Translate banner */}
       <style>{`
+        /* CRITICAL: Remove ALL body padding-top by default - only allow when Google Translate banner is visible */
+        body {
+          padding-top: 0 !important;
+        }
+        
+        /* When Google Translate banner is active (body has .top class), allow minimal padding if needed */
+        body.top {
+          padding-top: 0 !important;
+        }
+        
         /* Adjust header when Google Translate banner is present */
         .header.header-fixed,
         .header.header-custom {
           transition: margin-top 0.3s ease, top 0.3s ease !important;
+          margin-top: 0 !important;
         }
         
         /* When Google Translate banner is active, push header down */
         body.top .header.header-fixed,
         body.top .header.header-custom {
           margin-top: 42px !important;
+        }
+        
+        /* When Google Translate banner is NOT active, ensure no margin-top */
+        body:not(.top) .header.header-fixed,
+        body:not(.top) .header.header-custom,
+        .header.header-fixed:not(body.top .header),
+        .header.header-custom:not(body.top .header) {
+          margin-top: 0 !important;
         }
         
         /* Handle Google Translate banner frame */
@@ -226,9 +245,15 @@ const Header = () => {
           z-index: 9999 !important;
         }
         
-        /* Pharmacy top header adjustment */
+        /* Pharmacy top header adjustment - only when Google Translate is active */
         body.top .top-header {
           margin-top: 42px !important;
+        }
+        
+        /* Pharmacy top header - no margin when Google Translate is NOT active */
+        body:not(.top) .top-header,
+        .top-header {
+          margin-top: 0 !important;
         }
       `}</style>
 
@@ -352,7 +377,12 @@ const Header = () => {
                 </span>
               </a>
               <Link to="/" className="navbar-brand logo">
-                <img src="/assets/img/doctor_final.png" className="img-fluid" alt="Logo" />
+                <img 
+                  src="/assets/img/doctor_final.png" 
+                  className="img-fluid" 
+                  alt="Logo"
+                  style={isIndexPage ? { maxHeight: '60px', height: 'auto', width: 'auto' } : {}}
+                />
               </Link>
             </div>
 
@@ -375,7 +405,12 @@ const Header = () => {
             <div className={`main-menu-wrapper ${isMenuOpen ? 'menu-opened' : ''}`}>
               <div className="menu-header">
                 <Link to="/" className="menu-logo">
-                  <img src="/assets/img/doctor_final.png" className="img-fluid" alt="Logo" />
+                  <img 
+                    src="/assets/img/doctor_final.png" 
+                    className="img-fluid" 
+                    alt="Logo"
+                    style={isIndexPage ? { maxHeight: '60px', height: 'auto', width: 'auto' } : {}}
+                  />
                 </Link>
                 <a id="menu_close" className="menu-close" href="javascript:void(0);" onClick={() => setIsMenuOpen(false)}>
                   <i className="fas fa-times"></i>

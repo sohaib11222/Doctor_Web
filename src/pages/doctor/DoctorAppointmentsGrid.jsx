@@ -146,14 +146,14 @@ const DoctorAppointmentsGrid = () => {
 
   // Format date for display
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
   }
 
   // Format time for display
   const formatTime = (timeString) => {
-    if (!timeString) return 'N/A'
+    if (!timeString) return '—'
     const [hours, minutes] = timeString.split(':')
     const hour = parseInt(hours)
     const ampm = hour >= 12 ? 'PM' : 'AM'
@@ -169,7 +169,7 @@ const DoctorAppointmentsGrid = () => {
       case 'VISIT':
         return 'Direct Visit'
       default:
-        return bookingType || 'N/A'
+        return bookingType || '—'
     }
   }
 

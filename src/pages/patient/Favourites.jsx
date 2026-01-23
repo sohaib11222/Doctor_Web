@@ -160,7 +160,7 @@ const Favourites = () => {
 
   // Format date
   const formatDate = (date) => {
-    if (!date) return 'N/A'
+    if (!date) return '—'
     return new Date(date).toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'short', 

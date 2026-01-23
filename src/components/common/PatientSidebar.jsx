@@ -114,6 +114,12 @@ const PatientSidebar = () => {
                 <span>My Appointments</span>
               </Link>
             </li>
+            <li className={isActive(['/patient/request-reschedule', '/patient/reschedule-requests']) ? 'active' : ''}>
+              <Link to="/patient/reschedule-requests">
+                <i className="isax isax-calendar-2"></i>
+                <span>Reschedule Requests</span>
+              </Link>
+            </li>
             <li className={isActive(['/map-view', '/clinic-navigation']) ? 'active' : ''}>
               <Link to="/map-view">
                 <i className="isax isax-location"></i>

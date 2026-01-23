@@ -159,14 +159,14 @@ const DoctorAppointments = () => {
 
   // Format date for display
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
   }
 
   // Format time for display
   const formatTime = (timeString) => {
-    if (!timeString) return 'N/A'
+    if (!timeString) return '—'
     const [hours, minutes] = timeString.split(':')
     const hour = parseInt(hours)
     const ampm = hour >= 12 ? 'PM' : 'AM'
@@ -182,7 +182,7 @@ const DoctorAppointments = () => {
       case 'VISIT':
         return 'Direct Visit'
       default:
-        return bookingType || 'N/A'
+        return bookingType || '—'
     }
   }
 
@@ -389,11 +389,11 @@ const DoctorAppointments = () => {
                       <ul>
                         <li>
                           <i className="fa-solid fa-envelope"></i>
-                          {appointment.patientId?.email || 'N/A'}
+                          {appointment.patientId?.email || '—'}
                         </li>
                         <li>
                           <i className="fa-solid fa-phone"></i>
-                          {appointment.patientId?.phone || 'N/A'}
+                          {appointment.patientId?.phone || '—'}
                         </li>
                       </ul>
                     </li>

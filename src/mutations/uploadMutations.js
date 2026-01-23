@@ -75,3 +75,16 @@ export const useUploadGeneralImage = () => {
   })
 }
 
+// Upload chat file (supports all file types)
+export const useUploadChatFile = () => {
+  return useMutation({
+    mutationFn: (formData) => api.upload(API_ROUTES.UPLOAD.CHAT, formData),
+  })
+}
+
+// Upload multiple chat files
+export const useUploadChatFiles = () => {
+  return useMutation({
+    mutationFn: (formData) => api.upload(API_ROUTES.UPLOAD.CHAT_MULTIPLE, formData),
+  })
+}

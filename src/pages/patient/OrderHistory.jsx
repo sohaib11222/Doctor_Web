@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { usePatientOrders } from '../../queries'
-import { useCancelOrder } from '../../mutations'
+// Orders are paid immediately, so cancellation is not available
 import { toast } from 'react-toastify'
 
 const OrderHistory = () => {
@@ -37,12 +37,10 @@ const OrderHistory = () => {
     
     const counts = {
       'ALL': allOrders.length,
-      'PENDING': 0,
       'CONFIRMED': 0,
       'PROCESSING': 0,
       'SHIPPED': 0,
       'DELIVERED': 0,
-      'CANCELLED': 0,
     }
     
     allOrders.forEach((order) => {
@@ -55,7 +53,7 @@ const OrderHistory = () => {
     return counts
   }, [allOrdersResponse])
 
-  const cancelOrderMutation = useCancelOrder()
+  // Orders are paid immediately, so cancellation is not available
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -71,7 +69,7 @@ const OrderHistory = () => {
   }
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
@@ -81,22 +79,14 @@ const OrderHistory = () => {
   }
 
   const formatCurrency = (amount) => {
-    if (amount === undefined || amount === null) return '$0.00'
+    if (amount === undefined || amount === null) return '€0.00'
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'EUR',
     }).format(amount)
   }
 
-  const handleCancelOrder = (orderId) => {
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      cancelOrderMutation.mutate(orderId, {
-        onSuccess: () => {
-          refetch()
-        }
-      })
-    }
-  }
+  // Orders are paid immediately, so cancellation is not available
 
   if (isLoading && page === 1) {
     return (
@@ -176,7 +166,7 @@ const OrderHistory = () => {
                     >
                       All Orders {statusCounts['ALL'] > 0 && <span className="badge bg-light text-dark ms-1">{statusCounts['ALL']}</span>}
                     </button>
-                    {['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((status) => (
+                    {['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'].map((status) => (
                       <button
                         key={status}
                         className={`btn btn-sm ${statusFilter === status ? 'btn-primary' : 'btn-outline-primary'}`}
@@ -263,44 +253,36 @@ const OrderHistory = () => {
                             </ul>
                           </div>
 
+                          {/* Payment Status Alert */}
+                          {order.paymentStatus === 'PENDING' && (
+                            <div className="alert alert-warning mb-3">
+                              <i className="fe fe-info me-2"></i>
+                              {order.finalShipping !== null 
+                                ? 'Shipping fee set. Please complete payment.'
+                                : 'Waiting for shipping fee to be set.'}
+                            </div>
+                          )}
+
                           {/* Order Actions */}
                           <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
                             <div>
-                              {order.paymentStatus === 'PENDING' && order.finalShipping === null && (
-                                <div className="mb-2">
-                                  <span className="badge bg-info text-white">Processing...</span>
-                                  <small className="text-muted d-block mt-1">Waiting for shipping fee</small>
-                                </div>
+                              {order.paymentStatus === 'PAID' && (
+                                <span className="badge bg-success text-white">Paid</span>
+                              )}
+                              {order.paymentStatus === 'PENDING' && (
+                                <span className="badge bg-warning text-dark">Pending Payment</span>
                               )}
                             </div>
                             <div className="order-actions">
-                              {(order.paymentStatus === 'PENDING' || order.paymentStatus === 'PARTIAL') && 
-                               order.finalShipping !== null && order.finalShipping !== undefined && (
-                                <Link
-                                  to={`/order-details/${order._id}`}
-                                  className="btn btn-sm btn-success me-2"
-                                >
-                                  <i className="fe fe-credit-card me-1"></i>
-                                  Pay Now
-                                </Link>
-                              )}
-                              {(order.status === 'PENDING' || order.status === 'CONFIRMED') && 
-                               order.paymentStatus === 'PENDING' && (
-                                <button 
-                                  className="btn btn-sm btn-outline-danger me-2"
-                                  onClick={() => handleCancelOrder(order._id)}
-                                  disabled={cancelOrderMutation.isLoading}
-                                >
-                                  <i className="fe fe-x me-1"></i>
-                                  Cancel Order
-                                </button>
-                              )}
                               <Link
                                 to={`/order-details/${order._id}`}
                                 className="btn btn-sm btn-primary"
                               >
                                 <i className="fe fe-eye me-1"></i>
                                 View Details
+                                {order.paymentStatus === 'PENDING' && order.finalShipping !== null && (
+                                  <span className="badge bg-danger ms-2">Pay Now</span>
+                                )}
                               </Link>
                             </div>
                           </div>

@@ -30,7 +30,11 @@ export const getWeeklySchedule = async () => {
  * @returns {Promise<Object>} Updated schedule
  */
 export const updateAppointmentDuration = async (duration) => {
-  return api.put('/weekly-schedule/duration', { duration })
+  // Ensure duration is a number and send as object
+  const durationValue = typeof duration === 'object' && duration.duration !== undefined 
+    ? duration.duration 
+    : duration
+  return api.put('/weekly-schedule/duration', { duration: durationValue })
 }
 
 /**

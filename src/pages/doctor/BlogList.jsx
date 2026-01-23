@@ -58,7 +58,7 @@ const BlogList = () => {
 
   // Format date
   const formatDate = (date) => {
-    if (!date) return 'N/A'
+    if (!date) return '—'
     const d = new Date(date)
     return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   }

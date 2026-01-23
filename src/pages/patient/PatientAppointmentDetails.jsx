@@ -6,6 +6,7 @@ import * as appointmentApi from '../../api/appointments'
 import { useAuth } from '../../contexts/AuthContext'
 import { useCreateReview } from '../../mutations/reviewMutations'
 import * as reviewsApi from '../../api/reviews'
+import * as rescheduleApi from '../../api/rescheduleRequest'
 
 const PatientAppointmentDetails = () => {
   const { user } = useAuth()
@@ -19,6 +20,7 @@ const PatientAppointmentDetails = () => {
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewText, setReviewText] = useState('')
+  const [canReschedule, setCanReschedule] = useState(false)
 
   // Fetch appointment details
   const { data: appointmentData, isLoading, error } = useQuery({
@@ -113,6 +115,57 @@ const PatientAppointmentDetails = () => {
     }
   }, [appointment, existingReview, showReviewModal])
 
+  // Check if current appointment is eligible for reschedule
+  const { data: eligibleAppointmentsData } = useQuery({
+    queryKey: ['eligibleRescheduleAppointments'],
+    queryFn: () => rescheduleApi.getEligibleAppointments(),
+    enabled: !!user && !!appointment && appointment.status === 'CONFIRMED' && appointment.bookingType === 'ONLINE',
+    retry: 1
+  })
+
+  // Check if this appointment is eligible for reschedule
+  useEffect(() => {
+    if (appointment && eligibleAppointmentsData) {
+      const eligibleAppointments = eligibleAppointmentsData?.data || eligibleAppointmentsData || []
+      const isEligible = eligibleAppointments.some(apt => apt._id === appointment._id)
+      
+      // Also check if appointment time has passed (additional local check)
+      if (isEligible && appointment.appointmentDate && appointment.appointmentTime) {
+        const now = new Date()
+        const appointmentDateTime = new Date(appointment.appointmentDate)
+        const [hours, minutes] = appointment.appointmentTime.split(':').map(Number)
+        appointmentDateTime.setHours(hours, minutes, 0, 0)
+        
+        // Only show if appointment time has passed
+        if (now > appointmentDateTime) {
+          setCanReschedule(true)
+        } else {
+          setCanReschedule(false)
+        }
+      } else {
+        setCanReschedule(false)
+      }
+    } else if (appointment && appointment.status === 'CONFIRMED' && appointment.bookingType === 'ONLINE') {
+      // If API call fails or not available, do a basic local check
+      if (appointment.appointmentDate && appointment.appointmentTime) {
+        const now = new Date()
+        const appointmentDateTime = new Date(appointment.appointmentDate)
+        const [hours, minutes] = appointment.appointmentTime.split(':').map(Number)
+        appointmentDateTime.setHours(hours, minutes, 0, 0)
+        
+        // Show button if appointment time has passed (basic check)
+        // Note: This won't check if patient joined video call, but at least shows button for past appointments
+        if (now > appointmentDateTime) {
+          setCanReschedule(true)
+        } else {
+          setCanReschedule(false)
+        }
+      }
+    } else {
+      setCanReschedule(false)
+    }
+  }, [appointment, eligibleAppointmentsData])
+
   // Extract recent appointments
   const recentAppointments = useMemo(() => {
     if (!recentAppointmentsData) return []
@@ -122,7 +175,7 @@ const PatientAppointmentDetails = () => {
 
   // Format date and time
   const formatDateTime = (date, time) => {
-    if (!date) return 'N/A'
+    if (!date) return '—'
     const d = new Date(date)
     const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
     return time ? `${dateStr} - ${time}` : dateStr
@@ -428,6 +481,42 @@ const PatientAppointmentDetails = () => {
                       </div>
                     </li>
                   )}
+                  {/* Show reschedule button if appointment is CONFIRMED, ONLINE, and time has passed */}
+                  {(() => {
+                    if (status !== 'CONFIRMED' || bookingType !== 'ONLINE') return null
+                    
+                    // Check if appointment time has passed
+                    let hasPassed = false
+                    if (appointment.appointmentDate && appointment.appointmentTime) {
+                      const now = new Date()
+                      const appointmentDateTime = new Date(appointment.appointmentDate)
+                      const [hours, minutes] = appointment.appointmentTime.split(':').map(Number)
+                      appointmentDateTime.setHours(hours, minutes, 0, 0)
+                      hasPassed = now > appointmentDateTime
+                    }
+                    
+                    // Show button if appointment has passed and is eligible (or if API check not available yet)
+                    if (hasPassed && (canReschedule || !eligibleAppointmentsData)) {
+                      return (
+                        <li>
+                          <div className="mt-3">
+                            <div className="alert alert-warning">
+                              <h6>Missed Appointment?</h6>
+                              <p className="mb-2">If you were unable to join the video call, you can request to reschedule.</p>
+                              <Link
+                                to={`/patient/request-reschedule?appointmentId=${appointment._id}`}
+                                className="btn btn-warning"
+                              >
+                                <i className="fa-solid fa-calendar-days me-2"></i>
+                                Request Reschedule
+                              </Link>
+                            </div>
+                          </div>
+                        </li>
+                      )
+                    }
+                    return null
+                  })()}
                   {/* Debug info - shows why button might not appear */}
                   {process.env.NODE_ENV === 'development' && (
                     <li>

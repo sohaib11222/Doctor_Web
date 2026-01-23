@@ -77,13 +77,23 @@ export const sendMessageToAdmin = async (doctorId, adminId, message, attachments
  * @returns {Promise<Object>} Created message
  */
 export const sendMessageToPatient = async (doctorId, patientId, appointmentId, message, attachments = null) => {
-  const response = await axios.post('/chat/send', {
+  const requestBody = {
     doctorId,
     patientId,
-    appointmentId,
-    message,
-    ...(attachments && { attachments })
-  })
+    appointmentId
+  }
+  
+  // Only include message if it's not empty
+  if (message && message.trim().length > 0) {
+    requestBody.message = message.trim()
+  }
+  
+  // Include attachments if provided
+  if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+    requestBody.attachments = attachments
+  }
+  
+  const response = await axios.post('/chat/send', requestBody)
   return response.data
 }
 
@@ -141,13 +151,17 @@ export const sendMessageToDoctor = async (doctorId, appointmentId, message, atta
   
   const requestBody = {
     doctorId: doctorIdStr,
-    appointmentId: appointmentIdStr,
-    message: String(message)
+    appointmentId: appointmentIdStr
   }
   
   // Only include patientId if provided (required for doctor-patient chat)
   if (patientIdStr) {
     requestBody.patientId = patientIdStr
+  }
+  
+  // Only include message if it's not empty
+  if (message && String(message).trim().length > 0) {
+    requestBody.message = String(message).trim()
   }
   
   // Include attachments if provided
@@ -157,7 +171,8 @@ export const sendMessageToDoctor = async (doctorId, appointmentId, message, atta
   
   console.log('Sending message request:', {
     ...requestBody,
-    message: requestBody.message.substring(0, 50) + '...'
+    message: requestBody.message ? requestBody.message.substring(0, 50) + '...' : '(no message)',
+    attachments: requestBody.attachments?.length || 0
   })
   
   const response = await axios.post('/chat/send', requestBody)

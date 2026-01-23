@@ -26,8 +26,9 @@ const processQueue = (error, token = null) => {
 // Refresh token function (defined here to avoid circular dependency)
 const refreshToken = async (refreshToken) => {
   // Use raw axios to avoid interceptor loop
+  // TEMPORARY: Using localhost for debugging
   const response = await axios.post(
-    `${import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'}/auth/refresh-token`,
+    `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/refresh-token`,
     { refreshToken },
     {
       headers: {

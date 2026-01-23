@@ -83,25 +83,25 @@ const Invoices = () => {
 
   // Format date
   const formatDate = (date) => {
-    if (!date) return 'N/A'
+    if (!date) return '—'
     const d = new Date(date)
     return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   // Format date and time
   const formatDateTime = (date, time) => {
-    if (!date) return 'N/A'
+    if (!date) return '—'
     const d = new Date(date)
     const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
     return time ? `${dateStr} ${time}` : dateStr
   }
 
   // Format currency
-  const formatCurrency = (amount, currency = 'USD') => {
-    if (amount === null || amount === undefined) return 'N/A'
+  const formatCurrency = (amount, currency = 'EUR') => {
+    if (amount === null || amount === undefined) return '—'
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD'
+      currency: currency || 'EUR'
     }).format(amount)
   }
 
@@ -406,7 +406,7 @@ const Invoices = () => {
                       </div>
                       <div className="col-md-6">
                         <h6>Appointment Number</h6>
-                        <p>{selectedTransaction.relatedAppointmentId.appointmentNumber || 'N/A'}</p>
+                        <p>{selectedTransaction.relatedAppointmentId.appointmentNumber || '—'}</p>
                       </div>
                     </div>
                   )}
@@ -414,7 +414,7 @@ const Invoices = () => {
                   <div className="row mb-3">
                     <div className="col-md-6">
                       <h6>Payment Method</h6>
-                      <p>{selectedTransaction.provider || 'N/A'}</p>
+                      <p>{selectedTransaction.provider || '—'}</p>
                     </div>
                     <div className="col-md-6">
                       <h6>Transaction Date</h6>

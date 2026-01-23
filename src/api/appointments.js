@@ -74,6 +74,35 @@ export const updateAppointmentStatus = async (id, data) => {
  * @returns {Promise<Object>} Created appointment
  */
 export const createAppointment = async (data) => {
+  // Automatically add timezone information if not provided
+  // CRITICAL: timezoneOffset should be positive for timezones ahead of UTC
+  // Pakistan is UTC+5, so offset should be +300 minutes
+  if (!data.timezone || data.timezoneOffset === undefined || data.timezoneOffset === null) {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    // getTimezoneOffset() returns negative for timezones ahead of UTC
+    // For Pakistan (UTC+5), it returns -300, so we negate it to get +300
+    const timezoneOffset = -new Date().getTimezoneOffset() // Offset in minutes (positive = ahead of UTC)
+    
+    // Format timezone as UTC offset string (e.g., "UTC+5" for Pakistan)
+    const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60)
+    const offsetSign = timezoneOffset >= 0 ? '+' : '-'
+    const timezoneString = `UTC${offsetSign}${offsetHours}`
+    
+    console.log('🌍 [Frontend] Detected timezone:', {
+      timezone,
+      timezoneOffset,
+      timezoneString,
+      rawOffset: new Date().getTimezoneOffset(),
+      explanation: `User is ${offsetHours} hours ${offsetSign === '+' ? 'ahead' : 'behind'} UTC`
+    })
+    
+    return api.post('/appointment', {
+      ...data,
+      timezone: data.timezone || timezoneString,
+      timezoneOffset: data.timezoneOffset !== undefined ? data.timezoneOffset : timezoneOffset
+    })
+  }
+  
   return api.post('/appointment', data)
 }
 
