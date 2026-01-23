@@ -31,6 +31,7 @@ const DoctorVideoCallRoom = () => {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [timeValidationError, setTimeValidationError] = useState(null)
   const pendingNavigation = useRef(null)
+  const errorShownRef = useRef(false) // Track if error has been shown
 
   // Check appointment time window before starting call
   const checkAppointmentTime = () => {
@@ -78,6 +79,18 @@ const DoctorVideoCallRoom = () => {
     }
   }
 
+  // Check appointment time and show error only once (as page alert, not toast)
+  useEffect(() => {
+    if (!appointment || appointmentLoading || errorShownRef.current) return
+
+    const timeCheck = checkAppointmentTime()
+    if (!timeCheck.isValid) {
+      errorShownRef.current = true
+      setTimeValidationError(timeCheck.message)
+      // Don't show toast - only show page alert
+    }
+  }, [appointment, appointmentLoading])
+
   useEffect(() => {
     console.log('🔍 [DoctorVideoCallRoom] useEffect triggered:', {
       appointmentId,
@@ -86,11 +99,34 @@ const DoctorVideoCallRoom = () => {
       loading,
       hasClient: !!client,
       hasCall: !!call,
-      startCallRef: startCallRef.current
+      startCallRef: startCallRef.current,
+      timeValidationError
     })
 
+    // Don't start call if time validation failed
+    if (timeValidationError) {
+      return
+    }
+
     // Start call immediately when component mounts (if not already started)
-    if (appointmentId && user && !startCallRef.current && !loading) {
+    if (appointmentId && user && !startCallRef.current && !loading && !appointmentLoading) {
+      // Check appointment time before starting
+      const timeCheck = checkAppointmentTime()
+      if (!timeCheck.isValid) {
+        if (!errorShownRef.current) {
+          // Dismiss any existing toasts with the same ID first
+          toast.dismiss('appointment-time-error')
+          
+          errorShownRef.current = true
+          setTimeValidationError(timeCheck.message)
+          toast.error(timeCheck.message, { 
+            autoClose: false,
+            toastId: 'appointment-time-error'
+          })
+        }
+        return
+      }
+
       console.log('🚀 [DoctorVideoCallRoom] Starting video call...')
       startCallRef.current = true // Set immediately to prevent multiple calls
       setCallStarted(true)
@@ -111,12 +147,19 @@ const DoctorVideoCallRoom = () => {
           
           let errorMessage = err.response?.data?.message || err.message || 'Failed to start video call'
           
-          // Check if it's a permission error
-          if (err.message?.includes('permission') || err.message?.includes('Permission')) {
+          // Check if it's a time-related error - show as page alert only, not toast
+          if (errorMessage.includes('appointment time') || errorMessage.includes('time has passed') || errorMessage.includes('not arrived yet') || errorMessage.includes('time window')) {
+            if (!errorShownRef.current) {
+              errorShownRef.current = true
+              setTimeValidationError(errorMessage)
+              // Don't show toast - only show page alert
+            }
+          } else if (err.message?.includes('permission') || err.message?.includes('Permission')) {
+            // Check if it's a permission error
             errorMessage = err.message
-            toast.error(errorMessage, { autoClose: 8000 })
+            toast.error(errorMessage, { autoClose: 8000, toastId: 'permission-error' })
           } else {
-            toast.error(errorMessage)
+            toast.error(errorMessage, { toastId: 'call-error' })
           }
           
           console.error('❌ [DoctorVideoCallRoom] Error message:', errorMessage)
@@ -124,7 +167,7 @@ const DoctorVideoCallRoom = () => {
           setCallStarted(false)
         })
     }
-  }, [appointmentId, user, loading, startCall])
+  }, [appointmentId, user, loading, startCall, appointment, appointmentLoading, timeValidationError])
 
   const handleEndCall = async () => {
     try {
@@ -182,7 +225,32 @@ const DoctorVideoCallRoom = () => {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [isCallActive])
 
-  if (loading) {
+  // Show error alert if time validation failed
+  if (timeValidationError) {
+    return (
+      <div className="content doctor-content">
+        <div className="container">
+          <div className="row">
+            <div className="col-lg-10 mx-auto">
+              <div className="alert alert-warning" role="alert">
+                <h5 className="alert-heading">
+                  <i className="fa fa-exclamation-triangle me-2"></i>
+                  Appointment Time Issue
+                </h5>
+                <p className="mb-0">{timeValidationError}</p>
+                <hr />
+                <button className="btn btn-primary" onClick={() => navigate('/appointments')}>
+                  Back to Appointments
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading || appointmentLoading) {
     return (
       <div className="content doctor-content">
         <div className="container">
