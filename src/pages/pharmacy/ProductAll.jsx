@@ -234,8 +234,8 @@ const ProductAll = () => {
                               </h3>
                               <div className="row align-items-center">
                                 <div className="col-lg-6">
-                                  <span className="price">${productPrice.toFixed(2)}</span>
-                                  {originalPrice && <span className="price-strike">${originalPrice.toFixed(2)}</span>}
+                                  <span className="price">€{productPrice.toFixed(2)}</span>
+                                  {originalPrice && <span className="price-strike">€{originalPrice.toFixed(2)}</span>}
                                 </div>
                                 <div className="col-lg-6 text-end">
                                   <a

@@ -232,9 +232,9 @@ const DoctorPayment = () => {
                           <td>{withdrawal.paymentMethod || '—'}</td>
                           <td>
                             <strong>€{(withdrawal.amount || 0).toFixed(2)}</strong>
-                            {withdrawal.netAmount !== null && withdrawal.netAmount !== undefined && (
+                            {withdrawal.netAmount !== null && withdrawal.netAmount !== undefined && withdrawal.netAmount !== withdrawal.amount && (
                               <small className="d-block text-muted">
-                                You receive: ${withdrawal.netAmount.toFixed(2)}
+                                You receive: €{withdrawal.netAmount.toFixed(2)}
                               </small>
                             )}
                           </td>

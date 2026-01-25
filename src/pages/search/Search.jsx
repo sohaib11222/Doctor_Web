@@ -553,7 +553,7 @@ const Search = () => {
                             <div className="d-flex align-items-center justify-content-between">
                               <div>
                                 <p className="mb-1">Consultation Fees</p>
-                                <h3 className="text-orange">${fee || 'N/A'}</h3>
+                                <h3 className="text-orange">€{fee || 'N/A'}</h3>
                               </div>
                               <Link
                                 to={`/booking?doctorId=${doctorId}`}

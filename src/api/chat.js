@@ -58,12 +58,22 @@ export const startConversationWithPatient = async (doctorId, patientId, appointm
  * @returns {Promise<Object>} Created message
  */
 export const sendMessageToAdmin = async (doctorId, adminId, message, attachments = null) => {
-  const response = await axios.post('/chat/send', {
+  const requestBody = {
     doctorId,
-    adminId,
-    message,
-    ...(attachments && { attachments })
-  })
+    adminId
+  }
+  
+  // Only include message if it's not empty
+  if (message && typeof message === 'string' && message.trim().length > 0) {
+    requestBody.message = message.trim()
+  }
+  
+  // Include attachments if provided
+  if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+    requestBody.attachments = attachments
+  }
+  
+  const response = await axios.post('/chat/send', requestBody)
   return response.data
 }
 

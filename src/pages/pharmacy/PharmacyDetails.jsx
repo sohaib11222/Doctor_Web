@@ -261,7 +261,7 @@ const PharmacyDetails = () => {
                                   <li><strong>State:</strong> {pharmacy.address.state}</li>
                                 )}
                                 {pharmacy.address.country && (
-                                  <li><strong>Country:</strong> {pharmacy.address.country}</li>
+                                  <li><strong>Region:</strong> {pharmacy.address.country}</li>
                                 )}
                                 {pharmacy.address.zip && (
                                   <li><strong>ZIP Code:</strong> {pharmacy.address.zip}</li>
@@ -271,8 +271,8 @@ const PharmacyDetails = () => {
                           )}
                           {pharmacy.location?.lat && pharmacy.location?.lng && (
                             <div className="mt-3">
-                              <p><strong>Coordinates:</strong></p>
-                              <p>Latitude: {pharmacy.location.lat}, Longitude: {pharmacy.location.lng}</p>
+                              {/* <p><strong>Coordinates:</strong></p>
+                              <p>Latitude: {pharmacy.location.lat}, Longitude: {pharmacy.location.lng}</p> */}
                               <a
                                 href={`https://www.google.com/maps?q=${pharmacy.location.lat},${pharmacy.location.lng}`}
                                 target="_blank"

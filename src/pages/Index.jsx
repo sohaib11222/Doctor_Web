@@ -16,6 +16,8 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [location, setLocation] = useState('')
   const [selectedSpecialization, setSelectedSpecialization] = useState('')
+  const [showTelemedicineModal, setShowTelemedicineModal] = useState(false)
+  const [telemedicineSlide, setTelemedicineSlide] = useState(0)
   const carouselInstances = useRef({})
 
   // Fetch specializations
@@ -124,72 +126,85 @@ const Index = () => {
 
   // Format doctor data for display
   const formatDoctors = useMemo(() => {
-    return doctors.slice(0, 8).map((doctor) => {
-      const userId = doctor.userId || {}
-      
-      // Get specialization - can be an object (populated) or just an ID
-      let specialtyName = 'General'
-      if (doctor.specialization) {
-        if (typeof doctor.specialization === 'object' && doctor.specialization.name) {
-          specialtyName = doctor.specialization.name
-        }
-      }
-      
-      // Get clinic location
-      let location = 'Location not available'
-      if (doctor.clinics && doctor.clinics.length > 0) {
-        const clinic = doctor.clinics[0]
-        // Build location string from available fields
-        const locationParts = []
+    return doctors.slice(0, 8)
+      .map((doctor) => {
+        const userId = doctor.userId || {}
         
-        // Add address if available
-        if (clinic.address) {
-          locationParts.push(clinic.address)
+        // Extract doctorId - match the pattern used in Search.jsx
+        // The doctor object structure may have userId._id as the primary identifier
+        // The API endpoint /doctor/profile/${doctorId} expects the user ID
+        const doctorId = doctor.userId?._id || doctor._id || doctor.id
+        
+        // Skip doctors without a valid ID
+        if (!doctorId) {
+          console.warn('Doctor missing ID:', doctor)
+          return null
         }
         
-        // Add city if available
-        if (clinic.city) {
-          locationParts.push(clinic.city)
+        // Get specialization - can be an object (populated) or just an ID
+        let specialtyName = 'General'
+        if (doctor.specialization) {
+          if (typeof doctor.specialization === 'object' && doctor.specialization.name) {
+            specialtyName = doctor.specialization.name
+          }
         }
         
-        // Add state if available
-        if (clinic.state) {
-          locationParts.push(clinic.state)
+        // Get clinic location
+        let location = 'Location not available'
+        if (doctor.clinics && doctor.clinics.length > 0) {
+          const clinic = doctor.clinics[0]
+          // Build location string from available fields
+          const locationParts = []
+          
+          // Add address if available
+          if (clinic.address) {
+            locationParts.push(clinic.address)
+          }
+          
+          // Add city if available
+          if (clinic.city) {
+            locationParts.push(clinic.city)
+          }
+          
+          // Add state if available
+          if (clinic.state) {
+            locationParts.push(clinic.state)
+          }
+          
+          // Add country if available
+          if (clinic.country) {
+            locationParts.push(clinic.country)
+          }
+          
+          if (locationParts.length > 0) {
+            location = locationParts.join(', ')
+          }
         }
         
-        // Add country if available
-        if (clinic.country) {
-          locationParts.push(clinic.country)
+        // Get consultation fee - prefer online fee, fallback to clinic fee, then default
+        let feeDisplay = '€500' // Default
+        if (doctor.consultationFees) {
+          if (doctor.consultationFees.online) {
+            feeDisplay = `€${doctor.consultationFees.online}`
+          } else if (doctor.consultationFees.clinic) {
+            feeDisplay = `€${doctor.consultationFees.clinic}`
+          }
         }
         
-        if (locationParts.length > 0) {
-          location = locationParts.join(', ')
+        return {
+          id: doctorId,
+          name: userId.fullName || doctor.fullName || 'Dr. Unknown',
+          specialty: specialtyName,
+          location: location,
+          time: '30 Min', // Default, can be fetched from availability
+          fee: feeDisplay,
+          rating: doctor.ratingAvg || 0,
+          image: normalizeImageUrl(userId.profileImage || doctor.profileImage) || '/assets/img/doctor-grid/doctor-grid-01.jpg',
+          available: true,
+          doctorId: String(doctorId) // Ensure it's always a string for URL params
         }
-      }
-      
-      // Get consultation fee - prefer online fee, fallback to clinic fee, then default
-      let feeDisplay = '$500' // Default
-      if (doctor.consultationFees) {
-        if (doctor.consultationFees.online) {
-          feeDisplay = `$${doctor.consultationFees.online}`
-        } else if (doctor.consultationFees.clinic) {
-          feeDisplay = `$${doctor.consultationFees.clinic}`
-        }
-      }
-      
-      return {
-        id: doctor._id || doctor.userId?._id,
-        name: userId.fullName || doctor.fullName || 'Dr. Unknown',
-        specialty: specialtyName,
-        location: location,
-        time: '30 Min', // Default, can be fetched from availability
-        fee: feeDisplay,
-        rating: doctor.ratingAvg || 0,
-        image: normalizeImageUrl(userId.profileImage || doctor.profileImage) || '/assets/img/doctor-grid/doctor-grid-01.jpg',
-        available: true,
-        doctorId: doctor._id || doctor.userId?._id
-      }
-    })
+      })
+      .filter(doctor => doctor !== null) // Remove any doctors without valid IDs
   }, [doctors])
 
   // Fetch user's favorites to check which doctors are favorited
@@ -450,6 +465,7 @@ const Index = () => {
             loop: formatDoctors.length > 4,
             margin: 30,
             nav: true,
+            navContainer: '.doctor-nav',
             dots: false,
             responsive: {
               0: { items: 1 },
@@ -457,10 +473,126 @@ const Index = () => {
               1000: { items: 4 }
             }
           })
+          
+          // Apply centering styles after carousel initialization (especially for mobile)
+          setTimeout(() => {
+            const applyCentering = () => {
+              if (window.innerWidth <= 768) {
+                const navContainer = document.querySelector('.doctor-section .doctor-nav.nav-bottom.owl-nav') ||
+                                   document.querySelector('.doctor-section .doctor-nav.owl-nav') ||
+                                   document.querySelector('.doctor-section .owl-nav.nav-bottom')
+                if (navContainer) {
+                  navContainer.style.setProperty('display', 'flex', 'important')
+                  navContainer.style.setProperty('justify-content', 'center', 'important')
+                  navContainer.style.setProperty('align-items', 'center', 'important')
+                  navContainer.style.setProperty('text-align', 'center', 'important')
+                  navContainer.style.setProperty('margin-left', 'auto', 'important')
+                  navContainer.style.setProperty('margin-right', 'auto', 'important')
+                  navContainer.style.setProperty('width', '100%', 'important')
+                  navContainer.style.setProperty('left', '0', 'important')
+                  navContainer.style.setProperty('right', '0', 'important')
+                  navContainer.style.setProperty('position', 'relative', 'important')
+                  
+                  const prevBtn = navContainer.querySelector('.owl-prev') || navContainer.querySelector('button.owl-prev')
+                  const nextBtn = navContainer.querySelector('.owl-next') || navContainer.querySelector('button.owl-next')
+                  if (prevBtn) {
+                    prevBtn.style.setProperty('position', 'static', 'important')
+                    prevBtn.style.setProperty('left', 'auto', 'important')
+                    prevBtn.style.setProperty('right', 'auto', 'important')
+                    prevBtn.style.setProperty('margin', '0 8px', 'important')
+                    prevBtn.style.setProperty('float', 'none', 'important')
+                  }
+                  if (nextBtn) {
+                    nextBtn.style.setProperty('position', 'static', 'important')
+                    nextBtn.style.setProperty('left', 'auto', 'important')
+                    nextBtn.style.setProperty('right', 'auto', 'important')
+                    nextBtn.style.setProperty('margin', '0 8px', 'important')
+                    nextBtn.style.setProperty('float', 'none', 'important')
+                  }
+                }
+              }
+            }
+            
+            // Apply immediately
+            applyCentering()
+            
+            // Also apply after a short delay to catch any late-rendered elements
+            setTimeout(applyCentering, 200)
+            setTimeout(applyCentering, 500)
+          }, 100)
         }
       }, 300)
 
       return () => clearTimeout(timer)
+    }
+  }, [formatDoctors.length])
+  
+  // Re-apply centering on window resize and use MutationObserver for mobile
+  useEffect(() => {
+    const applyCentering = () => {
+      if (window.innerWidth <= 768) {
+        const navContainer = document.querySelector('.doctor-section .doctor-nav.nav-bottom.owl-nav') ||
+                           document.querySelector('.doctor-section .doctor-nav.owl-nav') ||
+                           document.querySelector('.doctor-section .owl-nav.nav-bottom')
+        if (navContainer) {
+          navContainer.style.setProperty('display', 'flex', 'important')
+          navContainer.style.setProperty('justify-content', 'center', 'important')
+          navContainer.style.setProperty('align-items', 'center', 'important')
+          navContainer.style.setProperty('text-align', 'center', 'important')
+          navContainer.style.setProperty('margin-left', 'auto', 'important')
+          navContainer.style.setProperty('margin-right', 'auto', 'important')
+          navContainer.style.setProperty('width', '100%', 'important')
+          navContainer.style.setProperty('left', '0', 'important')
+          navContainer.style.setProperty('right', '0', 'important')
+          navContainer.style.setProperty('position', 'relative', 'important')
+          
+          const prevBtn = navContainer.querySelector('.owl-prev') || navContainer.querySelector('button.owl-prev')
+          const nextBtn = navContainer.querySelector('.owl-next') || navContainer.querySelector('button.owl-next')
+          if (prevBtn) {
+            prevBtn.style.setProperty('position', 'static', 'important')
+            prevBtn.style.setProperty('left', 'auto', 'important')
+            prevBtn.style.setProperty('right', 'auto', 'important')
+            prevBtn.style.setProperty('margin', '0 8px', 'important')
+            prevBtn.style.setProperty('float', 'none', 'important')
+          }
+          if (nextBtn) {
+            nextBtn.style.setProperty('position', 'static', 'important')
+            nextBtn.style.setProperty('left', 'auto', 'important')
+            nextBtn.style.setProperty('right', 'auto', 'important')
+            nextBtn.style.setProperty('margin', '0 8px', 'important')
+            nextBtn.style.setProperty('float', 'none', 'important')
+          }
+        }
+      }
+    }
+    
+    const handleResize = () => {
+      applyCentering()
+    }
+    
+    // Use MutationObserver to watch for DOM changes (when carousel creates buttons)
+    const observer = new MutationObserver(() => {
+      applyCentering()
+    })
+    
+    const doctorSection = document.querySelector('.doctor-section')
+    if (doctorSection) {
+      observer.observe(doctorSection, {
+        childList: true,
+        subtree: true,
+        attributes: true
+      })
+    }
+    
+    window.addEventListener('resize', handleResize)
+    // Apply on mount and after a delay
+    setTimeout(applyCentering, 100)
+    setTimeout(applyCentering, 500)
+    setTimeout(applyCentering, 1000)
+    
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      observer.disconnect()
     }
   }, [formatDoctors.length])
 
@@ -475,6 +607,38 @@ const Index = () => {
       }
     }
   }, [])
+
+  // Handle ESC key to close telemedicine modal
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showTelemedicineModal) {
+        setShowTelemedicineModal(false)
+        setTelemedicineSlide(0)
+      }
+    }
+    if (showTelemedicineModal) {
+      window.addEventListener('keydown', handleEscape)
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden'
+    }
+    return () => {
+      window.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'unset'
+    }
+  }, [showTelemedicineModal])
+
+  // Auto-slider for telemedicine modal
+  useEffect(() => {
+    if (!showTelemedicineModal) {
+      return
+    }
+
+    const interval = setInterval(() => {
+      setTelemedicineSlide((prev) => (prev === 0 ? 1 : 0))
+    }, 5000) // Change slide every 5 seconds
+
+    return () => clearInterval(interval)
+  }, [showTelemedicineModal])
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -643,6 +807,52 @@ const Index = () => {
             width: auto !important;
             height: auto !important;
             transform: scale(1.2) !important;
+          }
+          
+          /* Center doctor slider navigation arrows on mobile */
+          .doctor-section .doctor-nav.nav-bottom.owl-nav,
+          .doctor-section .nav-bottom.owl-nav,
+          .doctor-section .owl-nav.nav-bottom,
+          .doctor-section .doctor-nav.owl-nav,
+          .doctor-section .owl-nav {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            text-align: center !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            padding: 0 !important;
+            width: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            position: relative !important;
+            transform: none !important;
+          }
+          .doctor-section .doctor-nav.nav-bottom.owl-nav .owl-prev,
+          .doctor-section .doctor-nav.nav-bottom.owl-nav .owl-next,
+          .doctor-section .nav-bottom.owl-nav .owl-prev,
+          .doctor-section .nav-bottom.owl-nav .owl-next,
+          .doctor-section .owl-nav.nav-bottom .owl-prev,
+          .doctor-section .owl-nav.nav-bottom .owl-next,
+          .doctor-section .doctor-nav.owl-nav .owl-prev,
+          .doctor-section .doctor-nav.owl-nav .owl-next,
+          .doctor-section .owl-nav .owl-prev,
+          .doctor-section .owl-nav .owl-next,
+          .doctor-section button.owl-prev,
+          .doctor-section button.owl-next {
+            position: static !important;
+            margin: 0 8px !important;
+            margin-left: 8px !important;
+            margin-right: 8px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            left: auto !important;
+            right: auto !important;
+            float: none !important;
+            transform: none !important;
+            top: auto !important;
+            bottom: auto !important;
           }
           
           .banner-section {
@@ -1537,6 +1747,306 @@ const Index = () => {
         </div>
       </section>
       {/* /Testimonial Section */}
+
+      {/* Telemedicine Section */}
+      <section className="telemedicine-section" style={{
+        backgroundImage: 'url(/assets/img/final-blue.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        position: 'relative',
+        padding: '100px 0',
+        overflow: 'hidden'
+      }}>
+        <div className="container">
+          <div className="row align-items-center g-4">
+            <div className="col-lg-6">
+              <div className="telemedicine-content aos" data-aos="fade-right">
+                <h2 style={{
+                  fontSize: '52px',
+                  fontWeight: '700',
+                  color: '#0E82FD',
+                  marginBottom: '24px',
+                  lineHeight: '1.2'
+                }}>
+                  Telemedicine
+                </h2>
+                <p style={{
+                  fontSize: '18px',
+                  color: '#ffffff',
+                  marginBottom: '40px',
+                  lineHeight: '1.8',
+                  maxWidth: '90%'
+                }}>
+                  Get in touch with the best doctors anytime and anywhere using private messaging or video conferencing.
+                </p>
+                <button
+                  onClick={() => setShowTelemedicineModal(true)}
+                  className="btn btn-primary"
+                  style={{
+                    padding: '16px 36px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    borderRadius: '8px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    textDecoration: 'none',
+                    transition: 'all 0.3s ease',
+                    backgroundColor: '#0E82FD',
+                    border: 'none',
+                    color: '#ffffff',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-2px)'
+                    e.target.style.boxShadow = '0 8px 20px rgba(14, 130, 253, 0.4)'
+                    e.target.style.backgroundColor = '#0a6dd4'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)'
+                    e.target.style.boxShadow = 'none'
+                    e.target.style.backgroundColor = '#0E82FD'
+                  }}
+                >
+                  Discover How It Works
+                  <i className="fa-solid fa-chevron-right" style={{ fontSize: '14px' }}></i>
+                </button>
+              </div>
+            </div>
+            <div className="col-lg-6">
+              <div className="telemedicine-visual aos" data-aos="fade-left" style={{
+                position: 'relative',
+                textAlign: 'center',
+                padding: '20px 0'
+              }}>
+                <div style={{
+                  position: 'relative',
+                  display: 'inline-block',
+                  maxWidth: '100%'
+                }}>
+                  <img 
+                    src="/assets/img/blue-banner.png" 
+                    alt="Telemedicine Video Consultation"
+                    style={{
+                      maxWidth: '100%',
+                      height: 'auto',
+                      borderRadius: '16px',
+                      boxShadow: '0 25px 70px rgba(0, 0, 0, 0.4)',
+                      display: 'block'
+                    }}
+                    onError={(e) => {
+                      console.warn('Image not found: blue-banner.png')
+                      e.target.style.display = 'none'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      {/* /Telemedicine Section */}
+
+      {/* Telemedicine Modal */}
+      {showTelemedicineModal && (
+        <div 
+          className="modal fade show" 
+          style={{ 
+            display: 'block', 
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1050
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowTelemedicineModal(false)
+              setTelemedicineSlide(0)
+            }
+          }}
+        >
+          <div 
+            className="modal-dialog modal-lg modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+              <div className="modal-header" style={{ 
+                borderBottom: '1px solid #e5e5e5',
+                padding: '20px 24px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <h5 className="modal-title" style={{ 
+                  fontSize: '24px', 
+                  fontWeight: '600',
+                  margin: 0
+                }}>
+                  Telemedicine
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => {
+                    setShowTelemedicineModal(false)
+                    setTelemedicineSlide(0)
+                  }}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    fontSize: '24px',
+                    cursor: 'pointer',
+                    padding: 0,
+                    width: '30px',
+                    height: '30px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <i className="fa-solid fa-times" style={{ color: '#666' }}></i>
+                </button>
+              </div>
+              <div className="modal-body" style={{ padding: 0, position: 'relative' }}>
+                {/* Slide 1: Private Chat */}
+                {telemedicineSlide === 0 && (
+                  <div style={{ padding: '30px' }}>
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{ 
+                        fontSize: '28px', 
+                        fontWeight: '600',
+                        marginBottom: '12px',
+                        color: '#0A0A0A'
+                      }}>
+                        Private Chat
+                      </h3>
+                      <p style={{ 
+                        fontSize: '16px', 
+                        color: '#666',
+                        lineHeight: '1.6',
+                        margin: 0
+                      }}>
+                        Send private messages to your specialist doctor and easily resolve your doubts.
+                      </p>
+                    </div>
+                    <div style={{
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      border: '1px solid #e5e5e5',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                    }}>
+                      <img 
+                        src="/assets/img/message-chat.jpg" 
+                        alt="Private Chat Interface"
+                        style={{
+                          width: '100%',
+                          height: 'auto',
+                          display: 'block'
+                        }}
+                        onError={(e) => {
+                          // Try alternative extension
+                          e.target.src = '/assets/img/message-chat.png'
+                          e.target.onError = () => {
+                            console.warn('Image not found: message-chat.jpg/png')
+                            e.target.style.display = 'none'
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Slide 2: Video Consultation */}
+                {telemedicineSlide === 1 && (
+                  <div style={{ padding: '30px' }}>
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{ 
+                        fontSize: '28px', 
+                        fontWeight: '600',
+                        marginBottom: '12px',
+                        color: '#0A0A0A'
+                      }}>
+                        Video Consultation
+                      </h3>
+                      <p style={{ 
+                        fontSize: '16px', 
+                        color: '#666',
+                        lineHeight: '1.6',
+                        margin: 0
+                      }}>
+                        Speak privately with your doctor from any location without having to physically reach your doctor's office.
+                      </p>
+                    </div>
+                    <div style={{
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      border: '1px solid #e5e5e5',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                    }}>
+                      <img 
+                        src="/assets/img/vedio-chat.png" 
+                        alt="Video Consultation Interface"
+                        style={{
+                          width: '100%',
+                          height: 'auto',
+                          display: 'block'
+                        }}
+                        onError={(e) => {
+                          // Try alternative extension
+                          e.target.src = '/assets/img/vedio-chat.jpg'
+                          e.target.onError = () => {
+                            console.warn('Image not found: vedio-chat.png/jpg')
+                            e.target.style.display = 'none'
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Navigation Dots */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '20px 30px',
+                  borderTop: '1px solid #e5e5e5'
+                }}>
+                  <button
+                    onClick={() => setTelemedicineSlide(0)}
+                    style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      border: 'none',
+                      backgroundColor: telemedicineSlide === 0 ? '#0E82FD' : '#ccc',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.3s ease',
+                      padding: 0
+                    }}
+                    aria-label="Go to slide 1"
+                  />
+                  <button
+                    onClick={() => setTelemedicineSlide(1)}
+                    style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      border: 'none',
+                      backgroundColor: telemedicineSlide === 1 ? '#0E82FD' : '#ccc',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.3s ease',
+                      padding: 0
+                    }}
+                    aria-label="Go to slide 2"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* /Telemedicine Modal */}
 
       {/* Insurance Companies Section */}
       {insuranceCompanies.length > 0 && (

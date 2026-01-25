@@ -208,11 +208,11 @@ const ProductDescription = () => {
                 <div className="card-body">
                   <div className="clini-infos mt-0">
                     <h2>
-                      ${productPrice.toFixed(2)}
+                      €{productPrice.toFixed(2)}
                       {originalPrice && (
                         <>
                           {' '}
-                          <b className="text-lg strike">${originalPrice.toFixed(2)}</b>
+                          <b className="text-lg strike">€{originalPrice.toFixed(2)}</b>
                           {discountPercent > 0 && (
                             <span className="text-lg text-success">
                               {' '}
@@ -369,7 +369,7 @@ const ProductDescription = () => {
                         </div>
                         <div>
                           Free Shipping<br />
-                          <span className="text-sm">For orders from $50</span>
+                          <span className="text-sm">For orders from €50</span>
                         </div>
                       </li>
                       <li className="list-group-item d-flex align-items-center">

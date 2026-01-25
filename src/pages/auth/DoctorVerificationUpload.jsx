@@ -138,21 +138,21 @@ const DoctorVerificationUpload = () => {
                 <div className="inner-right-login">
                   <div className="login-header">
                     <div className="logo-icon">
-                      <img src="/assets/img/logo.png" alt="mydoctor-logo" />
+                      <img src="/assets/img/doctor_final.png" alt="mydoctor-logo" style={{ maxHeight: '60px', height: 'auto', width: 'auto' }} />
                     </div>
                     <div className="step-list">
                       <ul>
-                        <li>
+                        {/* <li>
                           <a href="#" className="active-done">1</a>
                         </li>
                         <li>
                           <a href="#" className="active-done">2</a>
-                        </li>
+                        </li> */}
                         <li>
                           <a href="#" className="active-done">3</a>
                         </li>
                         <li>
-                          <a href="#" className="active">4</a>
+                          <a href="#" className="active">2</a>
                         </li>
                       </ul>
                     </div>

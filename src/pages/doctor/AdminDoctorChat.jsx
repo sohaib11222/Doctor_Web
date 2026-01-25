@@ -120,10 +120,15 @@ const AdminDoctorChat = () => {
           throw new Error('Admin ID is required for admin conversations')
         }
         
+        // Prepare message - only send if not empty
+        const messageText = message && typeof message === 'string' && message.trim().length > 0 
+          ? message.trim() 
+          : null
+        
         const response = await chatApi.sendMessageToAdmin(
           user._id,
           adminId,
-          message || null,
+          messageText,
           attachments
         )
         console.log('Message sent successfully:', response)
@@ -265,8 +270,8 @@ const AdminDoctorChat = () => {
     const uploadedAttachments = []
 
     try {
-      // Upload files one by one
-      for (const file of files) {
+      // Upload files in parallel for better performance
+      const uploadPromises = files.map(async (file) => {
         const formData = new FormData()
         formData.append('file', file)
 
@@ -279,31 +284,50 @@ const AdminDoctorChat = () => {
             const fileExtension = file.name.split('.').pop()?.toLowerCase() || ''
             const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(fileExtension)
             
-            uploadedAttachments.push({
+            return {
               type: isImage ? 'image' : 'file',
               url: fileUrl,
               name: file.name,
               size: file.size
-            })
+            }
           }
+          return null
         } catch (uploadError) {
           console.error('Error uploading file:', uploadError)
-          toast.error(`Failed to upload ${file.name}`)
+          const errorMessage = uploadError.response?.data?.message || uploadError.message || 'Upload failed'
+          toast.error(`Failed to upload ${file.name}: ${errorMessage}`)
+          return null
         }
+      })
+
+      // Wait for all uploads to complete
+      const results = await Promise.all(uploadPromises)
+      const successfulUploads = results.filter(result => result !== null)
+      
+      if (successfulUploads.length === 0) {
+        toast.error('No files were uploaded successfully')
+        return
       }
 
-      if (uploadedAttachments.length > 0) {
-        // Send message with attachments
-        sendMessageMutation.mutate({ 
-          message: newMessage.trim() || null,
-          attachments: uploadedAttachments 
-        })
-        setSelectedFiles([])
-        setNewMessage('')
+      // Prepare message data - ensure we don't send null/empty message when we have attachments
+      const messageText = newMessage.trim()
+      const messageData = {
+        attachments: successfulUploads
       }
+      
+      // Only include message if it's not empty (backend validator requires either message or attachments)
+      if (messageText) {
+        messageData.message = messageText
+      }
+
+      // Send message with attachments
+      sendMessageMutation.mutate(messageData)
+      setSelectedFiles([])
+      setNewMessage('')
     } catch (error) {
       console.error('Error handling files:', error)
-      toast.error('Failed to upload files')
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send message with attachments'
+      toast.error(errorMessage)
     } finally {
       setUploadingFiles(false)
       // Reset file input

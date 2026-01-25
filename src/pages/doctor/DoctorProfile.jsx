@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
@@ -86,6 +86,67 @@ const DoctorProfile = () => {
     if (!doctor?.awards || !Array.isArray(doctor.awards)) return 0
     return doctor.awards.length
   }, [doctor])
+
+  // Helper functions to check if sections have data
+  const hasExperience = useMemo(() => {
+    return doctor?.experience && Array.isArray(doctor.experience) && doctor.experience.length > 0
+  }, [doctor])
+
+  const hasEducation = useMemo(() => {
+    return doctor?.education && Array.isArray(doctor.education) && doctor.education.length > 0
+  }, [doctor])
+
+  const hasAwards = useMemo(() => {
+    return doctor?.awards && Array.isArray(doctor.awards) && doctor.awards.length > 0
+  }, [doctor])
+
+  const hasClinics = useMemo(() => {
+    return doctor?.clinics && Array.isArray(doctor.clinics) && doctor.clinics.length > 0
+  }, [doctor])
+
+  const hasServices = useMemo(() => {
+    return doctor?.services && Array.isArray(doctor.services) && doctor.services.length > 0
+  }, [doctor])
+
+  const hasSpeciality = useMemo(() => {
+    return !!doctor?.specialization
+  }, [doctor])
+
+  const hasMemberships = useMemo(() => {
+    return doctor?.memberships && Array.isArray(doctor.memberships) && doctor.memberships.length > 0
+  }, [doctor])
+
+  const hasBiography = useMemo(() => {
+    return !!doctor?.biography
+  }, [doctor])
+
+  // Get available sections in order
+  const availableSections = useMemo(() => {
+    const sections = []
+    if (hasBiography) sections.push('doc_bio')
+    if (hasExperience) sections.push('experience')
+    if (hasEducation) sections.push('education')
+    if (hasAwards) sections.push('awards')
+    if (hasServices) sections.push('services')
+    if (hasSpeciality) sections.push('speciality')
+    if (hasClinics) sections.push('clinic')
+    if (hasMemberships) sections.push('membership')
+    sections.push('review') // Always show reviews
+    if (doctor?.convenzionato === true && doctor?.insuranceCompanies && doctor.insuranceCompanies.length > 0) {
+      sections.push('insurance')
+    }
+    if (doctor?.products && Array.isArray(doctor.products) && doctor.products.length > 0) {
+      sections.push('products')
+    }
+    return sections
+  }, [hasBiography, hasExperience, hasEducation, hasAwards, hasServices, hasSpeciality, hasClinics, hasMemberships, doctor])
+
+  // Ensure activeSection is valid, if not, set to first available
+  useEffect(() => {
+    if (availableSections.length > 0 && !availableSections.includes(activeSection)) {
+      setActiveSection(availableSections[0])
+    }
+  }, [availableSections, activeSection])
 
   // Fetch user's favorites to check if this doctor is favorited
   const { data: favoritesData } = useQuery({
@@ -645,11 +706,11 @@ const DoctorProfile = () => {
                 <span style={{ fontWeight: '600', color: '#0d6efd' }}>
                   Price : 
                   {doctor.consultationFees?.clinic && doctor.consultationFees?.online 
-                    ? ` $${doctor.consultationFees.clinic} - $${doctor.consultationFees.online}`
+                    ? ` €${doctor.consultationFees.clinic} - €${doctor.consultationFees.online}`
                     : doctor.consultationFees?.clinic 
-                    ? ` $${doctor.consultationFees.clinic}`
+                    ? ` €${doctor.consultationFees.clinic}`
                     : doctor.consultationFees?.online
-                    ? ` $${doctor.consultationFees.online}`
+                    ? ` €${doctor.consultationFees.online}`
                     : ' Contact for pricing'
                   }
                 </span> for a Session
@@ -679,94 +740,110 @@ const DoctorProfile = () => {
       
       <div className="doctors-detailed-info" style={{ padding: '0 15px' }}>
         <ul className="information-title-list">
-          <li className={activeSection === 'doc_bio' ? 'active' : ''}>
-            <a 
-              href="#doc_bio" 
-              onClick={(e) => {
-                e.preventDefault()
-                setActiveSection('doc_bio')
-              }}
-            >
-              Doctor Bio
-            </a>
-          </li>
-          <li className={activeSection === 'experience' ? 'active' : ''}>
-            <a 
-              href="#experience" 
-              onClick={(e) => {
-                e.preventDefault()
-                setActiveSection('experience')
-              }}
-            >
-              Experience
-            </a>
-          </li>
-          <li className={activeSection === 'education' ? 'active' : ''}>
-            <a 
-              href="#education" 
-              onClick={(e) => {
-                e.preventDefault()
-                setActiveSection('education')
-              }}
-            >
-              Education
-            </a>
-          </li>
-          <li className={activeSection === 'awards' ? 'active' : ''}>
-            <a 
-              href="#awards" 
-              onClick={(e) => {
-                e.preventDefault()
-                setActiveSection('awards')
-              }}
-            >
-              Awards
-            </a>
-          </li>
-          <li className={activeSection === 'services' ? 'active' : ''}>
-            <a 
-              href="#services" 
-              onClick={(e) => {
-                e.preventDefault()
-                setActiveSection('services')
-              }}
-            >
-              Treatments
-            </a>
-          </li>
-          <li className={activeSection === 'speciality' ? 'active' : ''}>
-            <a 
-              href="#speciality" 
-              onClick={(e) => {
-                e.preventDefault()
-                setActiveSection('speciality')
-              }}
-            >
-              Speciality
-            </a>
-          </li>
-          <li className={activeSection === 'clinic' ? 'active' : ''}>
-            <a 
-              href="#clinic" 
-              onClick={(e) => {
-                e.preventDefault()
-                setActiveSection('clinic')
-              }}
-            >
-              Clinics
-            </a>
-          </li>
-          <li className={activeSection === 'membership' ? 'active' : ''}>
-            <a 
-              href="#membership" 
-              onClick={(e) => {
-                e.preventDefault()
-                setActiveSection('membership')
-              }}
-            >
-              Memberships
-            </a>
-          </li>
+          {hasBiography && (
+            <li className={activeSection === 'doc_bio' ? 'active' : ''}>
+              <a 
+                href="#doc_bio" 
+                onClick={(e) => {
+                  e.preventDefault()
+                  setActiveSection('doc_bio')
+                }}
+              >
+                Doctor Bio
+              </a>
+            </li>
+          )}
+          {hasExperience && (
+            <li className={activeSection === 'experience' ? 'active' : ''}>
+              <a 
+                href="#experience" 
+                onClick={(e) => {
+                  e.preventDefault()
+                  setActiveSection('experience')
+                }}
+              >
+                Experience
+              </a>
+            </li>
+          )}
+          {hasEducation && (
+            <li className={activeSection === 'education' ? 'active' : ''}>
+              <a 
+                href="#education" 
+                onClick={(e) => {
+                  e.preventDefault()
+                  setActiveSection('education')
+                }}
+              >
+                Education
+              </a>
+            </li>
+          )}
+          {hasAwards && (
+            <li className={activeSection === 'awards' ? 'active' : ''}>
+              <a 
+                href="#awards" 
+                onClick={(e) => {
+                  e.preventDefault()
+                  setActiveSection('awards')
+                }}
+              >
+                Awards
+              </a>
+            </li>
+          )}
+          {hasServices && (
+            <li className={activeSection === 'services' ? 'active' : ''}>
+              <a 
+                href="#services" 
+                onClick={(e) => {
+                  e.preventDefault()
+                  setActiveSection('services')
+                }}
+              >
+                Treatments
+              </a>
+            </li>
+          )}
+          {hasSpeciality && (
+            <li className={activeSection === 'speciality' ? 'active' : ''}>
+              <a 
+                href="#speciality" 
+                onClick={(e) => {
+                  e.preventDefault()
+                  setActiveSection('speciality')
+                }}
+              >
+                Speciality
+              </a>
+            </li>
+          )}
+          {hasClinics && (
+            <li className={activeSection === 'clinic' ? 'active' : ''}>
+              <a 
+                href="#clinic" 
+                onClick={(e) => {
+                  e.preventDefault()
+                  setActiveSection('clinic')
+                }}
+              >
+                Clinics
+              </a>
+            </li>
+          )}
+          {hasMemberships && (
+            <li className={activeSection === 'membership' ? 'active' : ''}>
+              <a 
+                href="#membership" 
+                onClick={(e) => {
+                  e.preventDefault()
+                  setActiveSection('membership')
+                }}
+              >
+                Memberships
+              </a>
+            </li>
+          )}
           <li className={activeSection === 'review' ? 'active' : ''}>
             <a 
               href="#review" 
@@ -807,29 +884,27 @@ const DoctorProfile = () => {
         </ul>
         <div className="doc-information-main" style={{ padding: '20px 0' }}>
           {/* Doctor Bio */}
-          <div 
-            className={`doc-information-details bio-detail ${activeSection === 'doc_bio' ? '' : 'd-none'}`} 
-            id="doc_bio"
-          >
-            <div className="detail-title">
-              <h4>Doctor Bio</h4>
-            </div>
-            {doctor.biography ? (
+          {hasBiography && (
+            <div 
+              className={`doc-information-details bio-detail ${activeSection === 'doc_bio' ? '' : 'd-none'}`} 
+              id="doc_bio"
+            >
+              <div className="detail-title">
+                <h4>Doctor Bio</h4>
+              </div>
               <p>{doctor.biography}</p>
-            ) : (
-              <p className="text-muted">Biography not available.</p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Experience */}
-          <div 
-            className={`doc-information-details ${activeSection === 'experience' ? '' : 'd-none'}`} 
-            id="experience"
-          >
-            <div className="detail-title">
-              <h4>Experience</h4>
-            </div>
-            {doctor.experience && Array.isArray(doctor.experience) && doctor.experience.length > 0 ? (
+          {hasExperience && (
+            <div 
+              className={`doc-information-details ${activeSection === 'experience' ? '' : 'd-none'}`} 
+              id="experience"
+            >
+              <div className="detail-title">
+                <h4>Experience</h4>
+              </div>
               <div className="experience-list">
                 {doctor.experience.map((exp, index) => (
                   <div key={index} className="experience-item mb-3">
@@ -845,10 +920,8 @@ const DoctorProfile = () => {
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-muted">Experience information not available.</p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Education */}
           <div 
@@ -874,14 +947,14 @@ const DoctorProfile = () => {
           </div>
 
           {/* Awards */}
-          <div 
-            className={`doc-information-details ${activeSection === 'awards' ? '' : 'd-none'}`} 
-            id="awards"
-          >
-            <div className="detail-title">
-              <h4>Awards</h4>
-            </div>
-            {doctor.awards && Array.isArray(doctor.awards) && doctor.awards.length > 0 ? (
+          {hasAwards && (
+            <div 
+              className={`doc-information-details ${activeSection === 'awards' ? '' : 'd-none'}`} 
+              id="awards"
+            >
+              <div className="detail-title">
+                <h4>Awards</h4>
+              </div>
               <div className="awards-list">
                 {doctor.awards.map((award, index) => (
                   <div key={index} className="award-item mb-2">
@@ -890,65 +963,59 @@ const DoctorProfile = () => {
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-muted">Awards information not available.</p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Services/Treatments */}
-          <div 
-            className={`doc-information-details ${activeSection === 'services' ? '' : 'd-none'}`} 
-            id="services"
-          >
-            <div className="detail-title">
-              <h4>Services & Treatments</h4>
-            </div>
-            {doctor.services && Array.isArray(doctor.services) && doctor.services.length > 0 ? (
+          {hasServices && (
+            <div 
+              className={`doc-information-details ${activeSection === 'services' ? '' : 'd-none'}`} 
+              id="services"
+            >
+              <div className="detail-title">
+                <h4>Services & Treatments</h4>
+              </div>
               <div className="services-list">
                 <ul className="list-unstyled">
                   {doctor.services.map((service, index) => (
                     <li key={index} className="mb-2">
                       <i className="fas fa-check-circle text-primary me-2"></i>
                       <strong>{service.name || 'Service Name'}</strong>
-                      {service.price && <span className="text-muted ms-2">- ${service.price}</span>}
+                      {service.price && <span className="text-muted ms-2">- €{service.price}</span>}
                     </li>
                   ))}
                 </ul>
               </div>
-            ) : (
-              <p className="text-muted">Services information not available.</p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Speciality */}
-          <div 
-            className={`doc-information-details ${activeSection === 'speciality' ? '' : 'd-none'}`} 
-            id="speciality"
-          >
-            <div className="detail-title">
-              <h4>Speciality</h4>
-            </div>
-            {doctor.specialization ? (
+          {hasSpeciality && (
+            <div 
+              className={`doc-information-details ${activeSection === 'speciality' ? '' : 'd-none'}`} 
+              id="speciality"
+            >
+              <div className="detail-title">
+                <h4>Speciality</h4>
+              </div>
               <div>
                 <h5>{doctor.specialization.name || specialization}</h5>
                 {doctor.specialization.description && (
                   <p className="text-muted">{doctor.specialization.description}</p>
                 )}
               </div>
-            ) : (
-              <p className="text-muted">Specialization information not available.</p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Clinics */}
-          <div 
-            className={`doc-information-details ${activeSection === 'clinic' ? '' : 'd-none'}`} 
-            id="clinic"
-          >
-            <div className="detail-title">
-              <h4>Clinics</h4>
-            </div>
-            {doctor.clinics && Array.isArray(doctor.clinics) && doctor.clinics.length > 0 ? (
+          {hasClinics && (
+            <div 
+              className={`doc-information-details ${activeSection === 'clinic' ? '' : 'd-none'}`} 
+              id="clinic"
+            >
+              <div className="detail-title">
+                <h4>Clinics</h4>
+              </div>
               <div className="clinics-list">
                 {doctor.clinics.map((clinic, index) => (
                   <div key={index} className="clinic-item mb-4 p-3 border rounded">
@@ -979,20 +1046,18 @@ const DoctorProfile = () => {
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-muted">Clinic information not available.</p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Memberships */}
-          <div 
-            className={`doc-information-details ${activeSection === 'membership' ? '' : 'd-none'}`} 
-            id="membership"
-          >
-            <div className="detail-title">
-              <h4>Memberships</h4>
-            </div>
-            {doctor.memberships && Array.isArray(doctor.memberships) && doctor.memberships.length > 0 ? (
+          {hasMemberships && (
+            <div 
+              className={`doc-information-details ${activeSection === 'membership' ? '' : 'd-none'}`} 
+              id="membership"
+            >
+              <div className="detail-title">
+                <h4>Memberships</h4>
+              </div>
               <div className="memberships-list">
                 <ul className="list-unstyled">
                   {doctor.memberships.map((membership, index) => (
@@ -1003,10 +1068,8 @@ const DoctorProfile = () => {
                   ))}
                 </ul>
               </div>
-            ) : (
-              <p className="text-muted">Membership information not available.</p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Accepted Insurance Companies */}
           {doctor?.convenzionato === true && doctor?.insuranceCompanies && doctor.insuranceCompanies.length > 0 && (
@@ -1169,9 +1232,9 @@ const DoctorProfile = () => {
                           </h6>
                           <div className="d-flex align-items-center justify-content-between">
                             <div>
-                              <span className="price">${productPrice.toFixed(2)}</span>
+                              <span className="price">€{productPrice.toFixed(2)}</span>
                               {originalPrice && (
-                                <span className="price-strike ms-2">${originalPrice.toFixed(2)}</span>
+                                <span className="price-strike ms-2">€{originalPrice.toFixed(2)}</span>
                               )}
                             </div>
                           </div>

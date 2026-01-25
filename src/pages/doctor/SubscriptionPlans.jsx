@@ -52,7 +52,7 @@ const SubscriptionPlans = () => {
 
   // Format price for display
   const formatPrice = (price) => {
-    return `$${price}`
+    return `€${price}`
   }
 
   // Format duration for display

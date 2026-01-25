@@ -161,7 +161,7 @@ const RescheduleRequests = () => {
                             </td>
                             <td>
                               {request.status === 'APPROVED' ? (
-                                <strong>${request.rescheduleFee?.toFixed(2) || '—'}</strong>
+                                <strong>€{request.rescheduleFee?.toFixed(2) || '—'}</strong>
                               ) : (
                                 <span className="text-muted">-</span>
                               )}
@@ -228,9 +228,9 @@ const RescheduleRequests = () => {
                     ></button>
                   </div>
                   <div className="modal-body">
-                    <p><strong>Reschedule Fee:</strong> ${selectedRequest.rescheduleFee?.toFixed(2)}</p>
+                    <p><strong>Reschedule Fee:</strong> €{selectedRequest.rescheduleFee?.toFixed(2)}</p>
                     <p className="text-muted small">
-                      Original appointment fee: ${selectedRequest.originalAppointmentFee?.toFixed(2)}
+                      Original appointment fee: €{selectedRequest.originalAppointmentFee?.toFixed(2)}
                     </p>
                     <p className="text-muted small">
                       New appointment date: {selectedRequest.newAppointmentId ? 

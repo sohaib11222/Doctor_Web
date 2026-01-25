@@ -474,7 +474,7 @@ const ProductCheckout = () => {
                             <td>
                               {item.name} <span className="text-muted">x{item.quantity}</span>
                             </td>
-                            <td className="text-end">${(item.price * item.quantity).toFixed(2)}</td>
+                            <td className="text-end">€{(item.price * item.quantity).toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -484,7 +484,7 @@ const ProductCheckout = () => {
                     <div className="booking-item-wrap">
                       <ul className="booking-date d-block pb-0">
                         <li>
-                          Subtotal <span>${subtotal.toFixed(2)}</span>
+                          Subtotal <span>€{subtotal.toFixed(2)}</span>
                         </li>
                         <li>
                           Shipping{' '}
@@ -492,7 +492,7 @@ const ProductCheckout = () => {
                             {shipping === 0 ? (
                               <span className="text-success">Free</span>
                             ) : (
-                              `$${shipping.toFixed(2)}`
+                              `€${shipping.toFixed(2)}`
                             )}
                           </span>
                         </li>
@@ -500,7 +500,7 @@ const ProductCheckout = () => {
                       <ul className="booking-fee">
                         {tax > 0 && (
                           <li>
-                            Tax <span>${tax.toFixed(2)}</span>
+                            Tax <span>€{tax.toFixed(2)}</span>
                           </li>
                         )}
                       </ul>
@@ -508,7 +508,7 @@ const ProductCheckout = () => {
                         <ul className="booking-total-list">
                           <li>
                             <span>Total</span>
-                            <span className="total-cost">${total.toFixed(2)}</span>
+                            <span className="total-cost">€{total.toFixed(2)}</span>
                           </li>
                         </ul>
                       </div>
