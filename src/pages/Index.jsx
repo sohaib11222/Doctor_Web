@@ -855,6 +855,144 @@ const Index = () => {
             bottom: auto !important;
           }
           
+          /* Center Top Specialties slider navigation arrows on mobile */
+          .speciality-section .spciality-nav.nav-bottom.owl-nav,
+          .speciality-section .nav-bottom.owl-nav,
+          .speciality-section .owl-nav.nav-bottom,
+          .speciality-section .spciality-nav.owl-nav,
+          .speciality-section .owl-nav {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            text-align: center !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            padding: 0 !important;
+            width: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            position: relative !important;
+            transform: none !important;
+          }
+          .speciality-section .spciality-nav.nav-bottom.owl-nav .owl-prev,
+          .speciality-section .spciality-nav.nav-bottom.owl-nav .owl-next,
+          .speciality-section .nav-bottom.owl-nav .owl-prev,
+          .speciality-section .nav-bottom.owl-nav .owl-next,
+          .speciality-section .owl-nav.nav-bottom .owl-prev,
+          .speciality-section .owl-nav.nav-bottom .owl-next,
+          .speciality-section .spciality-nav.owl-nav .owl-prev,
+          .speciality-section .spciality-nav.owl-nav .owl-next,
+          .speciality-section .owl-nav .owl-prev,
+          .speciality-section .owl-nav .owl-next,
+          .speciality-section button.owl-prev,
+          .speciality-section button.owl-next {
+            position: static !important;
+            margin: 0 8px !important;
+            margin-left: 8px !important;
+            margin-right: 8px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            left: auto !important;
+            right: auto !important;
+            float: none !important;
+            transform: none !important;
+            top: auto !important;
+            bottom: auto !important;
+          }
+          
+          /* Center Testimonials slider navigation arrows on mobile */
+          .testimonial-section-one .testimonials-slider + .owl-nav,
+          .testimonial-section-one .owl-nav.nav-bottom,
+          .testimonial-section-one .nav-bottom.owl-nav,
+          .testimonial-section-one .testimonials-slider ~ .owl-nav,
+          .testimonial-section-one .owl-nav {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            text-align: center !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            padding: 0 !important;
+            width: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            position: relative !important;
+            transform: none !important;
+          }
+          .testimonial-section-one .testimonials-slider + .owl-nav .owl-prev,
+          .testimonial-section-one .testimonials-slider + .owl-nav .owl-next,
+          .testimonial-section-one .owl-nav.nav-bottom .owl-prev,
+          .testimonial-section-one .owl-nav.nav-bottom .owl-next,
+          .testimonial-section-one .nav-bottom.owl-nav .owl-prev,
+          .testimonial-section-one .nav-bottom.owl-nav .owl-next,
+          .testimonial-section-one .testimonials-slider ~ .owl-nav .owl-prev,
+          .testimonial-section-one .testimonials-slider ~ .owl-nav .owl-next,
+          .testimonial-section-one .owl-nav .owl-prev,
+          .testimonial-section-one .owl-nav .owl-next,
+          .testimonial-section-one button.owl-prev,
+          .testimonial-section-one button.owl-next {
+            position: static !important;
+            margin: 0 8px !important;
+            margin-left: 8px !important;
+            margin-right: 8px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            left: auto !important;
+            right: auto !important;
+            float: none !important;
+            transform: none !important;
+            top: auto !important;
+            bottom: auto !important;
+          }
+          
+          /* Center Insurance Partners slider navigation arrows on mobile */
+          .insurance-companies-section .insurance-companies-slider + .owl-nav,
+          .insurance-companies-section .owl-nav.nav-bottom,
+          .insurance-companies-section .nav-bottom.owl-nav,
+          .insurance-companies-section .insurance-companies-slider ~ .owl-nav,
+          .insurance-companies-section .owl-nav {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            text-align: center !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            padding: 0 !important;
+            width: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            position: relative !important;
+            transform: none !important;
+          }
+          .insurance-companies-section .insurance-companies-slider + .owl-nav .owl-prev,
+          .insurance-companies-section .insurance-companies-slider + .owl-nav .owl-next,
+          .insurance-companies-section .owl-nav.nav-bottom .owl-prev,
+          .insurance-companies-section .owl-nav.nav-bottom .owl-next,
+          .insurance-companies-section .nav-bottom.owl-nav .owl-prev,
+          .insurance-companies-section .nav-bottom.owl-nav .owl-next,
+          .insurance-companies-section .insurance-companies-slider ~ .owl-nav .owl-prev,
+          .insurance-companies-section .insurance-companies-slider ~ .owl-nav .owl-next,
+          .insurance-companies-section .owl-nav .owl-prev,
+          .insurance-companies-section .owl-nav .owl-next,
+          .insurance-companies-section button.owl-prev,
+          .insurance-companies-section button.owl-next {
+            position: static !important;
+            margin: 0 8px !important;
+            margin-left: 8px !important;
+            margin-right: 8px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            left: auto !important;
+            right: auto !important;
+            float: none !important;
+            transform: none !important;
+            top: auto !important;
+            bottom: auto !important;
+          }
+          
           .banner-section {
             background-image: url('/assets/img/mobile_hero_background.png') !important;
             background-size: cover !important;
@@ -1069,7 +1207,7 @@ const Index = () => {
             </div>
             <div className="col-lg-5">
               <div className="banner-img aos" data-aos="fade-up">
-                <img src="/assets/img/banner/banner-doctor.svg" className="img-fluid" alt="patient-image" />
+                <img src="/assets/img/girl_final.png" className="img-fluid" alt="patient-image" />
                 <div className="banner-appointment">
                   <h6>1K</h6>
                   <p>Appointments <span className="d-block">Completed</span></p>
@@ -1750,10 +1888,7 @@ const Index = () => {
 
       {/* Telemedicine Section */}
       <section className="telemedicine-section" style={{
-        backgroundImage: 'url(/assets/img/final-blue.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
+        backgroundColor: '#f8f9fa',
         position: 'relative',
         padding: '100px 0',
         overflow: 'hidden'
@@ -1773,7 +1908,7 @@ const Index = () => {
                 </h2>
                 <p style={{
                   fontSize: '18px',
-                  color: '#ffffff',
+                  color: '#333333',
                   marginBottom: '40px',
                   lineHeight: '1.8',
                   maxWidth: '90%'
@@ -1809,7 +1944,7 @@ const Index = () => {
                     e.target.style.backgroundColor = '#0E82FD'
                   }}
                 >
-                  Discover How It Works
+                  See More
                   <i className="fa-solid fa-chevron-right" style={{ fontSize: '14px' }}></i>
                 </button>
               </div>
@@ -1826,17 +1961,17 @@ const Index = () => {
                   maxWidth: '100%'
                 }}>
                   <img 
-                    src="/assets/img/blue-banner.png" 
+                    src="/assets/img/same.jpeg" 
                     alt="Telemedicine Video Consultation"
                     style={{
                       maxWidth: '100%',
                       height: 'auto',
                       borderRadius: '16px',
-                      boxShadow: '0 25px 70px rgba(0, 0, 0, 0.4)',
+                      boxShadow: '0 25px 70px rgba(0, 0, 0, 0.2)',
                       display: 'block'
                     }}
                     onError={(e) => {
-                      console.warn('Image not found: blue-banner.png')
+                      console.warn('Image not found: same.jpeg')
                       e.target.style.display = 'none'
                     }}
                   />

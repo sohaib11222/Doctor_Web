@@ -21,9 +21,10 @@ const PendingApprovalStatus = () => {
           setCurrentStatus(status)
           
           if (status === 'APPROVED') {
-            // Doctor is approved, redirect to dashboard
-            toast.success('Your account has been approved! Redirecting to dashboard...')
-            navigate('/doctor/dashboard')
+            // Doctor is approved, logout and redirect to login
+            toast.success('Your account has been approved! Please login again.')
+            logout()
+            navigate('/login')
             return
           } else if (status === 'REJECTED' || status === 'BLOCKED') {
             // Doctor is rejected or blocked
@@ -126,8 +127,9 @@ const PendingApprovalStatus = () => {
           setCurrentStatus(userStatus)
           
           if (userStatus === 'APPROVED') {
-            toast.success('Your account has been approved! Redirecting to dashboard...')
-            navigate('/doctor/dashboard')
+            toast.success('Your account has been approved! Please login again.')
+            logout()
+            navigate('/login')
             return
           } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
             toast.error('Your account has been rejected or blocked.')
@@ -152,8 +154,9 @@ const PendingApprovalStatus = () => {
           setCurrentStatus(userStatus)
           
           if (userStatus === 'APPROVED') {
-            toast.success('Your account has been approved! Redirecting to dashboard...')
-            navigate('/doctor/dashboard')
+            toast.success('Your account has been approved! Please login again.')
+            logout()
+            navigate('/login')
             return
           } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
             toast.error('Your account has been rejected or blocked.')
@@ -185,7 +188,7 @@ const PendingApprovalStatus = () => {
                 <div className="inner-right-login">
                   <div className="login-header">
                     <div className="logo-icon">
-                      <img src="/assets/img/logo.png" alt="mydoctor-logo" />
+                      <img src="/assets/img/doctor_final.png" alt="mydoctor-logo" className="img-fluid" />
                     </div>
 
                     {checkingStatus ? (

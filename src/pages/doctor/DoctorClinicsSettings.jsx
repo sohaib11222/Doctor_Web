@@ -399,13 +399,13 @@ const DoctorClinicsSettings = () => {
                                   </div>
                                   <div className="col-md-6">
                                     <div className="form-wrap">
-                                      <label className="col-form-label">Country</label>
+                                      <label className="col-form-label">Region</label>
                                       <input 
                                         type="text" 
                                         className="form-control"
                                         value={clinic.country || ''}
                                         onChange={(e) => handleClinicChange(index, 'country', e.target.value)}
-                                        placeholder="Country"
+                                        placeholder="Region"
                                       />
                                     </div>
                                   </div>

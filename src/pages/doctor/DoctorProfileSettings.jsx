@@ -577,7 +577,7 @@ const DoctorProfileSettings = () => {
                 <div className="row">
                   <div className="col-lg-4 col-md-6">
                     <div className="form-wrap">
-                      <label className="form-label">In-Person Visit Fee ($)</label>
+                      <label className="form-label">In-Person Visit Fee (€)</label>
                       <input
                         type="number"
                         className="form-control"
@@ -592,7 +592,7 @@ const DoctorProfileSettings = () => {
                   </div>
                   <div className="col-lg-4 col-md-6">
                     <div className="form-wrap">
-                      <label className="form-label">Online Consultation Fee ($)</label>
+                      <label className="form-label">Online Consultation Fee (€)</label>
                       <input
                         type="number"
                         className="form-control"

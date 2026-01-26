@@ -332,14 +332,14 @@ const DoctorPharmacy = () => {
                     {/* Country */}
                     <div className="col-md-6">
                       <div className="form-wrap">
-                        <label className="form-label">Country</label>
+                        <label className="form-label">Region</label>
                         <input
                           type="text"
                           className="form-control"
                           name="address.country"
                           value={pharmacyData.address.country}
                           onChange={handleChange}
-                          placeholder="Enter country"
+                          placeholder="Enter region"
                         />
                       </div>
                     </div>

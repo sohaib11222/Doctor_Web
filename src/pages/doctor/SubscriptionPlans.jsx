@@ -7,7 +7,7 @@ import * as paymentApi from '../../api/payment'
 const SubscriptionPlans = () => {
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState('DUMMY') // DUMMY, CARD, PAYPAL, BANK
+  const [paymentMethod, setPaymentMethod] = useState('STRIPE') // STRIPE only
 
   const queryClient = useQueryClient()
 
@@ -42,7 +42,7 @@ const SubscriptionPlans = () => {
       toast.success('Subscription plan purchased successfully!')
       setShowPaymentModal(false)
       setSelectedPlan(null)
-      setPaymentMethod('DUMMY')
+      setPaymentMethod('STRIPE')
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to purchase subscription'
@@ -290,7 +290,7 @@ const SubscriptionPlans = () => {
                         onClick={() => {
                           setShowPaymentModal(false)
                           setSelectedPlan(null)
-                          setPaymentMethod('DUMMY')
+                          setPaymentMethod('STRIPE')
                         }}
                         aria-label="Close"
                       ></button>
@@ -309,60 +309,15 @@ const SubscriptionPlans = () => {
                             className="form-check-input"
                             type="radio"
                             name="paymentMethod"
-                            id="card"
-                            value="CARD"
-                            checked={paymentMethod === 'CARD'}
-                            onChange={(e) => setPaymentMethod(e.target.value)}
-                          />
-                          <label className="form-check-label" htmlFor="card">
-                            <i className="fe fe-credit-card me-2"></i>
-                            Credit/Debit Card
-                          </label>
-                        </div>
-                        <div className="form-check mb-2">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="paymentMethod"
-                            id="paypal"
-                            value="PAYPAL"
-                            checked={paymentMethod === 'PAYPAL'}
-                            onChange={(e) => setPaymentMethod(e.target.value)}
-                          />
-                          <label className="form-check-label" htmlFor="paypal">
-                            <i className="fe fe-credit-card me-2"></i>
-                            PayPal
-                          </label>
-                        </div>
-                        <div className="form-check mb-2">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="paymentMethod"
-                            id="bank"
-                            value="BANK"
-                            checked={paymentMethod === 'BANK'}
-                            onChange={(e) => setPaymentMethod(e.target.value)}
-                          />
-                          <label className="form-check-label" htmlFor="bank">
-                            <i className="fe fe-bank me-2"></i>
-                            Bank Transfer
-                          </label>
-                        </div>
-                        <div className="form-check">
-                          <input
-                            className="form-check-input"
-                            type="radio"
-                            name="paymentMethod"
-                            id="dummy"
-                            value="DUMMY"
-                            checked={paymentMethod === 'DUMMY'}
+                            id="stripe"
+                            value="STRIPE"
+                            checked={paymentMethod === 'STRIPE'}
                             onChange={(e) => setPaymentMethod(e.target.value)}
                             defaultChecked
                           />
-                          <label className="form-check-label" htmlFor="dummy">
-                            <i className="fe fe-check-circle me-2"></i>
-                            Test Payment (Dummy)
+                          <label className="form-check-label" htmlFor="stripe">
+                            <i className="fe fe-credit-card me-2"></i>
+                            Stripe
                           </label>
                         </div>
                       </div>
@@ -394,7 +349,7 @@ const SubscriptionPlans = () => {
                         onClick={() => {
                           setShowPaymentModal(false)
                           setSelectedPlan(null)
-                          setPaymentMethod('DUMMY')
+                          setPaymentMethod('STRIPE')
                         }}
                         disabled={buySubscriptionMutation.isLoading}
                       >
