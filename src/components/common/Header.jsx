@@ -10,6 +10,11 @@ const Header = () => {
   const { user, logout } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [hasGoogleTranslateBanner, setHasGoogleTranslateBanner] = useState(false)
+  const [openSubmenus, setOpenSubmenus] = useState({
+    doctors: false,
+    patients: false,
+    pharmacy: false
+  })
 
   // Fetch user profile to get profile image
   const { data: userProfileData } = useQuery({
@@ -65,6 +70,14 @@ const Header = () => {
   const handleLogout = () => {
     logout()
     navigate('/login')
+  }
+
+  // Toggle submenu in mobile view
+  const toggleSubmenu = (menuName) => {
+    setOpenSubmenus(prev => ({
+      ...prev,
+      [menuName]: !prev[menuName]
+    }))
   }
 
   // Helper functions for role-based visibility
@@ -200,6 +213,23 @@ const Header = () => {
     <>
       {/* Add CSS to handle Google Translate banner */}
       <style>{`
+        /* Mobile menu submenu toggle styles */
+        @media (max-width: 991px) {
+          .main-menu-wrapper .has-submenu .submenu {
+            display: none !important;
+          }
+          .main-menu-wrapper .has-submenu.submenu-opened .submenu {
+            display: block !important;
+          }
+          .main-menu-wrapper .has-submenu.submenu-opened > a i.fa-chevron-down {
+            transform: rotate(180deg);
+            transition: transform 0.3s ease;
+          }
+          .main-menu-wrapper .has-submenu > a i.fa-chevron-down {
+            transition: transform 0.3s ease;
+          }
+        }
+        
         /* CRITICAL: Remove ALL body padding-top by default - only allow when Google Translate banner is visible */
         body {
           padding-top: 0 !important;
@@ -412,7 +442,10 @@ const Header = () => {
                     style={isIndexPage ? { maxHeight: '60px', height: 'auto', width: 'auto' } : {}}
                   />
                 </Link>
-                <a id="menu_close" className="menu-close" href="javascript:void(0);" onClick={() => setIsMenuOpen(false)}>
+                <a id="menu_close" className="menu-close" href="javascript:void(0);" onClick={() => {
+                  setIsMenuOpen(false)
+                  setOpenSubmenus({ doctors: false, patients: false, pharmacy: false })
+                }}>
                   <i className="fas fa-times"></i>
                 </a>
               </div>
@@ -424,9 +457,9 @@ const Header = () => {
 
                 {/* Doctors Menu - Only show to doctors (approved) or public (for registration) */}
                 {(shouldShowMenuItem('DOCTOR', true) || !user) && (
-                  <li className={`has-submenu ${isActive('/doctor') || isActive('/appointments') ? 'active' : ''}`}>
-                    <a href="javascript:void(0);">Doctors <i className="fas fa-chevron-down"></i></a>
-                    <ul className="submenu">
+                  <li className={`has-submenu ${isActive('/doctor') || isActive('/appointments') ? 'active' : ''} ${openSubmenus.doctors ? 'submenu-opened' : ''}`}>
+                    <a href="javascript:void(0);" onClick={(e) => { e.preventDefault(); toggleSubmenu('doctors'); }}>Doctors <i className="fas fa-chevron-down"></i></a>
+                    <ul className="submenu" style={{ display: openSubmenus.doctors ? 'block' : 'none' }}>
                       {shouldShowMenuItem('DOCTOR', true) && (
                         <>
                           <li><Link to="/doctor/dashboard">Doctor Dashboard</Link></li>
@@ -449,9 +482,9 @@ const Header = () => {
 
                 {/* Patients Menu - Show to patients and public (for browsing/search), but NOT to doctors */}
                 {(!user || user.role !== 'DOCTOR') && (
-                  <li className={`has-submenu ${isActive('/patient') || isActive('/search') || isActive('/booking') ? 'active' : ''}`}>
-                    <a href="javascript:void(0);">Patients <i className="fas fa-chevron-down"></i></a>
-                    <ul className="submenu">
+                  <li className={`has-submenu ${isActive('/patient') || isActive('/search') || isActive('/booking') ? 'active' : ''} ${openSubmenus.patients ? 'submenu-opened' : ''}`}>
+                    <a href="javascript:void(0);" onClick={(e) => { e.preventDefault(); toggleSubmenu('patients'); }}>Patients <i className="fas fa-chevron-down"></i></a>
+                    <ul className="submenu" style={{ display: openSubmenus.patients ? 'block' : 'none' }}>
                       {/* Patient Dashboard - Only for patients */}
                       {shouldShowMenuItem('PATIENT') && (
                         <li><Link to="/patient/dashboard">Patient Dashboard</Link></li>
