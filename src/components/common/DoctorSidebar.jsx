@@ -409,18 +409,6 @@ const DoctorSidebar = () => {
                 <span>Blog Posts</span>
               </Link>
             </li>
-            <li className={isActive('/doctor/products') ? 'active' : ''}>
-              <Link to="/doctor/products">
-                <i className="fa-solid fa-box"></i>
-                <span>Products</span>
-              </Link>
-            </li>
-            <li className={isActive(['/pharmacy-orders', '/pharmacy-order-details']) ? 'active' : ''}>
-              <Link to="/pharmacy-orders">
-                <i className="fa-solid fa-shopping-bag"></i>
-                <span>Pharmacy Orders</span>
-              </Link>
-            </li>
             <li className={isActive('/doctor/subscription-plans') ? 'active' : ''}>
               <Link to="/doctor/subscription-plans">
                 <i className="fa-solid fa-crown"></i>

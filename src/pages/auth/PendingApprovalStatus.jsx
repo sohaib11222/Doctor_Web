@@ -49,7 +49,11 @@ const PendingApprovalStatus = () => {
               
               if (userStatus === 'APPROVED') {
                 toast.success('Your account has been approved! Redirecting to dashboard...')
-                navigate('/doctor/dashboard')
+                if (user?.role?.toUpperCase() === 'PHARMACY') {
+                  navigate('/pharmacy/dashboard')
+                } else {
+                  navigate('/doctor/dashboard')
+                }
                 return
               } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
                 toast.error('Your account has been rejected or blocked. Please contact support.')
@@ -71,7 +75,11 @@ const PendingApprovalStatus = () => {
                 
                 if (userStatus === 'APPROVED') {
                   toast.success('Your account has been approved! Redirecting to dashboard...')
-                  navigate('/doctor/dashboard')
+                  if (user?.role?.toUpperCase() === 'PHARMACY') {
+                    navigate('/pharmacy/dashboard')
+                  } else {
+                    navigate('/doctor/dashboard')
+                  }
                   return
                 } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
                   toast.error('Your account has been rejected or blocked. Please contact support.')
@@ -208,7 +216,7 @@ const PendingApprovalStatus = () => {
                           </div>
                           <h3 className="mb-2">Pending Admin Approval</h3>
                           <p className="text-muted">
-                            Your verification documents have been submitted successfully.
+                            Your request has been submitted successfully.
                           </p>
                         </div>
 
@@ -254,8 +262,8 @@ const PendingApprovalStatus = () => {
                             <div className="flex-grow-1 ms-3">
                               <h6 className="alert-heading">What happens next?</h6>
                               <p className="mb-0 small">
-                                Our admin team typically reviews verification documents within 24-48 hours. 
-                                Once approved, you'll be able to access your doctor dashboard and start accepting appointments.
+                                Our admin team typically reviews requests within 24-48 hours. 
+                                Once approved, you'll be able to access your dashboard.
                               </p>
                             </div>
                           </div>
@@ -273,11 +281,11 @@ const PendingApprovalStatus = () => {
                               {checkingStatus ? 'Checking...' : 'Check Status Again'}
                             </button>
                             <Link
-                              to="/doctor-verification-upload"
+                              to={user?.role?.toUpperCase() === 'PHARMACY' ? '/pharmacy/profile' : '/doctor-verification-upload'}
                               className="btn btn-outline-primary"
                             >
                               <i className="fe fe-edit me-2"></i>
-                              Update Documents
+                              {user?.role?.toUpperCase() === 'PHARMACY' ? 'Update Profile' : 'Update Documents'}
                             </Link>
                             <button
                               type="button"

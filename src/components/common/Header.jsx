@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import * as profileApi from '../../api/profile'
+import * as pharmacyApi from '../../api/pharmacy'
 
 const Header = () => {
   const location = useLocation()
@@ -30,6 +31,12 @@ const Header = () => {
     enabled: !!user && user?.role === 'DOCTOR'
   })
 
+  const { data: myPharmacyData } = useQuery({
+    queryKey: ['my-pharmacy-header'],
+    queryFn: () => pharmacyApi.getMyPharmacy(),
+    enabled: !!user && user?.role === 'PHARMACY'
+  })
+
   // Normalize image URL
   const normalizeImageUrl = (imageUri) => {
     if (!imageUri || typeof imageUri !== 'string') return null
@@ -47,6 +54,13 @@ const Header = () => {
   // Get user profile image - prioritize doctor profile userId.profileImage if doctor
   const userProfileImage = useMemo(() => {
     if (!user) return '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
+
+    if (user?.role === 'PHARMACY') {
+      const pharmacy = myPharmacyData?.data?.data || myPharmacyData?.data || myPharmacyData
+      const pharmacyLogo = pharmacy?.logo
+      const normalizedPharmacyLogo = normalizeImageUrl(pharmacyLogo)
+      if (normalizedPharmacyLogo) return normalizedPharmacyLogo
+    }
     
     // For doctors, try to get image from doctor profile first
     if (user?.role === 'DOCTOR' && doctorProfileData?.data) {
@@ -61,7 +75,7 @@ const Header = () => {
     const profileData = userProfileData?.data || userProfileData || {}
     const imageUrl = profileData.profileImage || user.profileImage
     return normalizeImageUrl(imageUrl) || '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
-  }, [user, userProfileData, doctorProfileData])
+  }, [user, userProfileData, doctorProfileData, myPharmacyData])
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
   const isIndexPage = location.pathname === '/' || location.pathname === '/index'
@@ -678,13 +692,18 @@ const Header = () => {
                         <i className="fe fe-clock me-2"></i>Pending Approval
                       </Link>
                     )}
+                    {shouldShowMenuItem('PHARMACY') && getUserStatus() === 'PENDING' && (
+                      <Link className="dropdown-item" to="/pending-approval">
+                        <i className="fe fe-clock me-2"></i>Pending Approval
+                      </Link>
+                    )}
                     {shouldShowMenuItem('PATIENT') && (
                       <Link className="dropdown-item" to="/patient/dashboard">
                         <i className="fe fe-home me-2"></i>Patient Dashboard
                       </Link>
                     )}
-                    {shouldShowMenuItem(['PHARMACY', 'PHARMACY_ADMIN']) && (
-                      <Link className="dropdown-item" to="/pharmacy-admin/dashboard">
+                    {shouldShowMenuItem(['PHARMACY']) && (
+                      <Link className="dropdown-item" to="/pharmacy/dashboard">
                         <i className="fe fe-home me-2"></i>Pharmacy Dashboard
                       </Link>
                     )}

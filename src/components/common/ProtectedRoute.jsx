@@ -87,6 +87,31 @@ const ProtectedRoute = ({
     }
   }
 
+  // For pharmacies, check status
+  if (userRole === 'PHARMACY') {
+    const userStatus = user?.status?.toUpperCase()
+
+    if (requireApproved && userStatus !== 'APPROVED') {
+      if (userStatus === 'PENDING' && !allowPending) {
+        toast.info('Your account is pending approval. Please wait for admin approval.')
+        return <Navigate to="/pending-approval" replace />
+      } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
+        toast.error('Your account has been rejected or blocked. Please contact support.')
+        return <Navigate to="/login" replace />
+      } else {
+        toast.info('Your account needs to be approved to access this page.')
+        return <Navigate to="/pending-approval" replace />
+      }
+    }
+
+    if (!allowPending && userStatus === 'PENDING' && requireApproved === false) {
+      const currentPath = window.location.pathname
+      if (currentPath !== '/pending-approval' && currentPath.startsWith('/pharmacy/')) {
+        return <Navigate to="/pending-approval" replace />
+      }
+    }
+  }
+
   return children
 }
 

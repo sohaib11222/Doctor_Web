@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import * as productApi from '../../api/product'
 import { useCart } from '../../contexts/CartContext'
 import { toast } from 'react-toastify'
+import { getImageUrl } from '../../utils/imageUtils'
 
 const PharmacyIndex = () => {
   const { addToCart } = useCart()
@@ -290,7 +291,7 @@ const PharmacyIndex = () => {
               {products.map((product) => {
                 const productPrice = product.discountPrice || product.price
                 const originalPrice = product.discountPrice ? product.price : null
-                const productImage = product.images?.[0] || '/assets/img/products/product.jpg'
+                const productImage = getImageUrl(product.images?.[0], '/assets/img/products/product.jpg')
                 
                 return (
                   <div key={product._id} className="col-md-12 col-lg-3 col-xl-3 product-custom">

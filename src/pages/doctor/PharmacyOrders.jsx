@@ -192,7 +192,7 @@ const PharmacyOrders = () => {
             <div className="dashboard-header">
               <div className="d-flex align-items-center mb-2">
                 <Link 
-                  to="/doctor/dashboard" 
+                  to="/pharmacy/dashboard" 
                   className="btn btn-sm btn-outline-secondary me-2"
                   style={{ minWidth: '40px', padding: '4px 8px' }}
                   title="Back to Dashboard"
@@ -321,7 +321,7 @@ const PharmacyOrders = () => {
                           {/* Order Actions */}
                           <div className="d-flex align-items-center justify-content-end flex-wrap gap-2">
                             <Link
-                              to={`/pharmacy-order-details/${order._id}`}
+                              to={`/pharmacy/orders/${order._id}`}
                               className="btn btn-sm btn-primary"
                             >
                               <i className="fe fe-eye me-1"></i>

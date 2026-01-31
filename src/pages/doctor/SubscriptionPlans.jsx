@@ -45,8 +45,14 @@ const SubscriptionPlans = () => {
       setPaymentMethod('STRIPE')
     },
     onError: (error) => {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to purchase subscription'
-      toast.error(errorMessage)
+      const status = error.response?.status
+      const serverMessage = error.response?.data?.message
+      const errorMessage = serverMessage || error.message || 'Failed to purchase subscription'
+      if (status === 403) {
+        toast.error(errorMessage)
+      } else {
+        toast.error(errorMessage)
+      }
     }
   })
 
@@ -68,6 +74,18 @@ const SubscriptionPlans = () => {
     if (!dateString) return '—'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  }
+
+  const formatLimit = (value) => {
+    if (value === null) return 'Unlimited'
+    if (value === undefined) return '—'
+    return value
+  }
+
+  const formatRemaining = (value) => {
+    if (value === null) return 'Unlimited'
+    if (value === undefined) return '—'
+    return value
   }
 
   // Get current plan ID
@@ -145,6 +163,8 @@ const SubscriptionPlans = () => {
 
   const plans = plansData || []
   const currentSubscription = currentSubscriptionData || {}
+  const usage = currentSubscription?.usage || null
+  const remaining = currentSubscription?.remaining || null
 
   return (
     <div className="content doctor-content">
@@ -182,6 +202,35 @@ const SubscriptionPlans = () => {
                       </span>
                     </div>
                   </div>
+
+                  {(usage || remaining) && (
+                    <div className="row mt-3">
+                      <div className="col-md-4">
+                        <div className="border rounded p-3">
+                          <div className="small text-muted">Private Consultations</div>
+                          <div className="fw-bold">
+                            {usage ? usage.privateConsultations : '—'} used / {formatRemaining(remaining?.privateConsultations)} left
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-md-4">
+                        <div className="border rounded p-3">
+                          <div className="small text-muted">Video Consultations</div>
+                          <div className="fw-bold">
+                            {usage ? usage.videoConsultations : '—'} used / {formatRemaining(remaining?.videoConsultations)} left
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-md-4">
+                        <div className="border rounded p-3">
+                          <div className="small text-muted">Chat Sessions</div>
+                          <div className="fw-bold">
+                            {usage ? usage.chatSessions : '—'} used / {formatRemaining(remaining?.chatSessions)} left
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -206,6 +255,7 @@ const SubscriptionPlans = () => {
                   const isPopular = isPopularPlan(plan, plans)
                   const isActive = plan.status === 'ACTIVE'
                   const currentPlanPrice = plans.find(p => p._id === currentPlanId)?.price || 0
+                  const limits = plan.limits || null
 
                   return (
                     <div key={plan._id} className="col-lg-4 col-md-6 mb-4">
@@ -226,6 +276,25 @@ const SubscriptionPlans = () => {
                             <h2 className="mb-0">{formatPrice(plan.price)}</h2>
                             <p className="text-muted">{formatDuration(plan.durationInDays)}</p>
                           </div>
+
+                          {limits && (
+                            <div className="mb-3 text-start">
+                              <div className="small text-muted">Plan Limits</div>
+                              <div className="small">
+                                Private Consultations: <strong>{formatLimit(limits.privateConsultations)}</strong>
+                              </div>
+                              <div className="small">
+                                Video Consultations: <strong>{formatLimit(limits.videoConsultations)}</strong>
+                              </div>
+                              <div className="small">
+                                Chat Sessions: <strong>{formatLimit(limits.chatSessions)}</strong>
+                              </div>
+                              <div className="small">
+                                CRM Access: <strong>{plan.crmAccess ? 'Yes' : 'No'}</strong>
+                              </div>
+                            </div>
+                          )}
+
                           <ul className="list-unstyled plan-features mb-4">
                             {plan.features && plan.features.length > 0 ? (
                               plan.features.map((feature, index) => (

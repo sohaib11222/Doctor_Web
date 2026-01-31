@@ -46,7 +46,7 @@ const Sidebar = ({ userType = 'patient' }) => {
             </li>
             <li className={isActive('/doctor-profile-settings') ? 'active' : ''}>
               <Link to="/doctor-profile-settings">
-                <i className="feather-user"></i> <span>Profile Settings</Link>
+                <i className="feather-user"></i> <span>Profile Settings</span>
               </Link>
             </li>
             <li className={isActive('/doctor-change-password') ? 'active' : ''}>
@@ -163,52 +163,6 @@ const Sidebar = ({ userType = 'patient' }) => {
             </li>
             <li className={isActive('/admin/settings') ? 'active' : ''}>
               <Link to="/admin/settings">
-                <i className="feather-settings"></i> <span>Settings</span>
-              </Link>
-            </li>
-          </ul>
-        </div>
-      </div>
-    )
-  }
-
-  if (userType === 'pharmacy_admin') {
-    return (
-      <div className="sidebar sidebar-pharmacy-admin">
-        <div className="sidebar-inner">
-          <ul className="sidebar-menu">
-            <li className={isActive('/pharmacy-admin/index_pharmacy_admin') ? 'active' : ''}>
-              <Link to="/pharmacy-admin/index_pharmacy_admin">
-                <i className="feather-grid"></i> <span>Dashboard</span>
-              </Link>
-            </li>
-            <li className={isActive('/pharmacy-admin/products') ? 'active' : ''}>
-              <Link to="/pharmacy-admin/products">
-                <i className="feather-package"></i> <span>Products</span>
-              </Link>
-            </li>
-            <li className={isActive('/pharmacy-admin/categories') ? 'active' : ''}>
-              <Link to="/pharmacy-admin/categories">
-                <i className="feather-layers"></i> <span>Categories</span>
-              </Link>
-            </li>
-            <li className={isActive('/pharmacy-admin/order') ? 'active' : ''}>
-              <Link to="/pharmacy-admin/order">
-                <i className="feather-shopping-cart"></i> <span>Orders</span>
-              </Link>
-            </li>
-            <li className={isActive('/pharmacy-admin/sales') ? 'active' : ''}>
-              <Link to="/pharmacy-admin/sales">
-                <i className="feather-trending-up"></i> <span>Sales</span>
-              </Link>
-            </li>
-            <li className={isActive('/pharmacy-admin/supplier') ? 'active' : ''}>
-              <Link to="/pharmacy-admin/supplier">
-                <i className="feather-truck"></i> <span>Suppliers</span>
-              </Link>
-            </li>
-            <li className={isActive('/pharmacy-admin/settings') ? 'active' : ''}>
-              <Link to="/pharmacy-admin/settings">
                 <i className="feather-settings"></i> <span>Settings</span>
               </Link>
             </li>

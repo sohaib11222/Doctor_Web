@@ -401,9 +401,9 @@ const DoctorAppointmentDetails = () => {
             )}
             {appointment.status === 'COMPLETED' && (
               <li className="appointment-detail-btn">
-                <a href="#view_prescription" data-bs-toggle="modal">
-                  View Details
-                </a>
+                <Link to={`/doctor/prescription?appointmentId=${appointment._id}`}>
+                  Prescription
+                </Link>
               </li>
             )}
           </ul>

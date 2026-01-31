@@ -82,6 +82,17 @@ const Login = () => {
             // Unknown status, default to dashboard
             navigate('/doctor/dashboard')
           }
+        } else if (role === 'PHARMACY') {
+          if (status === 'PENDING') {
+            navigate('/pending-approval')
+          } else if (status === 'APPROVED') {
+            navigate('/pharmacy/dashboard')
+          } else if (status === 'REJECTED' || status === 'BLOCKED') {
+            toast.error('Your account has been rejected or blocked. Please contact support.')
+            navigate('/login')
+          } else {
+            navigate('/pharmacy/dashboard')
+          }
         } else if (role === 'PATIENT') {
           navigate('/patient/dashboard')
         } else if (role === 'ADMIN') {
@@ -148,6 +159,7 @@ const Login = () => {
                     </div>
                     <div className="account-footer">
                       <p>Don't have an account? <Link to="/register">Register</Link></p>
+                      <p><Link to="/pharmacy-register">Register as a Pharmacy</Link></p>
                     </div>
                     {/* Development Test Links - Remove in production */}
                     {process.env.NODE_ENV === 'development' && (

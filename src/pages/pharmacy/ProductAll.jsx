@@ -5,6 +5,7 @@ import Breadcrumb from '../../components/common/Breadcrumb'
 import * as productApi from '../../api/product'
 import { useCart } from '../../contexts/CartContext'
 import { toast } from 'react-toastify'
+import { getImageUrl } from '../../utils/imageUtils'
 
 const ProductAll = () => {
   const { addToCart } = useCart()
@@ -201,7 +202,7 @@ const ProductAll = () => {
                     {products.map((product) => {
                       const productPrice = product.discountPrice || product.price
                       const originalPrice = product.discountPrice ? product.price : null
-                      const productImage = product.images?.[0] || '/assets/img/products/product.jpg'
+                      const productImage = getImageUrl(product.images?.[0], '/assets/img/products/product.jpg')
                       
                       return (
                         <div key={product._id} className="col-md-12 col-lg-4 col-xl-4 product-custom mb-4">

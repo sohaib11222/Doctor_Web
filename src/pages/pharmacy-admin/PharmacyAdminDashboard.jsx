@@ -8,10 +8,9 @@ const PharmacyAdminDashboard = () => {
           <div className="row">
             <div className="col-md-7 col-lg-8 col-xl-9">
               <div className="page-header">
-                <h3 className="page-title">Pharmacy Admin Dashboard</h3>
+                <h3 className="page-title">Pharmacy Dashboard</h3>
               </div>
-              <p>Convert from resources/views/pharmacy-admin/index_pharmacy_admin.blade.php</p>
-              <p>Use Index.jsx as a template for conversion.</p>
+              <p>Legacy placeholder page.</p>
             </div>
           </div>
         </div>

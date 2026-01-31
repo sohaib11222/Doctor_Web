@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import Breadcrumb from '../../components/common/Breadcrumb'
 import * as pharmacyApi from '../../api/pharmacy'
+import { getImageUrl } from '../../utils/imageUtils'
 
 const PharmacySearch = () => {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -173,20 +174,8 @@ const PharmacySearch = () => {
                     </p>
                   </div>
                   {pharmacies.map((pharmacy) => {
-                    // Normalize pharmacy logo URL
-                    const normalizeImageUrl = (imageUri) => {
-                      if (!imageUri || typeof imageUri !== 'string') return null
-                      const trimmedUri = imageUri.trim()
-                      if (!trimmedUri) return null
-                      const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
-                      const baseURL = apiBaseURL.replace('/api', '')
-                      if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
-                        return trimmedUri
-                      }
-                      const imagePath = trimmedUri.startsWith('/') ? trimmedUri : `/${trimmedUri}`
-                      return `${baseURL}${imagePath}`
-                    }
-                    const pharmacyLogo = normalizeImageUrl(pharmacy.logo) || '/assets/img/medical-img1.jpg'
+                    const pharmacyId = pharmacy?._id || pharmacy?.id
+                    const pharmacyLogo = getImageUrl(pharmacy?.logo, '/assets/img/medical-img1.jpg')
                     const pharmacyAddress = formatAddress(pharmacy.address)
                     const pharmacyPhone = formatPhone(pharmacy.phone)
                     const ownerName = pharmacy.ownerId && typeof pharmacy.ownerId === 'object' 
@@ -201,12 +190,12 @@ const PharmacySearch = () => {
                       : null
 
                     return (
-                      <div key={pharmacy._id} className="card mb-3">
+                      <div key={pharmacyId || pharmacy._id} className="card mb-3">
                         <div className="card-body">
                           <div className="doctor-widget">
                             <div className="doc-info-left">
                               <div className="doctor-img1" style={{ width: '100px', height: '100px', overflow: 'hidden', flexShrink: 0 }}>
-                                <Link to={`/pharmacy-details?id=${pharmacy._id}`} style={{ display: 'block', width: '100%', height: '100%' }}>
+                                <Link to={pharmacyId ? `/pharmacy-details?id=${pharmacyId}` : '/pharmacy-search'} style={{ display: 'block', width: '100%', height: '100%' }}>
                                   <img 
                                     src={pharmacyLogo} 
                                     className="img-fluid" 
@@ -227,7 +216,7 @@ const PharmacySearch = () => {
                               </div>
                               <div className="doc-info-cont">
                                 <h4 className="doc-name mb-2">
-                                  <Link to={`/pharmacy-details?id=${pharmacy._id}`}>{pharmacy.name}</Link>
+                                  <Link to={pharmacyId ? `/pharmacy-details?id=${pharmacyId}` : '/pharmacy-search'}>{pharmacy.name}</Link>
                                 </h4>
                                 {pharmacy.isActive && (
                                   <span className="badge badge-success mb-2">Active</span>

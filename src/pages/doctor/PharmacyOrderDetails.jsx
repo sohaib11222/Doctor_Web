@@ -162,7 +162,7 @@ const PharmacyOrderDetails = () => {
           <div className="col-lg-12 col-xl-12">
             <div className="dashboard-header d-flex justify-content-between align-items-center">
               <h3>Order Details</h3>
-              <Link to="/pharmacy-orders" className="btn btn-outline-primary btn-sm">
+              <Link to="/pharmacy/orders" className="btn btn-outline-primary btn-sm">
                 <i className="fe fe-arrow-left me-2"></i>
                 Back to Orders
               </Link>

@@ -154,6 +154,12 @@ const Register = () => {
                         Register as a Doctor
                       </Link>
                     </div>
+                    <div className="form-group text-center">
+                      <Link to="/pharmacy-register" className="btn btn-outline-primary account-btn w-100">
+                        <i className="fe fe-briefcase me-2"></i>
+                        Register as a Pharmacy
+                      </Link>
+                    </div>
                     <div className="account-footer">
                       <p>Already have an account? <Link to="/login">Login</Link></p>
                     </div>

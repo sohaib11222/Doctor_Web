@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as medicalRecordsApi from '../../api/medicalRecords'
+import * as prescriptionsApi from '../../api/prescriptions'
 import api from '../../api/axios'
 
 const MedicalRecords = () => {
@@ -31,20 +32,39 @@ const MedicalRecords = () => {
   }, [activeTab])
 
   // Fetch medical records
-  const { data: recordsResponse, isLoading, refetch } = useQuery({
+  const { data: recordsResponse, isLoading: medicalLoading, refetch } = useQuery({
     queryKey: ['medicalRecords', recordTypeFilter, currentPage],
     queryFn: () => medicalRecordsApi.getMedicalRecords({
       recordType: recordTypeFilter,
       page: currentPage,
       limit: 20
     }),
+    enabled: activeTab !== 'prescription',
+    keepPreviousData: true
+  })
+
+  // Fetch prescriptions (new prescription module)
+  const { data: prescriptionsResponse, isLoading: prescriptionsLoading } = useQuery({
+    queryKey: ['prescriptions', currentPage],
+    queryFn: () => prescriptionsApi.listMyPrescriptions({
+      page: currentPage,
+      limit: 20
+    }),
+    enabled: activeTab === 'prescription',
     keepPreviousData: true
   })
 
   // Extract records and pagination
-  const recordsData = recordsResponse?.data || recordsResponse
-  const records = recordsData?.records || []
-  const pagination = recordsData?.pagination || { page: 1, limit: 20, total: 0, pages: 1 }
+  const medicalRecordsData = recordsResponse?.data || recordsResponse
+  const medicalRecords = medicalRecordsData?.records || []
+  const medicalPagination = medicalRecordsData?.pagination || { page: 1, limit: 20, total: 0, pages: 1 }
+
+  const prescriptionsData = prescriptionsResponse?.data || prescriptionsResponse
+  const prescriptions = prescriptionsData?.prescriptions || []
+  const prescriptionsPagination = prescriptionsData?.pagination || { page: 1, limit: 20, total: 0, pages: 1 }
+
+  const records = activeTab === 'prescription' ? prescriptions : medicalRecords
+  const pagination = activeTab === 'prescription' ? prescriptionsPagination : medicalPagination
 
   // Filter records by search query
   const filteredRecords = useMemo(() => {
@@ -53,7 +73,10 @@ const MedicalRecords = () => {
     return records.filter(record => 
       record.title?.toLowerCase().includes(query) ||
       record.description?.toLowerCase().includes(query) ||
-      record.fileName?.toLowerCase().includes(query)
+      record.fileName?.toLowerCase().includes(query) ||
+      record.diagnosis?.toLowerCase().includes(query) ||
+      record.doctorId?.fullName?.toLowerCase().includes(query) ||
+      record.relatedDoctorId?.fullName?.toLowerCase().includes(query)
     )
   }, [records, searchQuery])
 
@@ -125,6 +148,15 @@ const MedicalRecords = () => {
     setActiveTab(tab)
     setCurrentPage(1)
     setSearchQuery('')
+  }
+
+  const handleDownloadPrescription = async (prescription) => {
+    try {
+      await prescriptionsApi.downloadPrescriptionPdf(prescription._id)
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to download prescription'
+      toast.error(errorMessage)
+    }
   }
 
   // Handle file change
@@ -252,7 +284,7 @@ const MedicalRecords = () => {
                   </ul>
                 </div>
 
-                {isLoading ? (
+                {prescriptionsLoading ? (
                   <div className="text-center py-5">
                     <div className="spinner-border" role="status">
                       <span className="visually-hidden">Loading...</span>
@@ -280,37 +312,34 @@ const MedicalRecords = () => {
                             {filteredRecords.map((record) => (
                               <tr key={record._id}>
                                 <td>
-                                  <a 
-                                    className="link-primary" 
-                                    href="javascript:void(0);" 
-                                    onClick={() => setViewRecord(record)}
+                                  <span className="link-primary">#{record._id.slice(-6).toUpperCase()}</span>
+                                </td>
+                                <td>
+                                  <Link
+                                    to={`/patient/prescription?appointmentId=${record.appointmentId?._id || record.appointmentId}`}
+                                    className="lab-icon prescription"
                                   >
-                                    #{record._id.slice(-6).toUpperCase()}
-                                  </a>
+                                    {record.appointmentId?.appointmentNumber ? `Prescription for ${record.appointmentId.appointmentNumber}` : 'Prescription'}
+                                  </Link>
                                 </td>
+                                <td>{formatDate(record.issuedAt || record.createdAt)}</td>
                                 <td>
-                                  <a href="javascript:void(0);" className="lab-icon prescription">
-                                    {record.title}
-                                  </a>
-                                </td>
-                                <td>{formatDate(record.uploadedDate || record.createdAt)}</td>
-                                <td>
-                                  {record.relatedDoctorId ? (
+                                  {record.doctorId ? (
                                     <h2 className="table-avatar">
                                       <span className="avatar avatar-sm me-2">
-                                        {typeof record.relatedDoctorId === 'object' && record.relatedDoctorId.profileImage ? (
-                                          <img className="avatar-img rounded-3" src={record.relatedDoctorId.profileImage} alt="Doctor" />
+                                        {typeof record.doctorId === 'object' && record.doctorId.profileImage ? (
+                                          <img className="avatar-img rounded-3" src={record.doctorId.profileImage} alt="Doctor" />
                                         ) : (
                                           <span className="avatar-title rounded-3 bg-primary text-white">
-                                            {typeof record.relatedDoctorId === 'object' && record.relatedDoctorId.fullName 
-                                              ? record.relatedDoctorId.fullName.charAt(0).toUpperCase()
+                                            {typeof record.doctorId === 'object' && record.doctorId.fullName 
+                                              ? record.doctorId.fullName.charAt(0).toUpperCase()
                                               : 'D'}
                                           </span>
                                         )}
                                       </span>
                                       <span>
-                                        {typeof record.relatedDoctorId === 'object' 
-                                          ? record.relatedDoctorId.fullName || 'Unknown Doctor'
+                                        {typeof record.doctorId === 'object' 
+                                          ? record.doctorId.fullName || 'Unknown Doctor'
                                           : 'Unknown Doctor'}
                                       </span>
                                     </h2>
@@ -320,27 +349,18 @@ const MedicalRecords = () => {
                                 </td>
                                 <td>
                                   <div className="action-item">
-                                    <a 
-                                      href="javascript:void(0);" 
-                                      onClick={() => setViewRecord(record)}
+                                    <Link
+                                      to={`/patient/prescription?appointmentId=${record.appointmentId?._id || record.appointmentId}`}
                                       title="View"
                                     >
                                       <i className="isax isax-link-2"></i>
-                                    </a>
-                                    <a 
-                                      href={record.fileUrl} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
+                                    </Link>
+                                    <a
+                                      href="javascript:void(0);"
+                                      onClick={() => handleDownloadPrescription(record)}
                                       title="Download"
                                     >
                                       <i className="isax isax-import"></i>
-                                    </a>
-                                    <a 
-                                      href="javascript:void(0);" 
-                                      onClick={() => handleDelete(record._id)}
-                                      title="Delete"
-                                    >
-                                      <i className="isax isax-trash"></i>
                                     </a>
                                   </div>
                                 </td>
@@ -425,7 +445,7 @@ const MedicalRecords = () => {
                   </button>
                 </div>
 
-                {isLoading ? (
+                {medicalLoading ? (
                   <div className="text-center py-5">
                     <div className="spinner-border" role="status">
                       <span className="visually-hidden">Loading...</span>

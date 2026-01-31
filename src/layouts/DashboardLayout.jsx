@@ -2,6 +2,7 @@ import { useLocation } from 'react-router-dom'
 import Header from '../components/common/Header'
 import DoctorSidebar from '../components/common/DoctorSidebar'
 import PatientSidebar from '../components/common/PatientSidebar'
+import PharmacySidebar from '../components/common/PharmacySidebar'
 import Footer from '../components/common/Footer'
 import Breadcrumb from '../components/common/Breadcrumb'
 
@@ -40,8 +41,7 @@ const DashboardLayout = ({ children, breadcrumb }) => {
                         location.pathname === '/dependent' ||
                         location.pathname === '/medical-records' ||
                         location.pathname === '/medical-details'
-  const isAdminRoute = location.pathname.startsWith('/admin')
-  const isPharmacyAdminRoute = location.pathname.startsWith('/pharmacy-admin')
+  const isPharmacyRoute = location.pathname.startsWith('/pharmacy/')
   const isChatRoute = location.pathname === '/chat' || location.pathname === '/chat-doctor' || location.pathname === '/doctor/admin-chat'
 
   return (
@@ -64,7 +64,12 @@ const DashboardLayout = ({ children, breadcrumb }) => {
                   <PatientSidebar />
                 </div>
               )}
-              <div className={(isDoctorRoute || isPatientRoute) && !isChatRoute
+              {isPharmacyRoute && !isChatRoute && (
+                <div className="col-lg-4 col-xl-3 theiaStickySidebar">
+                  <PharmacySidebar />
+                </div>
+              )}
+              <div className={(isDoctorRoute || isPatientRoute || isPharmacyRoute) && !isChatRoute
                 ? "col-lg-8 col-xl-9"
                 : "col-12"
               }>

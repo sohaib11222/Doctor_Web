@@ -28,6 +28,10 @@ export const getPharmacyById = async (id) => {
   return api.get(`/pharmacy/${id}`)
 }
 
+export const getMyPharmacy = async () => {
+  return api.get('/pharmacy/me')
+}
+
 /**
  * Create pharmacy (Private - Admin, Doctor)
  * @param {Object} data - Pharmacy data

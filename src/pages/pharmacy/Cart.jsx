@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import Breadcrumb from '../../components/common/Breadcrumb'
 import { useCart } from '../../contexts/CartContext'
 import { toast } from 'react-toastify'
+import { getImageUrl } from '../../utils/imageUtils'
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCart()
@@ -60,7 +61,7 @@ const Cart = () => {
                             <td>
                               <h2 className="table-avatar">
                                 <Link to={`/product-description?id=${item._id}`} className="avatar avatar-sm me-2">
-                                  <img className="avatar-img" src={item.image} alt={item.name} />
+                                  <img className="avatar-img" src={getImageUrl(item.image, '/assets/img/products/product.jpg')} alt={item.name} />
                                 </Link>
                               </h2>
                               <Link to={`/product-description?id=${item._id}`}>{item.name}</Link>

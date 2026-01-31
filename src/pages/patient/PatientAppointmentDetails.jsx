@@ -529,7 +529,7 @@ const PatientAppointmentDetails = () => {
                   {status === 'COMPLETED' && (
                     <li className="detail-badge-info">
                       <Link
-                        to={`/prescription?appointmentId=${appointment._id}`}
+                        to={`/patient/prescription?appointmentId=${appointment._id}`}
                         className="btn btn-primary prime-btn me-3"
                       >
                         Download Prescription

@@ -74,13 +74,17 @@ import DoctorChat from './pages/doctor/DoctorChat'
 import DoctorVideoCallRoom from './pages/doctor/DoctorVideoCallRoom'
 import DoctorRescheduleRequests from './pages/doctor/RescheduleRequests'
 import DoctorBlogList from './pages/doctor/BlogList'
-import DoctorProducts from './pages/doctor/DoctorProducts'
 import DoctorBlogDetails from './pages/doctor/BlogDetails'
 import BlogCreateEdit from './pages/doctor/BlogCreateEdit'
-import PharmacyOrders from './pages/doctor/PharmacyOrders'
-import PharmacyOrderDetails from './pages/doctor/PharmacyOrderDetails'
 import DoctorNotifications from './pages/doctor/DoctorNotifications'
-import DoctorPharmacy from './pages/doctor/DoctorPharmacy'
+
+// Pharmacy Dashboard Pages
+import PharmacyDashboard from './pages/pharmacy/PharmacyDashboard'
+import PharmacyProfile from './pages/pharmacy/PharmacyProfile'
+import PharmacyProducts from './pages/pharmacy/PharmacyProducts'
+import PharmacyOrders from './pages/pharmacy/PharmacyOrders'
+import PharmacyOrderDetails from './pages/pharmacy/PharmacyOrderDetails'
+import PharmacyPayment from './pages/pharmacy/PharmacyPayment'
 
 // Patient Pages
 import PatientDashboard from './pages/patient/PatientDashboard'
@@ -128,8 +132,7 @@ import OrderHistory from './pages/patient/OrderHistory'
 import OrderDetails from './pages/patient/OrderDetails'
 import DocumentsDownload from './pages/patient/DocumentsDownload'
 
-// Pharmacy Admin Pages
-import PharmacyAdminDashboard from './pages/pharmacy-admin/PharmacyAdminDashboard'
+import Prescription from './pages/prescription/Prescription'
 
 // Search & Booking Pages
 import Search from './pages/search/Search'
@@ -212,7 +215,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/pending-approval" element={
-                  <ProtectedRoute role="DOCTOR" allowPending={true}>
+                  <ProtectedRoute role={["DOCTOR", "PHARMACY"]} allowPending={true}>
                     <AuthLayout><PendingApprovalStatus /></AuthLayout>
                   </ProtectedRoute>
                 } />
@@ -260,6 +263,11 @@ function App() {
             <Route path="/doctor-appointment-details" element={
               <ProtectedRoute role="DOCTOR" requireApproved={true}>
                 <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Appointment Details", li2: "Appointment Details" }}><DoctorAppointmentDetails /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/doctor/prescription" element={
+              <ProtectedRoute role="DOCTOR" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Prescription", li2: "Prescription" }}><Prescription /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/doctor-appointment-start" element={
@@ -342,11 +350,6 @@ function App() {
                 <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Doctor Profile", li2: "Doctor Profile" }}><DoctorBusinessSettings /></DashboardLayout>
               </ProtectedRoute>
             } />
-            <Route path="/doctor/pharmacy" element={
-              <ProtectedRoute role="DOCTOR" requireApproved={true}>
-                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "My Pharmacy", li2: "My Pharmacy" }}><DoctorPharmacy /></DashboardLayout>
-              </ProtectedRoute>
-            } />
             <Route path="/social-media" element={
               <ProtectedRoute role="DOCTOR" requireApproved={true}>
                 <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Social Media", li2: "Social Media" }}><SocialMedia /></DashboardLayout>
@@ -387,19 +390,35 @@ function App() {
                 <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Blog Posts", li2: "Blog Details" }}><DoctorBlogDetails /></DashboardLayout>
               </ProtectedRoute>
             } />
-            <Route path="/doctor/products" element={
-              <ProtectedRoute role="DOCTOR" requireApproved={true}>
-                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Products", li2: "My Products" }}><DoctorProducts /></DashboardLayout>
+            {/* Pharmacy Dashboard Routes - Protected (PHARMACY) */}
+            <Route path="/pharmacy/dashboard" element={
+              <ProtectedRoute role="PHARMACY" allowPending={true}>
+                <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Dashboard", li2: "Dashboard" }}><PharmacyDashboard /></DashboardLayout>
               </ProtectedRoute>
             } />
-            <Route path="/pharmacy-orders" element={
-              <ProtectedRoute role="DOCTOR" requireApproved={true}>
-                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Pharmacy Orders", li2: "Pharmacy Orders" }}><PharmacyOrders /></DashboardLayout>
+            <Route path="/pharmacy/profile" element={
+              <ProtectedRoute role="PHARMACY" allowPending={true}>
+                <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Profile", li2: "Profile" }}><PharmacyProfile /></DashboardLayout>
               </ProtectedRoute>
             } />
-            <Route path="/pharmacy-order-details/:orderId" element={
-              <ProtectedRoute role="DOCTOR" requireApproved={true}>
-                <DashboardLayout breadcrumb={{ title: "Doctor", li1: "Pharmacy Orders", li2: "Order Details" }}><PharmacyOrderDetails /></DashboardLayout>
+            <Route path="/pharmacy/products" element={
+              <ProtectedRoute role="PHARMACY" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Products", li2: "Products" }}><PharmacyProducts /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/pharmacy/orders" element={
+              <ProtectedRoute role="PHARMACY" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Orders", li2: "Orders" }}><PharmacyOrders /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/pharmacy/orders/:orderId" element={
+              <ProtectedRoute role="PHARMACY" allowPending={true}>
+                <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Orders", li2: "Order Details" }}><PharmacyOrderDetails /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/pharmacy/payment" element={
+              <ProtectedRoute role="PHARMACY" requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Payouts", li2: "Payouts" }}><PharmacyPayment /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/chat-doctor" element={
@@ -477,6 +496,11 @@ function App() {
                 <Route path="/patient-appointment-details" element={
                   <ProtectedRoute role="PATIENT">
                     <DashboardLayout breadcrumb={{ title: "Patient", li1: "Patient Appointments", li2: "Patient Appointments" }}><PatientAppointmentDetails /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/patient/prescription" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Prescription", li2: "Prescription" }}><Prescription /></DashboardLayout>
                   </ProtectedRoute>
                 } />
                 <Route path="/patient-accounts" element={
@@ -611,13 +635,6 @@ function App() {
                     <DashboardLayout breadcrumb={{ title: "Patient", li1: "Settings", li2: "2 Factor Authentication" }}><TwoFactorAuthentication /></DashboardLayout>
                   </ProtectedRoute>
                 } />
-
-            {/* Pharmacy Admin Routes - Protected (Require PHARMACY or PHARMACY_ADMIN role) */}
-            <Route path="/pharmacy-admin/dashboard" element={
-              <ProtectedRoute role={["PHARMACY", "PHARMACY_ADMIN"]}>
-                <DashboardLayout><PharmacyAdminDashboard /></DashboardLayout>
-              </ProtectedRoute>
-            } />
 
             {/* Search & Booking Routes - Public (Browse) */}
             <Route path="/search" element={<MainLayout><Search /></MainLayout>} />
