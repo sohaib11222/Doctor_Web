@@ -532,7 +532,7 @@ const DoctorProfile = () => {
                     <a href="#review" className="d-inline-block average-rating">{ratingCount} {ratingCount === 1 ? 'Review' : 'Reviews'}</a>
                   </div>
                   <ul className="contact-doctors">
-                    <li>
+                    {/* <li>
                       <a 
                         href="javascript:void(0)" 
                         onClick={handleChat}
@@ -540,7 +540,7 @@ const DoctorProfile = () => {
                       >
                         <span><img src="/assets/img/icons/device-message2.svg" alt="Chat" /></span>Chat
                       </a>
-                    </li>
+                    </li> */}
                   </ul>
                 </li>
               </ul>

@@ -1915,8 +1915,8 @@ const Index = () => {
                 }}>
                   Get in touch with the best doctors anytime and anywhere using private messaging or video conferencing.
                 </p>
-                <button
-                  onClick={() => setShowTelemedicineModal(true)}
+                <Link
+                  to="/telemedicine"
                   className="btn btn-primary"
                   style={{
                     padding: '16px 36px',
@@ -1934,19 +1934,19 @@ const Index = () => {
                     cursor: 'pointer'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-2px)'
-                    e.target.style.boxShadow = '0 8px 20px rgba(14, 130, 253, 0.4)'
-                    e.target.style.backgroundColor = '#0a6dd4'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(14, 130, 253, 0.4)'
+                    e.currentTarget.style.backgroundColor = '#0a6dd4'
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)'
-                    e.target.style.boxShadow = 'none'
-                    e.target.style.backgroundColor = '#0E82FD'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                    e.currentTarget.style.backgroundColor = '#0E82FD'
                   }}
                 >
                   See More
                   <i className="fa-solid fa-chevron-right" style={{ fontSize: '14px' }}></i>
-                </button>
+                </Link>
               </div>
             </div>
             <div className="col-lg-6">

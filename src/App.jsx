@@ -13,6 +13,7 @@ import GoogleTranslate from './components/common/GoogleTranslate'
 
 // Public Pages - Home
 import Index from './pages/Index'
+import Telemedicine from './pages/Telemedicine'
 
 // Public Pages - General
 import AboutUs from './pages/AboutUs'
@@ -185,6 +186,7 @@ function App() {
             {/* Public Home Pages */}
             <Route path="/" element={<MainLayout><Index /></MainLayout>} />
             <Route path="/index" element={<MainLayout><Index /></MainLayout>} />
+            <Route path="/telemedicine" element={<MainLayout><Telemedicine /></MainLayout>} />
 
             {/* Public General Pages */}
             <Route path="/about-us" element={<MainLayout><AboutUs /></MainLayout>} />
