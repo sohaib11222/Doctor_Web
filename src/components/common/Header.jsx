@@ -556,7 +556,7 @@ const Header = () => {
                 {user && user.role === 'DOCTOR' ? (
                   /* My Pharmacy - Only for doctors */
                   <li className={isActive('/doctor/pharmacy') ? 'active' : ''}>
-                    <Link to="/doctor/pharmacy">My Pharmacy</Link>
+                    {/* <Link to="/doctor/pharmacy">My Pharmacy</Link> */}
                   </li>
                 ) : (
                   /* Pharmacy Menu - Show to everyone else (browse) but cart/checkout only for patients */
