@@ -16,20 +16,22 @@ const PharmacyDetails = () => {
     enabled: !!pharmacyId
   })
 
+  const pharmacy = pharmacyData?.data || pharmacyData
+  const sellerType = String(pharmacy?.kind || '').toUpperCase() === 'PARAPHARMACY' ? 'PARAPHARMACY' : 'PHARMACY'
+
   // Fetch products from this pharmacy
   // Extract ownerId - handle both populated object and direct ID
-  const ownerId = pharmacyData?.data?.ownerId 
-    ? (typeof pharmacyData.data.ownerId === 'object' && pharmacyData.data.ownerId._id 
-        ? pharmacyData.data.ownerId._id 
-        : pharmacyData.data.ownerId)
+  const ownerId = pharmacy?.ownerId 
+    ? (typeof pharmacy.ownerId === 'object' && pharmacy.ownerId._id 
+        ? pharmacy.ownerId._id 
+        : pharmacy.ownerId)
     : null
   const { data: productsData } = useQuery({
     queryKey: ['pharmacyProducts', ownerId],
-    queryFn: () => productApi.listProducts({ sellerId: ownerId, sellerType: 'PHARMACY', limit: 6 }),
+    queryFn: () => productApi.listProducts({ sellerId: ownerId, sellerType, limit: 6 }),
     enabled: !!ownerId
   })
 
-  const pharmacy = pharmacyData?.data || pharmacyData
   const products = productsData?.data?.products || []
 
   const formatAddress = (address) => {
@@ -93,7 +95,10 @@ const PharmacyDetails = () => {
     return `${baseURL}${imagePath}`
   }
   
-  const pharmacyLogo = normalizeImageUrl(pharmacy.logo) || '/assets/img/medical-img1.jpg'
+  const ownerProfileImage = pharmacy?.ownerId && typeof pharmacy.ownerId === 'object'
+    ? pharmacy.ownerId.profileImage
+    : null
+  const pharmacyLogo = normalizeImageUrl(pharmacy.logo) || normalizeImageUrl(ownerProfileImage) || '/assets/img/medical-img1.jpg'
   const pharmacyAddress = formatAddress(pharmacy.address)
   const pharmacyPhone = pharmacy.phone || 'Phone not available'
   const ownerName = pharmacy.ownerId && typeof pharmacy.ownerId === 'object'
@@ -172,7 +177,7 @@ const PharmacyDetails = () => {
                 <div className="doc-info-right d-flex align-items-center justify-content-center">
                   <div className="clinic-booking">
                     <Link
-                      to={`/product-all?sellerId=${ownerId}&sellerType=PHARMACY`}
+                      to={`/product-all?sellerId=${ownerId}&sellerType=${sellerType}`}
                       className="view-pro-btn"
                     >
                       Browse Products
@@ -330,7 +335,7 @@ const PharmacyDetails = () => {
                             </div>
                             <div className="mt-3">
                               <Link
-                                to={`/product-all?sellerId=${ownerId}&sellerType=PHARMACY`}
+                                to={`/product-all?sellerId=${ownerId}&sellerType=${sellerType}`}
                                 className="btn btn-primary"
                               >
                                 View All Products

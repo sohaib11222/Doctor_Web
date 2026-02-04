@@ -65,11 +65,11 @@ const Footer = () => {
                 <div className="social-icon">
                   <h6 className="mb-3">Connect With Us</h6>
                   <ul>
-                    <li><a href="javascript:void(0);"><i className="fa-brands fa-facebook"></i></a></li>
-                    <li><a href="javascript:void(0);"><i className="fa-brands fa-x-twitter"></i></a></li>
-                    <li><a href="javascript:void(0);"><i className="fa-brands fa-instagram"></i></a></li>
-                    <li><a href="javascript:void(0);"><i className="fa-brands fa-linkedin"></i></a></li>
-                    <li><a href="javascript:void(0);"><i className="fa-brands fa-pinterest"></i></a></li>
+                    <li><a href="https://www.facebook.com/profile.php?id=61586814218391" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-facebook"></i></a></li>
+                    <li><a href="https://www.tiktok.com/@mydoctorplus?lang=en" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-tiktok"></i></a></li>
+                    <li><a href="https://www.instagram.com/mydoctor406/" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-instagram"></i></a></li>
+                    {/* <li><a href="javascript:void(0);"><i className="fa-brands fa-linkedin"></i></a></li>
+                    <li><a href="javascript:void(0);"><i className="fa-brands fa-pinterest"></i></a></li> */}
                   </ul>
                 </div>
               </div>
@@ -179,9 +179,9 @@ const Footer = () => {
                   </div>
                   <div className="social-icon">
                     <ul>
-                      <li><a href="javascript:void(0);"><i className="fa-brands fa-facebook"></i></a></li>
-                      <li><a href="javascript:void(0);"><i className="fa-brands fa-x-twitter"></i></a></li>
-                      <li><a href="javascript:void(0);"><i className="fa-brands fa-instagram"></i></a></li>
+                      <li><a href="https://www.facebook.com/profile.php?id=61586814218391" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-facebook"></i></a></li>
+                      <li><a href="https://www.tiktok.com/@mydoctorplus?lang=en" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-tiktok"></i></a></li>
+                      <li><a href="https://www.instagram.com/mydoctor406/" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-instagram"></i></a></li>
                       <li><a href="javascript:void(0);"><i className="fa-brands fa-linkedin"></i></a></li>
                       <li><a href="javascript:void(0);"><i className="fa-brands fa-pinterest"></i></a></li>
                     </ul>

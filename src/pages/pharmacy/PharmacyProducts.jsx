@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../api/axios'
 import * as productApi from '../../api/product'
@@ -11,17 +12,38 @@ const PharmacyProducts = () => {
   const { user } = useAuth()
   const status = user?.status?.toUpperCase()
 
+  const userRole = user?.role?.toUpperCase()
+  const isParapharmacy = userRole === 'PARAPHARMACY'
+
   const { data: myPharmacyResponse } = useQuery({
     queryKey: ['my-pharmacy'],
     queryFn: () => pharmacyApi.getMyPharmacy(),
     enabled: !!user
   })
 
+  const { data: subscriptionResponse } = useQuery({
+    queryKey: ['my-pharmacy-subscription'],
+    queryFn: () => pharmacyApi.getMyPharmacySubscription(),
+    enabled: !!user && !isParapharmacy
+  })
+
+  const subscriptionData = subscriptionResponse?.data || subscriptionResponse
+  const hasActiveSubscription = isParapharmacy ? true : Boolean(subscriptionData?.hasActiveSubscription)
+
   const myPharmacy = useMemo(() => {
     if (!myPharmacyResponse) return null
     const responseData = myPharmacyResponse.data || myPharmacyResponse
     return responseData.data || responseData
   }, [myPharmacyResponse])
+
+  const isProfileComplete = useMemo(() => {
+    if (!myPharmacy) return false
+    const nameOk = Boolean(String(myPharmacy.name || '').trim())
+    const phoneOk = Boolean(String(myPharmacy.phone || '').trim())
+    const line1Ok = Boolean(String(myPharmacy.address?.line1 || '').trim())
+    const cityOk = Boolean(String(myPharmacy.address?.city || '').trim())
+    return nameOk && phoneOk && line1Ok && cityOk
+  }, [myPharmacy])
 
   const [page, setPage] = useState(1)
   const [limit] = useState(10)
@@ -30,10 +52,10 @@ const PharmacyProducts = () => {
     return {
       page,
       limit,
-      sellerType: 'PHARMACY',
+      sellerType: isParapharmacy ? 'PARAPHARMACY' : 'PHARMACY',
       sellerId: user?._id
     }
-  }, [page, limit, user?._id])
+  }, [page, limit, user?._id, isParapharmacy])
 
   const { data: productsResponse, isLoading, refetch } = useQuery({
     queryKey: ['pharmacy-products', queryParams],
@@ -84,6 +106,7 @@ const PharmacyProducts = () => {
   const [isSaving, setIsSaving] = useState(false)
 
   const canSell = status === 'APPROVED'
+  const canManageProducts = canSell && isProfileComplete && hasActiveSubscription
 
   const uploadImages = async (files) => {
     if (!files || files.length === 0) return []
@@ -107,8 +130,18 @@ const PharmacyProducts = () => {
       return
     }
 
+    if (!isProfileComplete) {
+      toast.info('Please complete your pharmacy profile first')
+      return
+    }
+
     if (!canSell) {
       toast.info('Your account is pending approval. You cannot add products yet.')
+      return
+    }
+
+    if (!hasActiveSubscription) {
+      toast.info('You need an active subscription to manage products.')
       return
     }
 
@@ -119,6 +152,15 @@ const PharmacyProducts = () => {
   }
 
   const handleEdit = (product) => {
+    if (!isProfileComplete) {
+      toast.info('Please complete your pharmacy profile first')
+      return
+    }
+
+    if (!hasActiveSubscription) {
+      toast.info('You need an active subscription to manage products.')
+      return
+    }
     setEditingProduct(product)
     setFormData({
       name: product.name || '',
@@ -134,8 +176,17 @@ const PharmacyProducts = () => {
   }
 
   const handleDelete = async (product) => {
+    if (!isProfileComplete) {
+      toast.info('Please complete your pharmacy profile first')
+      return
+    }
     if (!canSell) {
       toast.info('Your account is pending approval. You cannot delete products yet.')
+      return
+    }
+
+    if (!hasActiveSubscription) {
+      toast.info('You need an active subscription to manage products.')
       return
     }
 
@@ -152,8 +203,17 @@ const PharmacyProducts = () => {
   }
 
   const handleSave = async () => {
+    if (!isProfileComplete) {
+      toast.info('Please complete your pharmacy profile first')
+      return
+    }
     if (!canSell) {
       toast.info('Your account is pending approval. You cannot add products yet.')
+      return
+    }
+
+    if (!hasActiveSubscription) {
+      toast.info('You need an active subscription to manage products.')
       return
     }
 
@@ -233,13 +293,37 @@ const PharmacyProducts = () => {
           <h3>Products</h3>
           <p className="text-muted mb-0">Manage your products</p>
         </div>
-        <button className="btn btn-primary" onClick={handleCreate} disabled={!canSell}>
+        <button className="btn btn-primary" onClick={handleCreate} disabled={!canManageProducts}>
           Add Product
         </button>
       </div>
 
       {status === 'PENDING' && (
         <div className="alert alert-warning">Your account is pending approval. You cannot add or modify products yet.</div>
+      )}
+
+      {!isProfileComplete && (
+        <div className="alert alert-info">
+          <div className="d-flex align-items-center justify-content-between flex-wrap" style={{ gap: 12 }}>
+            <div>
+              <strong>Complete your profile to add products</strong>
+              <div className="small text-muted">Required: name, phone, address line 1, city.</div>
+            </div>
+            <a className="btn btn-sm btn-primary" href="/pharmacy/profile">Complete Profile</a>
+          </div>
+        </div>
+      )}
+
+      {!hasActiveSubscription && (
+        <div className="alert alert-warning">
+          <div className="d-flex align-items-center justify-content-between flex-wrap" style={{ gap: 12 }}>
+            <div>
+              <strong>Subscription required</strong>
+              <div className="small text-muted">You need an active subscription to add, edit, or delete products.</div>
+            </div>
+            <Link className="btn btn-sm btn-primary" to="/pharmacy/subscription-plans">View Plans</Link>
+          </div>
+        </div>
       )}
 
       {isLoading ? (
@@ -296,8 +380,8 @@ const PharmacyProducts = () => {
                         <td>{p.price}</td>
                         <td>{p.stock}</td>
                         <td className="text-end">
-                          <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEdit(p)} disabled={!canSell}>Edit</button>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(p)} disabled={!canSell}>Delete</button>
+                          <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEdit(p)} disabled={!canManageProducts}>Edit</button>
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(p)} disabled={!canManageProducts}>Delete</button>
                         </td>
                       </tr>
                     ))

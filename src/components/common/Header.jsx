@@ -34,7 +34,7 @@ const Header = () => {
   const { data: myPharmacyData } = useQuery({
     queryKey: ['my-pharmacy-header'],
     queryFn: () => pharmacyApi.getMyPharmacy(),
-    enabled: !!user && user?.role === 'PHARMACY'
+    enabled: !!user && (user?.role === 'PHARMACY' || user?.role === 'PARAPHARMACY')
   })
 
   // Normalize image URL
@@ -55,7 +55,7 @@ const Header = () => {
   const userProfileImage = useMemo(() => {
     if (!user) return '/assets/img/doctors-dashboard/doctor-profile-img.jpg'
 
-    if (user?.role === 'PHARMACY') {
+    if (user?.role === 'PHARMACY' || user?.role === 'PARAPHARMACY') {
       const pharmacy = myPharmacyData?.data?.data || myPharmacyData?.data || myPharmacyData
       const pharmacyLogo = pharmacy?.logo
       const normalizedPharmacyLogo = normalizeImageUrl(pharmacyLogo)
@@ -581,7 +581,10 @@ const Header = () => {
                       
                       {/* Pharmacy Register - Only show if not logged in */}
                       {!user && (
-                        <li><Link to="/pharmacy-register">Pharmacy Register</Link></li>
+                        <>
+                          <li><Link to="/pharmacy-register">Pharmacy Register</Link></li>
+                          <li><Link to="/pharmacy-register?kind=PARAPHARMACY">Parapharmacy Register</Link></li>
+                        </>
                       )}
                     </ul>
                   </li>
@@ -692,7 +695,7 @@ const Header = () => {
                         <i className="fe fe-clock me-2"></i>Pending Approval
                       </Link>
                     )}
-                    {shouldShowMenuItem('PHARMACY') && getUserStatus() === 'PENDING' && (
+                    {shouldShowMenuItem(['PHARMACY', 'PARAPHARMACY']) && getUserStatus() === 'PENDING' && (
                       <Link className="dropdown-item" to="/pending-approval">
                         <i className="fe fe-clock me-2"></i>Pending Approval
                       </Link>
@@ -702,7 +705,7 @@ const Header = () => {
                         <i className="fe fe-home me-2"></i>Patient Dashboard
                       </Link>
                     )}
-                    {shouldShowMenuItem(['PHARMACY']) && (
+                    {shouldShowMenuItem(['PHARMACY', 'PARAPHARMACY']) && (
                       <Link className="dropdown-item" to="/pharmacy/dashboard">
                         <i className="fe fe-home me-2"></i>Pharmacy Dashboard
                       </Link>

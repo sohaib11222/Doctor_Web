@@ -49,7 +49,7 @@ const PendingApprovalStatus = () => {
               
               if (userStatus === 'APPROVED') {
                 toast.success('Your account has been approved! Redirecting to dashboard...')
-                if (user?.role?.toUpperCase() === 'PHARMACY') {
+                if (user?.role?.toUpperCase() === 'PHARMACY' || user?.role?.toUpperCase() === 'PARAPHARMACY') {
                   navigate('/pharmacy/dashboard')
                 } else {
                   navigate('/doctor/dashboard')
@@ -75,7 +75,7 @@ const PendingApprovalStatus = () => {
                 
                 if (userStatus === 'APPROVED') {
                   toast.success('Your account has been approved! Redirecting to dashboard...')
-                  if (user?.role?.toUpperCase() === 'PHARMACY') {
+                  if (user?.role?.toUpperCase() === 'PHARMACY' || user?.role?.toUpperCase() === 'PARAPHARMACY') {
                     navigate('/pharmacy/dashboard')
                   } else {
                     navigate('/doctor/dashboard')
@@ -281,11 +281,11 @@ const PendingApprovalStatus = () => {
                               {checkingStatus ? 'Checking...' : 'Check Status Again'}
                             </button>
                             <Link
-                              to={user?.role?.toUpperCase() === 'PHARMACY' ? '/pharmacy/profile' : '/doctor-verification-upload'}
+                              to={(user?.role?.toUpperCase() === 'PHARMACY' || user?.role?.toUpperCase() === 'PARAPHARMACY') ? '/pharmacy-verification-upload' : '/doctor-verification-upload'}
                               className="btn btn-outline-primary"
                             >
                               <i className="fe fe-edit me-2"></i>
-                              {user?.role?.toUpperCase() === 'PHARMACY' ? 'Update Profile' : 'Update Documents'}
+                              Update Documents
                             </Link>
                             <button
                               type="button"

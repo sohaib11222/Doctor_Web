@@ -35,6 +35,7 @@ import DoctorRegisterStep1 from './pages/auth/DoctorRegisterStep1'
 import DoctorRegisterStep2 from './pages/auth/DoctorRegisterStep2'
 import DoctorRegisterStep3 from './pages/auth/DoctorRegisterStep3'
 import DoctorVerificationUpload from './pages/auth/DoctorVerificationUpload'
+import PharmacyVerificationUpload from './pages/auth/PharmacyVerificationUpload'
 import PendingApprovalStatus from './pages/auth/PendingApprovalStatus'
 import PharmacyRegister from './pages/auth/PharmacyRegister'
 import PharmacyRegisterStep1 from './pages/auth/PharmacyRegisterStep1'
@@ -86,6 +87,7 @@ import PharmacyProducts from './pages/pharmacy/PharmacyProducts'
 import PharmacyOrders from './pages/pharmacy/PharmacyOrders'
 import PharmacyOrderDetails from './pages/pharmacy/PharmacyOrderDetails'
 import PharmacyPayment from './pages/pharmacy/PharmacyPayment'
+import PharmacySubscriptionPlans from './pages/pharmacy/PharmacySubscriptionPlans'
 
 // Patient Pages
 import PatientDashboard from './pages/patient/PatientDashboard'
@@ -216,8 +218,13 @@ function App() {
                     <AuthLayout><DoctorVerificationUpload /></AuthLayout>
                   </ProtectedRoute>
                 } />
+                <Route path="/pharmacy-verification-upload" element={
+                  <ProtectedRoute role={["PHARMACY", "PARAPHARMACY"]} allowPending={true}>
+                    <AuthLayout><PharmacyVerificationUpload /></AuthLayout>
+                  </ProtectedRoute>
+                } />
                 <Route path="/pending-approval" element={
-                  <ProtectedRoute role={["DOCTOR", "PHARMACY"]} allowPending={true}>
+                  <ProtectedRoute role={["DOCTOR", "PHARMACY", "PARAPHARMACY"]} allowPending={true}>
                     <AuthLayout><PendingApprovalStatus /></AuthLayout>
                   </ProtectedRoute>
                 } />
@@ -394,33 +401,38 @@ function App() {
             } />
             {/* Pharmacy Dashboard Routes - Protected (PHARMACY) */}
             <Route path="/pharmacy/dashboard" element={
-              <ProtectedRoute role="PHARMACY" allowPending={true}>
+              <ProtectedRoute role={["PHARMACY", "PARAPHARMACY"]} allowPending={true}>
                 <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Dashboard", li2: "Dashboard" }}><PharmacyDashboard /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/pharmacy/profile" element={
-              <ProtectedRoute role="PHARMACY" allowPending={true}>
+              <ProtectedRoute role={["PHARMACY", "PARAPHARMACY"]} allowPending={true}>
                 <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Profile", li2: "Profile" }}><PharmacyProfile /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/pharmacy/products" element={
-              <ProtectedRoute role="PHARMACY" requireApproved={true}>
+              <ProtectedRoute role={["PHARMACY", "PARAPHARMACY"]} requireApproved={true}>
                 <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Products", li2: "Products" }}><PharmacyProducts /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/pharmacy/orders" element={
-              <ProtectedRoute role="PHARMACY" requireApproved={true}>
+              <ProtectedRoute role={["PHARMACY", "PARAPHARMACY"]} requireApproved={true}>
                 <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Orders", li2: "Orders" }}><PharmacyOrders /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/pharmacy/orders/:orderId" element={
-              <ProtectedRoute role="PHARMACY" allowPending={true}>
+              <ProtectedRoute role={["PHARMACY", "PARAPHARMACY"]} allowPending={true}>
                 <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Orders", li2: "Order Details" }}><PharmacyOrderDetails /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/pharmacy/payment" element={
-              <ProtectedRoute role="PHARMACY" requireApproved={true}>
+              <ProtectedRoute role={["PHARMACY", "PARAPHARMACY"]} requireApproved={true}>
                 <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Payouts", li2: "Payouts" }}><PharmacyPayment /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/pharmacy/subscription-plans" element={
+              <ProtectedRoute role="PHARMACY" allowPending={true}>
+                <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Subscription Plans", li2: "Subscription Plans" }}><PharmacySubscriptionPlans /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/chat-doctor" element={

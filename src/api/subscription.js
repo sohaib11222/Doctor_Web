@@ -36,7 +36,11 @@ export const listSubscriptionPlans = async (params = {}) => {
  * Get active subscription plans (public - alternative endpoint)
  * @returns {Promise<Array>} List of active subscription plans
  */
-export const getActivePlans = async () => {
-  return api.get('/admin/subscription-plan/active')
+export const getActivePlans = async (params = {}) => {
+  return api.get('/admin/subscription-plan/active', { params })
+}
+
+export const getActivePlansByRole = async (targetRole) => {
+  return api.get('/admin/subscription-plan/active', { params: { targetRole } })
 }
 

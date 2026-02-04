@@ -19,6 +19,15 @@ const PharmacyDashboard = () => {
     return responseData.data || responseData
   }, [myPharmacyResponse])
 
+  const isProfileComplete = useMemo(() => {
+    if (!myPharmacy) return false
+    const nameOk = Boolean(String(myPharmacy.name || '').trim())
+    const phoneOk = Boolean(String(myPharmacy.phone || '').trim())
+    const line1Ok = Boolean(String(myPharmacy.address?.line1 || '').trim())
+    const cityOk = Boolean(String(myPharmacy.address?.city || '').trim())
+    return nameOk && phoneOk && line1Ok && cityOk
+  }, [myPharmacy])
+
   const status = user?.status?.toUpperCase()
 
   if (isLoading) {
@@ -41,6 +50,18 @@ const PharmacyDashboard = () => {
       {status === 'PENDING' && (
         <div className="alert alert-warning">
           Your account is pending admin approval. You can complete your pharmacy profile, but you cannot sell products until approved.
+        </div>
+      )}
+
+      {myPharmacy && !isProfileComplete && (
+        <div className="alert alert-info">
+          <div className="d-flex align-items-center justify-content-between flex-wrap" style={{ gap: 12 }}>
+            <div>
+              <strong>Complete your profile</strong>
+              <div className="small text-muted">Add name, phone, address line 1, and city to start adding products.</div>
+            </div>
+            <Link className="btn btn-sm btn-primary" to="/pharmacy/profile">Complete Profile</Link>
+          </div>
         </div>
       )}
 

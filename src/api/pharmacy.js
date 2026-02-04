@@ -32,6 +32,18 @@ export const getMyPharmacy = async () => {
   return api.get('/pharmacy/me')
 }
 
+export const getPharmacyActivePlans = async () => {
+  return api.get('/admin/subscription-plan/active', { params: { targetRole: 'PHARMACY' } })
+}
+
+export const buyPharmacySubscriptionPlan = async (planId) => {
+  return api.post('/pharmacy/buy-subscription', { planId })
+}
+
+export const getMyPharmacySubscription = async () => {
+  return api.get('/pharmacy/my-subscription')
+}
+
 /**
  * Create pharmacy (Private - Admin, Doctor)
  * @param {Object} data - Pharmacy data

@@ -2414,7 +2414,7 @@ const Index = () => {
                   </span>
                   <div className="ms-2">
                     <p className="text-white mb-1">Customer Support</p>
-                    <p className="text-white fw-medium mb-0">+1 56589 54598</p>
+                    <p className="text-white fw-medium mb-0">800925225</p>
                   </div>
                 </div>
                 <div className="con-info d-flex align-items-center">
@@ -2423,7 +2423,7 @@ const Index = () => {
                   </span>
                   <div className="ms-2">
                     <p className="text-white mb-1">Drop Us an Email</p>
-                    <p className="text-white fw-medium mb-0">info1256@example.com</p>
+                    <p className="text-white fw-medium mb-0">mydoctorplus@virgilio.it</p>
                   </div>
                 </div>
               </div>

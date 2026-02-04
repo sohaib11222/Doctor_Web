@@ -88,11 +88,23 @@ const ProtectedRoute = ({
   }
 
   // For pharmacies, check status
-  if (userRole === 'PHARMACY') {
+  if (userRole === 'PHARMACY' || userRole === 'PARAPHARMACY') {
     const userStatus = user?.status?.toUpperCase()
+
+    const currentPath = window.location.pathname
+    const documentsSubmitted = localStorage.getItem('pharmacy_documents_submitted') === 'true'
+
+    if (userStatus === 'PENDING' && currentPath !== '/pharmacy-verification-upload' && currentPath !== '/pending-approval') {
+      if (!documentsSubmitted) {
+        return <Navigate to="/pharmacy-verification-upload" replace />
+      }
+    }
 
     if (requireApproved && userStatus !== 'APPROVED') {
       if (userStatus === 'PENDING' && !allowPending) {
+        if (!documentsSubmitted) {
+          return <Navigate to="/pharmacy-verification-upload" replace />
+        }
         toast.info('Your account is pending approval. Please wait for admin approval.')
         return <Navigate to="/pending-approval" replace />
       } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
@@ -105,8 +117,10 @@ const ProtectedRoute = ({
     }
 
     if (!allowPending && userStatus === 'PENDING' && requireApproved === false) {
-      const currentPath = window.location.pathname
       if (currentPath !== '/pending-approval' && currentPath.startsWith('/pharmacy/')) {
+        if (!documentsSubmitted) {
+          return <Navigate to="/pharmacy-verification-upload" replace />
+        }
         return <Navigate to="/pending-approval" replace />
       }
     }

@@ -7,15 +7,15 @@ const slideContent = [
   {
     title: 'Private Chat',
     text: 'Send private messages to your specialist doctor and easily resolve your doubts.',
-    imgSrc: '/assets/img/message-chat.jpg',
-    imgFallback: '/assets/img/message-chat.png',
+    imgSrc: '/assets/img/message-chat.jpeg',
+    imgFallback: '/assets/img/message-chat.jpeg',
     alt: 'Private Chat Interface'
   },
   {
     title: 'Video Consultation',
     text: "Speak privately with your doctor from any location without having to physically reach your doctor's office.",
-    imgSrc: '/assets/img/vedio-chat.png',
-    imgFallback: '/assets/img/vedio-chat.jpg',
+    imgSrc: '/assets/img/vedio-chat.jpeg',
+    imgFallback: '/assets/img/vedio-chat.jpeg',
     alt: 'Video Consultation Interface'
   }
 ]

@@ -11,17 +11,19 @@ const PharmacySearch = () => {
   // Get filters from URL params
   const search = searchParams.get('search') || ''
   const city = searchParams.get('city') || ''
+  const kind = searchParams.get('kind') || 'PHARMACY'
   const page = parseInt(searchParams.get('page') || '1')
   const limit = 10
 
   // State for filters
   const [searchTerm, setSearchTerm] = useState(search)
   const [cityFilter, setCityFilter] = useState(city)
+  const [selectedKind, setSelectedKind] = useState(kind)
 
   // Fetch pharmacies with filters
   const { data: pharmaciesData, isLoading: pharmaciesLoading } = useQuery({
-    queryKey: ['pharmacies', { search, city, page, limit }],
-    queryFn: () => pharmacyApi.listPharmacies({ search, city, page, limit })
+    queryKey: ['pharmacies', { kind: selectedKind, search, city, page, limit }],
+    queryFn: () => pharmacyApi.listPharmacies({ kind: selectedKind, search, city, page, limit })
   })
 
   const pharmacies = pharmaciesData?.data?.pharmacies || []
@@ -33,6 +35,11 @@ const PharmacySearch = () => {
   const handleSearch = (e) => {
     e.preventDefault()
     const params = new URLSearchParams(searchParams)
+    if (selectedKind) {
+      params.set('kind', selectedKind)
+    } else {
+      params.delete('kind')
+    }
     if (searchTerm) {
       params.set('search', searchTerm)
     } else {
@@ -43,6 +50,15 @@ const PharmacySearch = () => {
     } else {
       params.delete('city')
     }
+    params.set('page', '1')
+    setSearchParams(params)
+  }
+
+  const handleKindChange = (nextKind) => {
+    if (nextKind === selectedKind) return
+    setSelectedKind(nextKind)
+    const params = new URLSearchParams(searchParams)
+    params.set('kind', nextKind)
     params.set('page', '1')
     setSearchParams(params)
   }
@@ -102,7 +118,7 @@ const PharmacySearch = () => {
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="Search pharmacies..."
+                        placeholder={selectedKind === 'PARAPHARMACY' ? 'Search parapharmacies...' : 'Search pharmacies...'}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
@@ -144,7 +160,8 @@ const PharmacySearch = () => {
                         onClick={() => {
                           setSearchTerm('')
                           setCityFilter('')
-                          setSearchParams({})
+                          setSelectedKind('PHARMACY')
+                          setSearchParams({ kind: 'PHARMACY' })
                         }}
                       >
                         Clear Filters
@@ -156,6 +173,24 @@ const PharmacySearch = () => {
             </div>
 
             <div className="col-md-12 col-lg-8 col-xl-9">
+              <div className="mb-3">
+                <div className="btn-group" role="group" aria-label="Pharmacy kind">
+                  <button
+                    type="button"
+                    className={`btn ${selectedKind === 'PHARMACY' ? 'btn-primary' : 'btn-outline-primary'}`}
+                    onClick={() => handleKindChange('PHARMACY')}
+                  >
+                    Pharmacies
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${selectedKind === 'PARAPHARMACY' ? 'btn-primary' : 'btn-outline-primary'}`}
+                    onClick={() => handleKindChange('PARAPHARMACY')}
+                  >
+                    Parapharmacies
+                  </button>
+                </div>
+              </div>
               {pharmaciesLoading ? (
                 <div className="text-center py-5">
                   <div className="spinner-border text-primary" role="status">
@@ -164,18 +199,21 @@ const PharmacySearch = () => {
                 </div>
               ) : pharmacies.length === 0 ? (
                 <div className="text-center py-5">
-                  <p className="text-muted">No pharmacies found. Try adjusting your search filters.</p>
+                  <p className="text-muted">No results found. Try adjusting your search filters.</p>
                 </div>
               ) : (
                 <>
                   <div className="mb-3">
                     <p className="text-muted">
-                      Showing {pharmacies.length} of {pagination.total} pharmacies
+                      Showing {pharmacies.length} of {pagination.total} {selectedKind === 'PARAPHARMACY' ? 'parapharmacies' : 'pharmacies'}
                     </p>
                   </div>
                   {pharmacies.map((pharmacy) => {
                     const pharmacyId = pharmacy?._id || pharmacy?.id
-                    const pharmacyLogo = getImageUrl(pharmacy?.logo, '/assets/img/medical-img1.jpg')
+                    const ownerProfileImage = pharmacy?.ownerId && typeof pharmacy.ownerId === 'object'
+                      ? pharmacy.ownerId.profileImage
+                      : null
+                    const pharmacyLogo = getImageUrl(pharmacy?.logo || ownerProfileImage, '/assets/img/medical-img1.jpg')
                     const pharmacyAddress = formatAddress(pharmacy.address)
                     const pharmacyPhone = formatPhone(pharmacy.phone)
                     const ownerName = pharmacy.ownerId && typeof pharmacy.ownerId === 'object' 
@@ -188,6 +226,8 @@ const PharmacySearch = () => {
                           ? pharmacy.ownerId._id 
                           : pharmacy.ownerId)
                       : null
+
+                    const pharmacyKind = String(pharmacy?.kind || '').toUpperCase() === 'PARAPHARMACY' ? 'PARAPHARMACY' : 'PHARMACY'
 
                     return (
                       <div key={pharmacyId || pharmacy._id} className="card mb-3">
@@ -243,7 +283,7 @@ const PharmacySearch = () => {
                               <div className="clinic-booking">
                                 {ownerId ? (
                                   <Link
-                                    to={`/product-all?sellerId=${ownerId}&sellerType=PHARMACY`}
+                                    to={`/product-all?sellerId=${ownerId}&sellerType=${pharmacyKind}`}
                                     className="view-pro-btn"
                                   >
                                     Browse Products

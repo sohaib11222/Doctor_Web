@@ -15,7 +15,7 @@ const SubscriptionPlans = () => {
   const { data: plansData, isLoading: plansLoading, error: plansError } = useQuery({
     queryKey: ['subscriptionPlans'],
     queryFn: async () => {
-      const response = await subscriptionApi.listSubscriptionPlans()
+      const response = await subscriptionApi.getActivePlans({ targetRole: 'DOCTOR' })
       return response.data || response
     }
   })

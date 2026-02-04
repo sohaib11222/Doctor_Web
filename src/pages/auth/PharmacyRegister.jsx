@@ -1,13 +1,19 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import AuthLayout from '../../layouts/AuthLayout'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
 
 const PharmacyRegister = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { register } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
+  const selectedKind = String(searchParams.get('kind') || '').toUpperCase()
+  const isParapharmacy = selectedKind === 'PARAPHARMACY'
+  const userRole = isParapharmacy ? 'PARAPHARMACY' : 'PHARMACY'
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -35,7 +41,7 @@ const PharmacyRegister = () => {
           email: formData.email.trim(),
           phone: formData.phone.trim() || undefined,
           password: formData.password,
-          role: 'PHARMACY'
+          role: userRole
         },
         'pharmacy'
       )
@@ -46,7 +52,8 @@ const PharmacyRegister = () => {
       toast.success('Registration successful!')
 
       if (status === 'PENDING') {
-        navigate('/pending-approval')
+        localStorage.removeItem('pharmacy_documents_submitted')
+        navigate('/pharmacy-verification-upload')
       } else {
         navigate('/pharmacy/dashboard')
       }
@@ -66,12 +73,13 @@ const PharmacyRegister = () => {
               <div className="account-content">
                 <div className="row align-items-center justify-content-center">
                   <div className="col-md-7 col-lg-6 login-left">
-                    <img src="/assets/img/login-banner.png" className="img-fluid" alt="Mydoctor+ Login" />
+                    <img src="/assets/img/pharmacy.jpg" className="img-fluid" alt="Mydoctor+ Pharmacy" />
                   </div>
                   <div className="col-md-12 col-lg-6 login-right">
                     <div className="login-header">
                       <h3>
-                        Pharmacy Register <Link to="/doctor-register">Are you a Doctor?</Link>
+                        {isParapharmacy ? 'Parapharmacy Register' : 'Pharmacy Register'}{' '}
+                        <Link to="/doctor-register">Are you a Doctor?</Link>
                       </h3>
                     </div>
                     <form onSubmit={handleSubmit}>
@@ -92,8 +100,25 @@ const PharmacyRegister = () => {
                           <label className="form-label">Create Password</label>
                         </div>
                         <div className="pass-group">
-                          <input type="password" className="form-control pass-input" name="password" value={formData.password} onChange={handleChange} />
-                          <span className="feather-eye-off toggle-password"></span>
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            className="form-control pass-input"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                          />
+                          <span
+                            className={`${showPassword ? 'feather-eye' : 'feather-eye-off'} toggle-password`}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                setShowPassword((prev) => !prev)
+                              }
+                            }}
+                          ></span>
                         </div>
                       </div>
                       <div className="mb-3">
@@ -105,7 +130,7 @@ const PharmacyRegister = () => {
                         <span className="or-line"></span>
                         <span className="span-or">or</span>
                       </div>
-                      <div className="social-login-btn">
+                      {/* <div className="social-login-btn">
                         <a href="javascript:void(0);" className="btn w-100">
                           <img src="/assets/img/icons/google-icon.svg" alt="google-icon" />
                           Sign in With Google
@@ -114,7 +139,7 @@ const PharmacyRegister = () => {
                           <img src="/assets/img/icons/facebook-icon.svg" alt="fb-icon" />
                           Sign in With Facebook
                         </a>
-                      </div>
+                      </div> */}
                       <div className="account-signup">
                         <p>
                           Already have account? <Link to="/login">Sign In</Link>

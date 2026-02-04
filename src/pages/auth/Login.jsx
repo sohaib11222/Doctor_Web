@@ -82,7 +82,7 @@ const Login = () => {
             // Unknown status, default to dashboard
             navigate('/doctor/dashboard')
           }
-        } else if (role === 'PHARMACY') {
+        } else if (role === 'PHARMACY' || role === 'PARAPHARMACY') {
           if (status === 'PENDING') {
             navigate('/pending-approval')
           } else if (status === 'APPROVED') {
@@ -160,6 +160,7 @@ const Login = () => {
                     <div className="account-footer">
                       <p>Don't have an account? <Link to="/register">Register</Link></p>
                       <p><Link to="/pharmacy-register">Register as a Pharmacy</Link></p>
+                      <p><Link to="/pharmacy-register?kind=PARAPHARMACY">Register as a Parapharmacy</Link></p>
                     </div>
                     {/* Development Test Links - Remove in production */}
                     {process.env.NODE_ENV === 'development' && (
