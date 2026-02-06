@@ -69,22 +69,6 @@ const PharmacyProducts = () => {
     return Array.isArray(responseData) ? responseData : (responseData.products || [])
   }, [productsResponse])
 
-  const categoryOptions = useMemo(() => {
-    const set = new Set()
-    products.forEach((p) => {
-      if (p?.category) set.add(String(p.category))
-    })
-    return Array.from(set).sort()
-  }, [products])
-
-  const subCategoryOptions = useMemo(() => {
-    const set = new Set()
-    products.forEach((p) => {
-      if (p?.subCategory) set.add(String(p.subCategory))
-    })
-    return Array.from(set).sort()
-  }, [products])
-
   const pagination = useMemo(() => {
     if (!productsResponse) return null
     const responseData = productsResponse.data || productsResponse
@@ -104,6 +88,44 @@ const PharmacyProducts = () => {
   })
   const [imageFiles, setImageFiles] = useState([])
   const [isSaving, setIsSaving] = useState(false)
+
+  const dummyCategoryMap = useMemo(() => {
+    return {
+      'Family Care': ['Pain Relief', 'Cold & Flu', 'Digestive Health', 'Vitamins'],
+      'Skin Care': ['Moisturizers', 'Acne Care', 'Sunscreen', 'Hand Cream'],
+      'Hair Care': ['Shampoo', 'Conditioner', 'Hair Oil', 'Anti-Dandruff'],
+      'Baby Care': ['Diapers', 'Baby Lotion', 'Baby Shampoo', 'Wipes'],
+      "Men's Care": ['Shaving', 'Deodorants', 'Face Wash'],
+      "Women's Care": ['Feminine Hygiene', 'Supplements', 'Skin Care'],
+      'Personal Hygiene': ['Toothpaste', 'Mouthwash', 'Soap', 'Sanitizers']
+    }
+  }, [])
+
+  const categoryOptions = useMemo(() => {
+    const set = new Set()
+    products.forEach((p) => {
+      if (p?.category) set.add(String(p.category))
+    })
+    const fromProducts = Array.from(set).sort()
+    if (fromProducts.length > 0) return fromProducts
+    return Object.keys(dummyCategoryMap)
+  }, [products, dummyCategoryMap])
+
+  const subCategoryOptions = useMemo(() => {
+    const set = new Set()
+    products.forEach((p) => {
+      if (p?.subCategory) set.add(String(p.subCategory))
+    })
+    const fromProducts = Array.from(set).sort()
+    if (fromProducts.length > 0) return fromProducts
+
+    const selectedCategory = String(formData.category || '')
+    const all = Object.values(dummyCategoryMap).flat()
+    const filtered = selectedCategory && dummyCategoryMap[selectedCategory]
+      ? dummyCategoryMap[selectedCategory]
+      : all
+    return Array.from(new Set(filtered)).sort()
+  }, [products, dummyCategoryMap, formData.category])
 
   const canSell = status === 'APPROVED'
   const canManageProducts = canSell && isProfileComplete && hasActiveSubscription
@@ -435,7 +457,14 @@ const PharmacyProducts = () => {
                   <select
                     className="form-control"
                     value={formData.category}
-                    onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))}
+                    onChange={(e) => {
+                      const nextCategory = e.target.value
+                      setFormData((p) => ({
+                        ...p,
+                        category: nextCategory,
+                        subCategory: p.category !== nextCategory ? '' : p.subCategory
+                      }))
+                    }}
                   >
                     <option value="">Select category</option>
                     {categoryOptions.map((c) => (
