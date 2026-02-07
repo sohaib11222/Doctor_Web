@@ -669,7 +669,7 @@ const Telemedicine = () => {
           <div className="row align-items-center g-4">
             <div className="col-lg-6">
               <div className="multi-img">
-                <img src="/assets/img/transform.png" alt="Multiplatform service - app and website" />
+                <img src="/assets/img/same.jpeg" alt="Multiplatform service - app and website" />
               </div>
             </div>
             <div className="col-lg-6">

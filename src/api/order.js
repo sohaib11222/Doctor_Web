@@ -87,7 +87,7 @@ export const cancelOrder = async (orderId) => {
  * @param {string} paymentMethod - Payment method
  * @returns {Promise} Payment response
  */
-export const payForOrder = async (orderId, paymentMethod = 'DUMMY') => {
+export const payForOrder = async (orderId, paymentMethod = 'STRIPE') => {
   return api.post(API_ROUTES.ORDER.PAY(orderId), { paymentMethod })
 }
 

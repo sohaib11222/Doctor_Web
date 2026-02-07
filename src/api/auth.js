@@ -1,4 +1,5 @@
 import api from './axios'
+import { API_ROUTES } from '../utils/apiConfig'
 
 export const login = async (email, password) => {
   // Backend uses /auth/login for all users (role is determined by email/user in DB)
@@ -111,5 +112,17 @@ export const refreshToken = async (refreshToken) => {
     refreshToken
   })
   return response.data?.token || response.token
+}
+
+export const sendPhoneOtp = async (phone) => {
+  const response = await api.post(API_ROUTES.AUTH.SEND_PHONE_OTP, phone ? { phone } : {})
+  return response.data || response
+}
+
+export const verifyPhoneOtp = async (code, phone) => {
+  const payload = { code }
+  if (phone) payload.phone = phone
+  const response = await api.post(API_ROUTES.AUTH.VERIFY_PHONE_OTP, payload)
+  return response.data || response
 }
 

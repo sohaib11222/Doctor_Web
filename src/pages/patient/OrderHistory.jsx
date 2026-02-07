@@ -179,7 +179,7 @@ const OrderHistory = () => {
                       </button>
                     ))}
                   </div>
-                  <Link to="/pharmacy-index" className="btn btn-primary btn-sm">
+                  <Link to="/product-all" className="btn btn-primary btn-sm">
                     <i className="fe fe-shopping-cart me-2"></i>
                     Continue Shopping
                   </Link>
@@ -195,7 +195,7 @@ const OrderHistory = () => {
                     <i className="fe fe-package" style={{ fontSize: '64px', color: '#dee2e6' }}></i>
                     <h5 className="mt-3">No orders found</h5>
                     <p className="text-muted">You haven't placed any orders yet.</p>
-                    <Link to="/pharmacy-index" className="btn btn-primary mt-3">
+                    <Link to="/product-all" className="btn btn-primary mt-3">
                       Start Shopping
                     </Link>
                   </div>

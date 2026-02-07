@@ -24,7 +24,7 @@ const ProductCheckout = () => {
     shippingZip: '',
     shippingCountry: 'USA',
     orderNotes: '',
-    paymentMethod: 'DUMMY',
+    paymentMethod: 'STRIPE',
     cardName: '',
     cardNumber: '',
     expiryMonth: '',
@@ -98,13 +98,18 @@ const ProductCheckout = () => {
       {
         items: orderItems,
         shippingAddress: shippingAddress || undefined,
-        paymentMethod: formData.paymentMethod
+        paymentMethod: 'STRIPE'
       },
       {
         onSuccess: (data) => {
+          const responseData = data?.data || data
+          const createdOrders = Array.isArray(responseData?.orders)
+            ? responseData.orders
+            : (responseData ? [responseData] : [])
+
           clearCart()
           toast.success('Order created successfully! The pharmacy owner will set the shipping fee, then you can complete payment.')
-          navigate(`/order-details/${data.data._id}`)
+          navigate('/order-history')
         },
         onError: (error) => {
           const errorMessage = error.response?.data?.message || error.message || 'Failed to create order'
@@ -299,120 +304,12 @@ const ProductCheckout = () => {
                           <input
                             type="radio"
                             name="paymentMethod"
-                            value="CARD"
-                            checked={formData.paymentMethod === 'CARD'}
-                            onChange={handleInputChange}
+                            value="STRIPE"
+                            checked
+                            readOnly
                           />
                           <span className="checkmark"></span>
-                          Credit card
-                        </label>
-                        {formData.paymentMethod === 'CARD' && (
-                          <div className="row mt-3">
-                            <div className="col-md-6">
-                              <div className="mb-3 card-label">
-                                <label htmlFor="card_name">Name on Card</label>
-                                <input
-                                  className="form-control"
-                                  id="card_name"
-                                  type="text"
-                                  name="cardName"
-                                  value={formData.cardName}
-                                  onChange={handleInputChange}
-                                  required={formData.paymentMethod === 'CARD'}
-                                />
-                              </div>
-                            </div>
-                            <div className="col-md-6">
-                              <div className="mb-3 card-label">
-                                <label htmlFor="card_number">Card Number</label>
-                                <input
-                                  className="form-control"
-                                  id="card_number"
-                                  placeholder="1234  5678  9876  5432"
-                                  type="text"
-                                  name="cardNumber"
-                                  value={formData.cardNumber}
-                                  onChange={handleInputChange}
-                                  required={formData.paymentMethod === 'CARD'}
-                                />
-                              </div>
-                            </div>
-                            <div className="col-md-4">
-                              <div className="mb-3 card-label">
-                                <label htmlFor="expiry_month">Expiry Month</label>
-                                <input
-                                  className="form-control"
-                                  id="expiry_month"
-                                  placeholder="MM"
-                                  type="text"
-                                  name="expiryMonth"
-                                  value={formData.expiryMonth}
-                                  onChange={handleInputChange}
-                                  maxLength="2"
-                                  required={formData.paymentMethod === 'CARD'}
-                                />
-                              </div>
-                            </div>
-                            <div className="col-md-4">
-                              <div className="mb-3 card-label">
-                                <label htmlFor="expiry_year">Expiry Year</label>
-                                <input
-                                  className="form-control"
-                                  id="expiry_year"
-                                  placeholder="YY"
-                                  type="text"
-                                  name="expiryYear"
-                                  value={formData.expiryYear}
-                                  onChange={handleInputChange}
-                                  maxLength="2"
-                                  required={formData.paymentMethod === 'CARD'}
-                                />
-                              </div>
-                            </div>
-                            <div className="col-md-4">
-                              <div className="mb-3 card-label">
-                                <label htmlFor="cvv">CVV</label>
-                                <input
-                                  className="form-control"
-                                  id="cvv"
-                                  type="text"
-                                  name="cvv"
-                                  value={formData.cvv}
-                                  onChange={handleInputChange}
-                                  maxLength="4"
-                                  required={formData.paymentMethod === 'CARD'}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="payment-list">
-                        <label className="payment-radio paypal-option">
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            value="PAYPAL"
-                            checked={formData.paymentMethod === 'PAYPAL'}
-                            onChange={handleInputChange}
-                          />
-                          <span className="checkmark"></span>
-                          Paypal
-                        </label>
-                      </div>
-
-                      <div className="payment-list">
-                        <label className="payment-radio paypal-option">
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            value="DUMMY"
-                            checked={formData.paymentMethod === 'DUMMY'}
-                            onChange={handleInputChange}
-                          />
-                          <span className="checkmark"></span>
-                          Test Payment (Dummy)
+                          Stripe
                         </label>
                       </div>
 

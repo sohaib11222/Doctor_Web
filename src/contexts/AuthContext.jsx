@@ -28,6 +28,14 @@ export const AuthProvider = ({ children }) => {
     setLoading(false)
   }
 
+  const refreshUser = async () => {
+    const token = localStorage.getItem('token')
+    if (!token) return null
+    const userData = await authApi.getUser()
+    setUser(userData)
+    return userData
+  }
+
   const login = async (email, password) => {
     try {
       const response = await authApi.login(email, password)
@@ -57,7 +65,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

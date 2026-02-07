@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
 
@@ -24,6 +24,8 @@ const ProtectedRoute = ({
   requireAuth = true 
 }) => {
   const { user, loading } = useAuth()
+  const location = useLocation()
+  const currentPath = (location?.pathname || '/').replace(/\/+$/, '') || '/'
 
   // Show loading spinner while checking auth
   if (loading) {
@@ -80,7 +82,6 @@ const ProtectedRoute = ({
     if (!allowPending && userStatus === 'PENDING' && requireApproved === false) {
       // Only redirect if this is a doctor-specific route (not pending-approval page itself)
       // This allows pending doctors to access pending-approval page
-      const currentPath = window.location.pathname
       if (currentPath !== '/pending-approval' && currentPath.startsWith('/doctor/')) {
         return <Navigate to="/pending-approval" replace />
       }
@@ -90,9 +91,15 @@ const ProtectedRoute = ({
   // For pharmacies, check status
   if (userRole === 'PHARMACY' || userRole === 'PARAPHARMACY') {
     const userStatus = user?.status?.toUpperCase()
-
-    const currentPath = window.location.pathname
+    const phoneVerified = Boolean(user?.isPhoneVerified)
     const documentsSubmitted = localStorage.getItem('pharmacy_documents_submitted') === 'true'
+
+    if (!phoneVerified) {
+      if (currentPath !== '/pharmacy-phone-verification') {
+        return <Navigate to="/pharmacy-phone-verification" replace />
+      }
+      return children
+    }
 
     if (userStatus === 'PENDING' && currentPath !== '/pharmacy-verification-upload' && currentPath !== '/pending-approval') {
       if (!documentsSubmitted) {

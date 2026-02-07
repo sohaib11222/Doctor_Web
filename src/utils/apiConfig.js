@@ -20,6 +20,8 @@ export const API_ROUTES = {
     FORGOT_PASSWORD: '/auth/forgot-password',
     VERIFY_RESET_CODE: '/auth/verify-reset-code',
     RESET_PASSWORD: '/auth/reset-password',
+    SEND_PHONE_OTP: '/auth/phone-otp/send',
+    VERIFY_PHONE_OTP: '/auth/phone-otp/verify',
   },
 
   // Specialization Routes

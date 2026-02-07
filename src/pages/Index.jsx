@@ -388,15 +388,20 @@ const Index = () => {
         if (specializations.length > 0 && !carouselInstances.current['.spciality-slider']) {
           initCarousel('.spciality-slider', {
             loop: specializations.length > 5,
-        margin: 15,
-        nav: true,
-        dots: false,
-        responsive: {
-          0: { items: 1 },
-          600: { items: 3 },
-          1000: { items: 5 }
-        }
-      })
+            margin: 15,
+            nav: true,
+            dots: false,
+            autoplay: true,
+            autoplayTimeout: 2500,
+            autoplayHoverPause: true,
+            smartSpeed: 700,
+            rtl: true,
+            responsive: {
+              0: { items: 1 },
+              600: { items: 3 },
+              1000: { items: 5 }
+            }
+          })
         }
 
         // Insurance Companies Slider - only initialize once
@@ -701,6 +706,48 @@ const Index = () => {
           margin-bottom: 1.5rem !important;
           margin-top: 0.5rem !important;
         }
+
+        .home-category-tabs {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          margin: 0 auto 14px;
+          padding: 8px;
+          background: rgba(11, 76, 140, 0.12);
+          border-radius: 14px;
+          width: fit-content;
+          max-width: 100%;
+          flex-wrap: wrap;
+        }
+        .home-category-tab {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 16px;
+          border-radius: 12px;
+          background: #0b4c8c;
+          color: #fff;
+          font-weight: 600;
+          font-size: 14px;
+          text-decoration: none;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          transition: transform 0.15s ease, background-color 0.15s ease;
+          white-space: nowrap;
+        }
+        .home-category-tab i {
+          font-size: 16px;
+        }
+        .home-category-tab:hover {
+          color: #fff;
+          transform: translateY(-1px);
+          background: #083a6a;
+        }
+        .home-category-tab.active {
+          background: linear-gradient(90deg, #0b4c8c 0%, #0e82fd 100%);
+          border-color: rgba(255, 255, 255, 0.25);
+        }
+
         @media (max-width: 992px) {
           .banner-section .banner-content h1 {
             font-size: 2.5rem !important;
@@ -1082,6 +1129,46 @@ const Index = () => {
             color: #1a1a1a !important;
             text-align: center !important;
           }
+          .home-category-tabs {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 0 auto 14px;
+            padding: 8px;
+            background: rgba(11, 76, 140, 0.12);
+            border-radius: 14px;
+            width: fit-content;
+            max-width: 100%;
+            flex-wrap: wrap;
+          }
+          .home-category-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            background: #0b4c8c;
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+            white-space: nowrap;
+          }
+          .home-category-tab i {
+            font-size: 16px;
+          }
+          .home-category-tab:hover {
+            color: #fff;
+            transform: translateY(-1px);
+            background: #083a6a;
+          }
+          .home-category-tab.active {
+            background: linear-gradient(90deg, #0b4c8c 0%, #0e82fd 100%);
+            border-color: rgba(255, 255, 255, 0.25);
+          }
           .banner-section .banner-img {
             display: none !important;
           }
@@ -1152,6 +1239,24 @@ const Index = () => {
                   </span>{' '}
                   <span className="text-gradient">Doctors</span> Today
                 </h1>
+                <div className="home-category-tabs" aria-label="Home quick categories">
+                  <Link to="/search" className="home-category-tab active">
+                    <i className="isax isax-user-search"></i>
+                    Doctors
+                  </Link>
+                  <Link to="/telemedicine" className="home-category-tab">
+                    <i className="isax isax-video"></i>
+                    Telemedicine
+                  </Link>
+                  <Link to="/search" className="home-category-tab">
+                    <i className="isax isax-hospital"></i>
+                    Clinic
+                  </Link>
+                  <Link to="/pharmacy-search" className="home-category-tab">
+                    <i className="isax isax-bag"></i>
+                    Pharmacy
+                  </Link>
+                </div>
                 <div className="search-box-one aos" data-aos="fade-up">
                   <form onSubmit={handleSearch}>
                     <div className="search-input search-line">

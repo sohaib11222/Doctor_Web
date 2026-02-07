@@ -33,13 +33,24 @@ const PharmacyRegister = () => {
       return
     }
 
+    if (!formData.phone.trim()) {
+      toast.error('Phone number is required')
+      return
+    }
+
+    const normalizedPhone = formData.phone.trim()
+    if (!/^\+\d{7,15}$/.test(normalizedPhone)) {
+      toast.error('Phone number must be in international format (E.164), e.g. +1234567890')
+      return
+    }
+
     setLoading(true)
     try {
       const response = await register(
         {
           fullName: formData.fullName.trim(),
           email: formData.email.trim(),
-          phone: formData.phone.trim() || undefined,
+          phone: normalizedPhone,
           password: formData.password,
           role: userRole
         },
@@ -53,7 +64,7 @@ const PharmacyRegister = () => {
 
       if (status === 'PENDING') {
         localStorage.removeItem('pharmacy_documents_submitted')
-        navigate('/pharmacy-verification-upload')
+        navigate('/pharmacy-phone-verification')
       } else {
         navigate('/pharmacy/dashboard')
       }

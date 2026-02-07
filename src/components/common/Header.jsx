@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useCart } from '../../contexts/CartContext'
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import * as profileApi from '../../api/profile'
@@ -9,6 +10,7 @@ const Header = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const { getCartItemCount } = useCart()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [hasGoogleTranslateBanner, setHasGoogleTranslateBanner] = useState(false)
   const [openSubmenus, setOpenSubmenus] = useState({
@@ -80,6 +82,13 @@ const Header = () => {
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
   const isIndexPage = location.pathname === '/' || location.pathname === '/index'
   const isPharmacyIndex = location.pathname === '/pharmacy-index'
+  const cartItemCount = useMemo(() => {
+    try {
+      return getCartItemCount ? getCartItemCount() : 0
+    } catch {
+      return 0
+    }
+  }, [getCartItemCount])
 
   const handleLogout = () => {
     logout()
@@ -554,9 +563,13 @@ const Header = () => {
 
                 {/* Pharmacy Menu - Different for doctors vs others */}
                 {user && user.role === 'DOCTOR' ? (
-                  /* My Pharmacy - Only for doctors */
-                  <li className={isActive('/doctor/pharmacy') ? 'active' : ''}>
-                    {/* <Link to="/doctor/pharmacy">My Pharmacy</Link> */}
+                  /* Pharmacy Menu - Allow doctors to browse pharmacies/products */
+                  <li className={`has-submenu ${isActive('/pharmacy') || isActive('/product') ? 'active' : ''}`}>
+                    <a href="javascript:void(0);">Pharmacy <i className="fas fa-chevron-down"></i></a>
+                    <ul className="submenu">
+                      <li><Link to="/pharmacy-search"> Pharmacies </Link></li>
+                      <li><Link to="/product-all">Products</Link></li>
+                    </ul>
                   </li>
                 ) : (
                   /* Pharmacy Menu - Show to everyone else (browse) but cart/checkout only for patients */
@@ -629,6 +642,31 @@ const Header = () => {
                 <li className="searchbar">
                   <Link to="/search"><i className="feather-search"></i></Link>
                 </li>
+                {user?.role === 'PATIENT' && (
+                  <li className="nav-item" style={{ position: 'relative' }}>
+                    <Link to="/cart" className="nav-link" title="Cart" style={{ position: 'relative' }}>
+                      <i className="feather-shopping-cart"></i>
+                      {cartItemCount > 0 && (
+                        <span
+                          className="badge bg-danger"
+                          style={{
+                            position: 'absolute',
+                            top: '-6px',
+                            right: '-10px',
+                            borderRadius: '999px',
+                            fontSize: '10px',
+                            lineHeight: 1,
+                            padding: '4px 6px',
+                            minWidth: '18px',
+                            textAlign: 'center'
+                          }}
+                        >
+                          {cartItemCount}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                )}
                 {/* <li className="header-theme noti-nav">
                   <a href="javascript:void(0);" id="dark-mode-toggle" className="theme-toggle">
                     <i className="isax isax-sun-1"></i>

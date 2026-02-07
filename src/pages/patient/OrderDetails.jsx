@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useOrder } from '../../queries'
 import { usePayForOrder, useCancelOrder } from '../../mutations'
-import { toast } from 'react-toastify'
 import BASE_URL from '../../utils/apiConfig'
 
 const OrderDetails = () => {
@@ -115,7 +114,7 @@ const OrderDetails = () => {
   const handlePay = () => {
     if (!order) return
     payMutation.mutate(
-      { orderId: order._id, paymentMethod: 'DUMMY' },
+      { orderId: order._id, paymentMethod: 'STRIPE' },
       {
         onSuccess: () => {
           refetch()

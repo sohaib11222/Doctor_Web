@@ -38,6 +38,7 @@ import DoctorVerificationUpload from './pages/auth/DoctorVerificationUpload'
 import PharmacyVerificationUpload from './pages/auth/PharmacyVerificationUpload'
 import PendingApprovalStatus from './pages/auth/PendingApprovalStatus'
 import PharmacyRegister from './pages/auth/PharmacyRegister'
+import PharmacyPhoneVerification from './pages/auth/PharmacyPhoneVerification'
 import PharmacyRegisterStep1 from './pages/auth/PharmacyRegisterStep1'
 import PharmacyRegisterStep2 from './pages/auth/PharmacyRegisterStep2'
 import PharmacyRegisterStep3 from './pages/auth/PharmacyRegisterStep3'
@@ -229,6 +230,11 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/pharmacy-register" element={<AuthLayout><PharmacyRegister /></AuthLayout>} />
+                <Route path="/pharmacy-phone-verification" element={
+                  <ProtectedRoute role={["PHARMACY", "PARAPHARMACY"]} allowPending={true}>
+                    <AuthLayout><PharmacyPhoneVerification /></AuthLayout>
+                  </ProtectedRoute>
+                } />
                 <Route path="/pharmacy-register-step1" element={<AuthLayout><PharmacyRegisterStep1 /></AuthLayout>} />
                 <Route path="/pharmacy-register-step2" element={<AuthLayout><PharmacyRegisterStep2 /></AuthLayout>} />
                 <Route path="/pharmacy-register-step3" element={<AuthLayout><PharmacyRegisterStep3 /></AuthLayout>} />
