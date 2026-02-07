@@ -656,7 +656,7 @@ const Telemedicine = () => {
             </div>
             <div className="col-lg-6">
               <div className="how-img text-center text-lg-end">
-                <img src="/assets/img/steps.png" alt="How telemedicine works - steps" />
+                <img src="/assets/img/newstepsbhai.png" alt="How telemedicine works - steps" />
               </div>
             </div>
           </div>
