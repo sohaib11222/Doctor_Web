@@ -462,7 +462,7 @@ const PharmacyOrders = () => {
                   </div>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="shippingFee" className="form-label">New Shipping Fee ($)</label>
+                  <label htmlFor="shippingFee" className="form-label">New Shipping Fee (€)</label>
                   <input
                     type="number"
                     className="form-control"
