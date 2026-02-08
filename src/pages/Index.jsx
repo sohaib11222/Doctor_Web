@@ -1242,7 +1242,7 @@ const Index = () => {
                 <div className="home-category-tabs" aria-label="Home quick categories">
                   <Link to="/search" className="home-category-tab active">
                     <i className="isax isax-user-search"></i>
-                    Doctors
+                    Dental Practices
                   </Link>
                   <Link to="/telemedicine" className="home-category-tab">
                     <i className="isax isax-video"></i>
