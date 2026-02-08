@@ -248,6 +248,7 @@ const PharmacyOrders = () => {
                       const patientName = patient?.fullName || 'Unknown Patient'
                       const firstItem = order.items?.[0]
                       const product = typeof firstItem?.productId === 'object' ? firstItem.productId : null
+                      const realTotal = (Number(order.subtotal) || 0) + (Number(order.shipping) || 0)
                       
                       return (
                         <div key={order._id} className="order-item mb-4 pb-4 border-bottom">
@@ -271,7 +272,7 @@ const PharmacyOrders = () => {
                             </div>
                             <div className="text-end">
                               {getStatusBadge(order.status)}
-                              <h5 className="mt-2 mb-0">Total: {formatCurrency(order.total)}</h5>
+                              <h5 className="mt-2 mb-0">Total: {formatCurrency(realTotal)}</h5>
                               <p className="text-muted small mb-0 mt-1">
                                 Payment: <span className={`badge ${
                                   order.paymentStatus === 'PAID' ? 'badge-success' :
@@ -474,12 +475,12 @@ const PharmacyOrders = () => {
                     placeholder="Enter shipping fee"
                   />
                   <small className="text-muted">
-                    Subtotal: {formatCurrency(selectedOrderForShipping.subtotal)} + Tax: {formatCurrency(selectedOrderForShipping.tax)} + Shipping = New Total
+                    Subtotal: {formatCurrency(selectedOrderForShipping.subtotal)} + Shipping = New Total
                   </small>
                 </div>
                 {shippingFee && !isNaN(parseFloat(shippingFee)) && (
                   <div className="alert alert-info">
-                    <strong>New Total:</strong> {formatCurrency(selectedOrderForShipping.subtotal + selectedOrderForShipping.tax + parseFloat(shippingFee))}
+                    <strong>New Total:</strong> {formatCurrency((Number(selectedOrderForShipping.subtotal) || 0) + parseFloat(shippingFee))}
                   </div>
                 )}
               </div>

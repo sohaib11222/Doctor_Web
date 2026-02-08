@@ -252,10 +252,6 @@ const OrderDetails = () => {
                   <span>{formatCurrency(order.subtotal)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
-                  <span>Tax</span>
-                  <span>{formatCurrency(order.tax)}</span>
-                </div>
-                <div className="d-flex justify-content-between mb-2">
                   <span>Shipping</span>
                   <span>{formatCurrency(order.shipping)}</span>
                 </div>

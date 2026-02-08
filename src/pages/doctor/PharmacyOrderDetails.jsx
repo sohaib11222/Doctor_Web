@@ -292,13 +292,13 @@ const PharmacyOrderDetails = () => {
                 <h4 className="card-title mb-0">Order Summary</h4>
               </div>
               <div className="card-body">
+                {(() => {
+                  const realTotal = (Number(order.subtotal) || 0) + (Number(order.shipping) || 0)
+                  return (
+                    <>
                 <div className="d-flex justify-content-between mb-2">
                   <span>Subtotal</span>
                   <span>{formatCurrency(order.subtotal)}</span>
-                </div>
-                <div className="d-flex justify-content-between mb-2">
-                  <span>Tax</span>
-                  <span>{formatCurrency(order.tax)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
                   <div>
@@ -319,8 +319,11 @@ const PharmacyOrderDetails = () => {
                 <hr />
                 <div className="d-flex justify-content-between">
                   <strong>Total</strong>
-                  <strong>{formatCurrency(order.total)}</strong>
+                  <strong>{formatCurrency(realTotal)}</strong>
                 </div>
+                    </>
+                  )
+                })()}
               </div>
             </div>
 

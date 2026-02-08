@@ -206,6 +206,7 @@ const OrderHistory = () => {
                       const pharmacyName = pharmacy?.name || 'Pharmacy'
                       const firstItem = order.items?.[0]
                       const product = typeof firstItem?.productId === 'object' ? firstItem.productId : null
+                      const realTotal = (Number(order.subtotal) || 0) + (Number(order.shipping) || 0)
                       
                       return (
                         <div key={order._id} className="order-item mb-4 pb-4 border-bottom">
@@ -229,7 +230,7 @@ const OrderHistory = () => {
                             </div>
                             <div className="text-end">
                               {getStatusBadge(order.status)}
-                              <h5 className="mt-2 mb-0">Total: {formatCurrency(order.total)}</h5>
+                              <h5 className="mt-2 mb-0">Total: {formatCurrency(realTotal)}</h5>
                             </div>
                           </div>
 
