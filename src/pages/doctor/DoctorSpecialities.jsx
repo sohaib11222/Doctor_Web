@@ -261,6 +261,9 @@ const DoctorSpecialities = () => {
                   <div className="add-info">
                     <div className="row">
                       <div className="col-md-4">
+
+
+
                         <div className="form-wrap">
                           <label className="form-label">Speciality <span className="text-danger">*</span></label>
                           <select 
@@ -315,7 +318,7 @@ const DoctorSpecialities = () => {
                               </div>
                               <div className="col-md-2">
                                 <div className="form-wrap">
-                                  <label className="form-label">Price ($) <span className="text-danger">*</span></label>
+                                  <label className="form-label">Price (€) <span className="text-danger">*</span></label>
                                   <input
                                     type="number"
                                     className="form-control"
