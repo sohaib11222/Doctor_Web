@@ -390,6 +390,7 @@ const Index = () => {
             loop: specializations.length > 5,
             margin: 15,
             nav: true,
+            navContainer: '.spciality-nav',
             dots: false,
             autoplay: true,
             autoplayTimeout: 2500,
@@ -402,6 +403,43 @@ const Index = () => {
               1000: { items: 5 }
             }
           })
+
+          setTimeout(() => {
+            const navContainer = document.querySelector('.speciality-section .spciality-nav.nav-bottom.owl-nav') ||
+                               document.querySelector('.speciality-section .spciality-nav.owl-nav') ||
+                               document.querySelector('.speciality-section .spciality-nav')
+            if (navContainer) {
+              navContainer.style.setProperty('display', 'flex', 'important')
+              navContainer.style.setProperty('justify-content', 'center', 'important')
+              navContainer.style.setProperty('align-items', 'center', 'important')
+              navContainer.style.setProperty('text-align', 'center', 'important')
+              navContainer.style.setProperty('margin-left', 'auto', 'important')
+              navContainer.style.setProperty('margin-right', 'auto', 'important')
+              navContainer.style.setProperty('width', '100%', 'important')
+              navContainer.style.setProperty('left', '0', 'important')
+              navContainer.style.setProperty('right', '0', 'important')
+              navContainer.style.setProperty('position', 'relative', 'important')
+
+              const prevBtn = navContainer.querySelector('.owl-prev') || navContainer.querySelector('button.owl-prev')
+              const nextBtn = navContainer.querySelector('.owl-next') || navContainer.querySelector('button.owl-next')
+              if (prevBtn) {
+                prevBtn.style.setProperty('position', 'static', 'important')
+                prevBtn.style.setProperty('left', 'auto', 'important')
+                prevBtn.style.setProperty('right', 'auto', 'important')
+                prevBtn.style.setProperty('margin', '0 8px', 'important')
+                prevBtn.style.setProperty('float', 'none', 'important')
+                prevBtn.style.setProperty('transform', 'none', 'important')
+              }
+              if (nextBtn) {
+                nextBtn.style.setProperty('position', 'static', 'important')
+                nextBtn.style.setProperty('left', 'auto', 'important')
+                nextBtn.style.setProperty('right', 'auto', 'important')
+                nextBtn.style.setProperty('margin', '0 8px', 'important')
+                nextBtn.style.setProperty('float', 'none', 'important')
+                nextBtn.style.setProperty('transform', 'none', 'important')
+              }
+            }
+          }, 150)
         }
 
         // Insurance Companies Slider - only initialize once
@@ -777,6 +815,19 @@ const Index = () => {
           align-items: center !important;
           padding: 0 12px !important;
         }
+
+        .banner-section .search-box-one .search-line {
+          flex: 1.4 1 0 !important;
+        }
+
+        .banner-section .search-box-one .search-map-line {
+          flex: 1 1 0 !important;
+        }
+
+        .banner-section .search-box-one .search-calendar-line {
+          flex: 1.2 1 0 !important;
+          min-width: 220px !important;
+        }
         .banner-section .search-box-one .search-input i {
           font-size: 18px !important;
           color: #6c757d !important;
@@ -800,6 +851,13 @@ const Index = () => {
           border-radius: 50px !important;
           width: 100% !important;
           min-width: 0 !important;
+        }
+
+        .banner-section .search-box-one select.form-control {
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          padding-right: 34px !important;
         }
         .banner-section .search-box-one .form-control::placeholder {
           color: #6c757d !important;
@@ -1193,6 +1251,32 @@ const Index = () => {
             width: 100% !important;
             padding: 14px 24px !important;
           }
+        }
+
+        /* Center Top Specialties navigation arrows on desktop/web (match doctor section) */
+        .speciality-section .spciality-nav.nav-bottom.owl-nav,
+        .speciality-section .spciality-nav.owl-nav {
+          display: flex !important;
+          justify-content: center !important;
+          align-items: center !important;
+          text-align: center !important;
+          margin-left: auto !important;
+          margin-right: auto !important;
+          width: 100% !important;
+          left: 0 !important;
+          right: 0 !important;
+          position: relative !important;
+        }
+
+        .speciality-section .spciality-nav.nav-bottom.owl-nav .owl-prev,
+        .speciality-section .spciality-nav.nav-bottom.owl-nav .owl-next,
+        .speciality-section .spciality-nav.owl-nav .owl-prev,
+        .speciality-section .spciality-nav.owl-nav .owl-next {
+          position: static !important;
+          left: auto !important;
+          right: auto !important;
+          transform: none !important;
+          margin: 0 8px !important;
         }
       `}</style>
       {/* Home Banner */}

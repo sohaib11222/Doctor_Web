@@ -69,7 +69,7 @@ const Cart = () => {
                             <td>{item.sku || 'N/A'}</td>
                             <td>${item.price.toFixed(2)}</td>
                             <td className="text-center">
-                              <div className="input-group1">
+                              <div className="input-group1 cart-qty-stepper">
                                 <span className="input-group-btn">
                                   <button
                                     type="button"
@@ -83,7 +83,7 @@ const Cart = () => {
                                   type="text"
                                   id={`quantity${item._id}`}
                                   name={`quantity${item._id}`}
-                                  className="input-number"
+                                  className="input-number cart-qty-value"
                                   value={item.quantity}
                                   readOnly
                                 />

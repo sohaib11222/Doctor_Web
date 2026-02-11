@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 let scriptLoaded = false
 let translateInitialized = false
 
+const DEFAULT_LANGUAGE = 'it'
+
 const GoogleTranslate = () => {
   const translateElementRef = useRef(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -13,6 +15,40 @@ const GoogleTranslate = () => {
     let bannerInterval = null
     let observer = null
     let isMounted = true
+
+    let appliedDefaultLanguage = false
+
+    const getCookie = (name) => {
+      try {
+        const cookies = String(document.cookie || '').split(';')
+        for (const c of cookies) {
+          const [k, ...rest] = c.trim().split('=')
+          if (k === name) return rest.join('=')
+        }
+      } catch {
+        return null
+      }
+      return null
+    }
+
+    const setGoogTransCookie = (value) => {
+      try {
+        document.cookie = `googtrans=${value};path=/`
+        document.cookie = `googtrans=${value};path=/;domain=${window.location.hostname}`
+      } catch {
+        return
+      }
+    }
+
+    const ensureDefaultLanguage = () => {
+      const existing = getCookie('googtrans')
+      if (existing) return
+      appliedDefaultLanguage = true
+      setGoogTransCookie(`/en/${DEFAULT_LANGUAGE}`)
+    }
+
+    // Apply default language as early as possible (only when user hasn't chosen anything yet)
+    ensureDefaultLanguage()
 
     // Initialize Google Translate
     const initializeTranslate = () => {
@@ -48,6 +84,16 @@ const GoogleTranslate = () => {
           )
           translateInitialized = true
           if (isMounted) setIsLoading(false)
+
+          if (appliedDefaultLanguage) {
+            setTimeout(() => {
+              const combo = document.querySelector('.goog-te-combo')
+              if (combo && combo.value !== DEFAULT_LANGUAGE) {
+                combo.value = DEFAULT_LANGUAGE
+                combo.dispatchEvent(new Event('change'))
+              }
+            }, 350)
+          }
         } catch (error) {
           console.error('Error initializing Google Translate:', error)
           if (isMounted) setIsLoading(false)
@@ -75,6 +121,16 @@ const GoogleTranslate = () => {
                   'google_translate_element'
                 )
                 translateInitialized = true
+
+                if (appliedDefaultLanguage) {
+                  setTimeout(() => {
+                    const combo = document.querySelector('.goog-te-combo')
+                    if (combo && combo.value !== DEFAULT_LANGUAGE) {
+                      combo.value = DEFAULT_LANGUAGE
+                      combo.dispatchEvent(new Event('change'))
+                    }
+                  }, 350)
+                }
               } catch (error) {
                 console.error('Error initializing Google Translate:', error)
               }
