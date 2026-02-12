@@ -1324,13 +1324,13 @@ const Index = () => {
                   <span className="text-gradient">Doctors</span> Today
                 </h1>
                 <div className="home-category-tabs" aria-label="Home quick categories">
-                  <Link to="/search" className="home-category-tab active">
-                    <i className="isax isax-user-search"></i>
-                    Dental Practices
-                  </Link>
                   <Link to="/telemedicine" className="home-category-tab">
                     <i className="isax isax-video"></i>
                     Telemedicine
+                  </Link>
+                  <Link to="/search" className="home-category-tab active">
+                    <i className="isax isax-user-search"></i>
+                    Dental Practices
                   </Link>
                   <Link to="/search" className="home-category-tab">
                     <i className="isax isax-hospital"></i>
