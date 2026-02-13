@@ -564,18 +564,18 @@ const Header = () => {
                 {/* Pharmacy Menu - Different for doctors vs others */}
                 {user && user.role === 'DOCTOR' ? (
                   /* Pharmacy Menu - Allow doctors to browse pharmacies/products */
-                  <li className={`has-submenu ${isActive('/pharmacy') || isActive('/product') ? 'active' : ''}`}>
-                    <a href="javascript:void(0);">Pharmacy <i className="fas fa-chevron-down"></i></a>
-                    <ul className="submenu">
+                  <li className={`has-submenu ${isActive('/pharmacy') || isActive('/product') ? 'active' : ''} ${openSubmenus.pharmacy ? 'submenu-opened' : ''}`}>
+                    <a href="javascript:void(0);" onClick={(e) => { e.preventDefault(); toggleSubmenu('pharmacy'); }}>Pharmacy <i className="fas fa-chevron-down"></i></a>
+                    <ul className="submenu" style={{ display: openSubmenus.pharmacy ? 'block' : 'none' }}>
                       <li><Link to="/pharmacy-search"> Pharmacies </Link></li>
                       <li><Link to="/product-all">Products</Link></li>
                     </ul>
                   </li>
                 ) : (
                   /* Pharmacy Menu - Show to everyone else (browse) but cart/checkout only for patients */
-                  <li className={`has-submenu ${isActive('/pharmacy') || isActive('/product') || isActive('/cart') ? 'active' : ''}`}>
-                    <a href="javascript:void(0);">Pharmacy <i className="fas fa-chevron-down"></i></a>
-                    <ul className="submenu">
+                  <li className={`has-submenu ${isActive('/pharmacy') || isActive('/product') || isActive('/cart') ? 'active' : ''} ${openSubmenus.pharmacy ? 'submenu-opened' : ''}`}>
+                    <a href="javascript:void(0);" onClick={(e) => { e.preventDefault(); toggleSubmenu('pharmacy'); }}>Pharmacy <i className="fas fa-chevron-down"></i></a>
+                    <ul className="submenu" style={{ display: openSubmenus.pharmacy ? 'block' : 'none' }}>
                       {/* Public browsing - Show to everyone */}
                      {/* <li><Link to="/pharmacy-index">Pharmacy</Link></li>*/}
                       <li><Link to="/pharmacy-search"> Pharmacies </Link></li>
@@ -612,6 +612,33 @@ const Header = () => {
                 <li className={isActive('/about-us') ? 'active' : ''}>
                   <Link to="/about-us">About Us</Link>
                 </li>
+
+                {/* Auth links inside hamburger menu (mobile only) */}
+                {!user && (
+                  <>
+                    <li className="d-block d-lg-none">
+                      <Link to="/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
+                    </li>
+                    <li className="d-block d-lg-none">
+                      <Link to="/register" onClick={() => setIsMenuOpen(false)}>Sign Up</Link>
+                    </li>
+                  </>
+                )}
+
+                {user && (
+                  <li className="d-block d-lg-none">
+                    <a
+                      href="javascript:void(0);"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setIsMenuOpen(false)
+                        handleLogout()
+                      }}
+                    >
+                      Logout
+                    </a>
+                  </li>
+                )}
 
                 {/* Contact Us */}
                 {/* <li className={isActive('/contact-us') ? 'active' : ''}>
