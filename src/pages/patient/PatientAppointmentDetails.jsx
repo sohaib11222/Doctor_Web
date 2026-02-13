@@ -132,9 +132,26 @@ const PatientAppointmentDetails = () => {
       // Also check if appointment time has passed (additional local check)
       if (isEligible && appointment.appointmentDate && appointment.appointmentTime) {
         const now = new Date()
-        const appointmentDateTime = new Date(appointment.appointmentDate)
-        const [hours, minutes] = appointment.appointmentTime.split(':').map(Number)
-        appointmentDateTime.setHours(hours, minutes, 0, 0)
+        let appointmentDateTime
+        const tzOffsetMinutes =
+          typeof appointment.timezoneOffset === 'number' && Number.isFinite(appointment.timezoneOffset)
+            ? appointment.timezoneOffset
+            : null
+
+        if (tzOffsetMinutes !== null) {
+          const appointmentDateUTC = new Date(appointment.appointmentDate)
+          const appointmentDateInTz = new Date(appointmentDateUTC.getTime() + tzOffsetMinutes * 60 * 1000)
+          const year = appointmentDateInTz.getUTCFullYear()
+          const month = appointmentDateInTz.getUTCMonth() + 1
+          const day = appointmentDateInTz.getUTCDate()
+          const [hours, minutes] = String(appointment.appointmentTime).split(':').map(Number)
+          const appointmentDateTimeUTC = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0))
+          appointmentDateTime = new Date(appointmentDateTimeUTC.getTime() - tzOffsetMinutes * 60 * 1000)
+        } else {
+          appointmentDateTime = new Date(appointment.appointmentDate)
+          const [hours, minutes] = appointment.appointmentTime.split(':').map(Number)
+          appointmentDateTime.setHours(hours, minutes, 0, 0)
+        }
         
         // Only show if appointment time has passed
         if (now > appointmentDateTime) {
@@ -149,9 +166,26 @@ const PatientAppointmentDetails = () => {
       // If API call fails or not available, do a basic local check
       if (appointment.appointmentDate && appointment.appointmentTime) {
         const now = new Date()
-        const appointmentDateTime = new Date(appointment.appointmentDate)
-        const [hours, minutes] = appointment.appointmentTime.split(':').map(Number)
-        appointmentDateTime.setHours(hours, minutes, 0, 0)
+        let appointmentDateTime
+        const tzOffsetMinutes =
+          typeof appointment.timezoneOffset === 'number' && Number.isFinite(appointment.timezoneOffset)
+            ? appointment.timezoneOffset
+            : null
+
+        if (tzOffsetMinutes !== null) {
+          const appointmentDateUTC = new Date(appointment.appointmentDate)
+          const appointmentDateInTz = new Date(appointmentDateUTC.getTime() + tzOffsetMinutes * 60 * 1000)
+          const year = appointmentDateInTz.getUTCFullYear()
+          const month = appointmentDateInTz.getUTCMonth() + 1
+          const day = appointmentDateInTz.getUTCDate()
+          const [hours, minutes] = String(appointment.appointmentTime).split(':').map(Number)
+          const appointmentDateTimeUTC = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0))
+          appointmentDateTime = new Date(appointmentDateTimeUTC.getTime() - tzOffsetMinutes * 60 * 1000)
+        } else {
+          appointmentDateTime = new Date(appointment.appointmentDate)
+          const [hours, minutes] = appointment.appointmentTime.split(':').map(Number)
+          appointmentDateTime.setHours(hours, minutes, 0, 0)
+        }
         
         // Show button if appointment time has passed (basic check)
         // Note: This won't check if patient joined video call, but at least shows button for past appointments

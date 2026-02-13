@@ -475,7 +475,7 @@ const Header = () => {
               <ul className="main-nav">
                 {/* Home Menu */}
                 <li className={isActive('/') || location.pathname === '/index' ? 'active' : ''}>
-                  <Link to="/">Home</Link>
+                  <Link to="/"><span className="notranslate" translate="no">Home</span></Link>
                 </li>
 
                 {/* Doctors Menu - Only show to doctors (approved) or public (for registration) */}

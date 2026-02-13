@@ -365,11 +365,25 @@ const Booking = () => {
       return
     }
 
+    const getTimezoneOffsetForLocalDateTime = (dateStr, timeStr) => {
+      const [year, month, day] = String(dateStr).split('-').map((x) => Number(x))
+      const [hours, minutes] = String(timeStr).split(':').map((x) => Number(x))
+
+      if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(hours) || !Number.isFinite(minutes)) {
+        return -new Date().getTimezoneOffset()
+      }
+
+      const dt = new Date(year, month - 1, day, hours, minutes, 0, 0)
+      return -dt.getTimezoneOffset()
+    }
+
     const appointmentData = {
       doctorId: formData.doctorId,
       patientId: user._id,
       appointmentDate: formData.appointmentDate,
       appointmentTime: formData.appointmentTime,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timezoneOffset: getTimezoneOffsetForLocalDateTime(formData.appointmentDate, formData.appointmentTime),
       bookingType: formData.bookingType,
       patientNotes: formData.patientNotes || undefined,
       clinicName: formData.clinicName || undefined
