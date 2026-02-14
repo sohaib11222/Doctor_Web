@@ -14076,14 +14076,35 @@ header.inner-header .header-nav .header-navbar-rht li.noti-nav > a i {
   padding: 0 10px 0 25px;
   border: 0;
 }
+.search-input select {
+  height: 40px;
+  padding: 0 10px 0 25px;
+  border: 0;
+  background: transparent;
+  line-height: 40px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .search-input input::placeholder {
   color: #8C97B0;
 }
 .search-input.search-calendar-line input {
   padding: 0 36px 0 36px;
 }
+.search-input.search-calendar-line select {
+  padding: 0 36px 0 36px;
+}
 @media (max-width: 767.98px) {
   .search-input.search-calendar-line input {
+    padding: 0px 25px 0px 25px;
+  }
+}
+@media (max-width: 767.98px) {
+  .search-input.search-calendar-line select {
     padding: 0px 25px 0px 25px;
   }
 }
@@ -57462,6 +57483,16 @@ ul li {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.doctors-search-box .search-box-one form .search-input.search-calendar-line {
+  width: 32%;
+}
+
+@media (max-width: 767.98px) {
+  .doctors-search-box .search-box-one form .search-input.search-calendar-line {
+    width: 100%;
+  }
 }
 
 .head-icon {
