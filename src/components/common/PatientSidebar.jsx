@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../contexts/AuthContext'
 import * as profileApi from '../../api/profile'
 import { useUnreadNotificationsCount } from '../../queries/notificationQueries'
+import { useUnreadMessageCount } from '../../queries/chatQueries'
+import { useUnreadOrderCount } from '../../queries/orderQueries'
 import { normalizeImageUrl } from '../../utils/imageUtils'
 
 const PatientSidebar = () => {
@@ -62,6 +64,8 @@ const PatientSidebar = () => {
 
   // Fetch unread notifications count
   const { data: unreadNotificationsCount = 0 } = useUnreadNotificationsCount()
+  const { data: unreadMessagesCount = 0 } = useUnreadMessageCount()
+  const { data: unreadOrdersCount = 0 } = useUnreadOrderCount(Boolean(user?._id))
 
   return (
     <div className="profile-sidebar patient-sidebar profile-sidebar-new">
@@ -160,6 +164,9 @@ const PatientSidebar = () => {
               <Link to="/order-history">
                 <i className="isax isax-shopping-bag"></i>
                 <span>Order History</span>
+                {unreadOrdersCount > 0 && (
+                  <small className="unread-msg">{unreadOrdersCount > 99 ? '99+' : unreadOrdersCount}</small>
+                )}
               </Link>
             </li>
             {/* <li className={isActive('/documents-download') ? 'active' : ''}>
@@ -172,7 +179,9 @@ const PatientSidebar = () => {
               <Link to="/chat">
                 <i className="isax isax-messages-1"></i>
                 <span>Message</span>
-                <small className="unread-msg">7</small>
+                {unreadMessagesCount > 0 && (
+                  <small className="unread-msg">{unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}</small>
+                )}
               </Link>
             </li>
             <li className={isActive('/patient-notifications') ? 'active' : ''}>

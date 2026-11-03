@@ -51,3 +51,17 @@ export const useOrder = (orderId) => {
   })
 }
 
+/** A role-scoped, server-derived sidebar count for new order activity. */
+export const useUnreadOrderCount = (enabled = true) => {
+  return useQuery({
+    queryKey: ['orders', 'unread-count'],
+    queryFn: async () => {
+      const response = await orderApi.getUnreadCount()
+      return response?.data?.unreadCount ?? response?.unreadCount ?? 0
+    },
+    enabled,
+    refetchInterval: 10000,
+    refetchOnWindowFocus: true,
+  })
+}
+

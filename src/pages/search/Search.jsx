@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
@@ -11,12 +11,19 @@ import Breadcrumb from '../../components/common/Breadcrumb'
 const Search = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const isEmergencySearch = searchParams.get('isAvailableOnline') === 'true'
   const [searchTerm, setSearchTerm] = useState('')
   const [location, setLocation] = useState('')
   const [selectedSpecialization, setSelectedSpecialization] = useState('')
   const [page, setPage] = useState(1)
-  const [showAvailability, setShowAvailability] = useState(false)
+  const [showAvailability, setShowAvailability] = useState(isEmergencySearch)
   const limit = 12
+
+  useEffect(() => {
+    setShowAvailability(isEmergencySearch)
+    setPage(1)
+  }, [isEmergencySearch])
 
   // Build query params
   const queryParams = useMemo(() => {
@@ -374,7 +381,7 @@ const Search = () => {
                   <li className="breadcrumb-item">Doctor</li>
                   <li className="breadcrumb-item active">Doctor Grid Full Width</li>
                 </ol>
-                <h2 className="breadcrumb-title">Find Your Doctor</h2>
+                <h2 className="breadcrumb-title">{isEmergencySearch ? 'Emergency Room H24' : 'Find Your Doctor'}</h2>
               </nav>
             </div>
           </div>

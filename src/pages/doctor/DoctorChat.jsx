@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
+import '../../styles/chat-workspace.css'
 import { useAuth } from '../../contexts/AuthContext'
 import * as chatApi from '../../api/chat'
 import { useUploadChatFile } from '../../mutations/uploadMutations'
@@ -803,11 +804,8 @@ const DoctorChat = () => {
             margin-left: 0;
             position: relative;
             height: auto;
-            max-height: none;
-            display: none;
-          }
-          .chat-details-area.show {
             display: flex;
+            max-height: 680px;
           }
         }
       `}</style>

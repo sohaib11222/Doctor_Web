@@ -6,6 +6,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../utils/api'
 import { API_ROUTES } from '../utils/apiConfig'
+import * as chatApi from '../api/chat'
 
 // Get all conversations
 export const useConversations = () => {
@@ -19,8 +20,12 @@ export const useConversations = () => {
 export const useUnreadMessageCount = () => {
   return useQuery({
     queryKey: ['chat', 'unread-count'],
-    queryFn: () => api.get(API_ROUTES.CHAT.UNREAD_COUNT),
-    refetchInterval: 30000, // Refetch every 30 seconds
+    queryFn: async () => {
+      const response = await chatApi.getUnreadCount()
+      return response?.data?.unreadCount ?? response?.unreadCount ?? 0
+    },
+    refetchInterval: 10000,
+    refetchOnWindowFocus: true,
   })
 }
 

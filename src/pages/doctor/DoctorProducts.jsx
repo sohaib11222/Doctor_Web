@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import * as productApi from '../../api/product'
 import * as pharmacyApi from '../../api/pharmacy'
 import api from '../../api/axios'
+import { getImageUrl } from '../../utils/imageUtils'
 
 const DoctorProducts = () => {
   const { user } = useAuth()
@@ -639,18 +640,14 @@ const DoctorProducts = () => {
                         <tr key={product._id}>
                           <td>
                             <h2 className="table-avatar">
-                              {product.images && product.images.length > 0 && (
-                                <a href="#" className="avatar avatar-sm me-2">
-                                  <img
-                                    className="avatar-img rounded"
-                                    src={product.images[0]}
-                                    alt={product.name}
-                                    onError={(e) => {
-                                      e.target.style.display = 'none'
-                                    }}
-                                  />
-                                </a>
-                              )}
+                              <span className="avatar avatar-sm me-2">
+                                <img
+                                  className="avatar-img rounded"
+                                  src={getImageUrl(product.images?.[0], '/assets/img/pharmacy.jpg')}
+                                  alt={product.name || 'Product'}
+                                  onError={(event) => { event.currentTarget.src = '/assets/img/pharmacy.jpg' }}
+                                />
+                              </span>
                               <a href="#">{product.name}</a>
                             </h2>
                             {product.sku && (

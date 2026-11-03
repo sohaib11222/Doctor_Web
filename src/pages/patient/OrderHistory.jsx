@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { usePatientOrders } from '../../queries'
 // Orders are paid immediately, so cancellation is not available
 import { toast } from 'react-toastify'
+import { getImageUrl } from '../../utils/imageUtils'
 
 const OrderHistory = () => {
   const navigate = useNavigate()
@@ -243,10 +244,19 @@ const OrderHistory = () => {
                                 const productName = product?.name || 'Product'
                                 const itemPrice = item.discountPrice || item.price
                                 return (
-                                  <li key={index} className="d-flex justify-content-between mb-2">
-                                    <span>
-                                      {productName} <span className="text-muted">x{item.quantity}</span>
-                                    </span>
+                                <li key={index} className="d-flex justify-content-between align-items-center gap-3 mb-2">
+                                  <span className="d-flex align-items-center gap-2 min-w-0">
+                                    <img
+                                      src={getImageUrl(product?.images?.[0], '/assets/img/pharmacy.jpg')}
+                                      alt={productName}
+                                      width="42"
+                                      height="42"
+                                      className="rounded border flex-shrink-0"
+                                      style={{ objectFit: 'cover' }}
+                                      onError={(event) => { event.currentTarget.src = '/assets/img/pharmacy.jpg' }}
+                                    />
+                                    <span className="text-truncate">{productName} <span className="text-muted">x{item.quantity}</span></span>
+                                  </span>
                                     <span className="fw-bold">{formatCurrency(item.total)}</span>
                                   </li>
                                 )

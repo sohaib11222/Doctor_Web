@@ -285,6 +285,7 @@ export const API_ROUTES = {
     UPDATE_SHIPPING: (id) => `/orders/${id}/shipping`,
     CANCEL: (id) => `/orders/${id}/cancel`,
     PAY: (id) => `/orders/${id}/pay`,
+    UNREAD_COUNT: '/orders/unread-count',
     ADMIN_LIST: '/admin/orders',
   },
 }

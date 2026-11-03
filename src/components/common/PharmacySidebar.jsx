@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useUnreadOrderCount } from '../../queries/orderQueries'
 
 const PharmacySidebar = () => {
   const location = useLocation()
@@ -8,6 +9,7 @@ const PharmacySidebar = () => {
 
   const userRole = user?.role?.toUpperCase()
   const showSubscriptionPlans = userRole === 'PHARMACY'
+  const { data: unreadOrdersCount = 0 } = useUnreadOrderCount(Boolean(user?._id))
 
   return (
     <div className="profile-sidebar">
@@ -44,6 +46,9 @@ const PharmacySidebar = () => {
               <Link to="/pharmacy/orders">
                 <i className="fas fa-shopping-bag" />
                 <span>Orders</span>
+                {unreadOrdersCount > 0 && (
+                  <small className="unread-msg">{unreadOrdersCount > 99 ? '99+' : unreadOrdersCount}</small>
+                )}
               </Link>
             </li>
             {showSubscriptionPlans && (

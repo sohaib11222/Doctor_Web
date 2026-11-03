@@ -91,3 +91,6 @@ export const payForOrder = async (orderId, paymentMethod = 'STRIPE') => {
   return api.post(API_ROUTES.ORDER.PAY(orderId), { paymentMethod })
 }
 
+/** Get order updates that have not yet been viewed by the current user. */
+export const getUnreadCount = async () => api.get(API_ROUTES.ORDER.UNREAD_COUNT)
+

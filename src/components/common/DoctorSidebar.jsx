@@ -8,6 +8,7 @@ import * as subscriptionApi from '../../api/subscription'
 import * as appointmentApi from '../../api/appointments'
 import * as rescheduleApi from '../../api/rescheduleRequest'
 import { useUnreadNotificationsCount } from '../../queries/notificationQueries'
+import { useUnreadMessageCount } from '../../queries/chatQueries'
 import { toast } from 'react-toastify'
 
 const DoctorSidebar = () => {
@@ -149,6 +150,7 @@ const DoctorSidebar = () => {
 
   // Fetch unread notifications count
   const { data: unreadNotificationsCount = 0 } = useUnreadNotificationsCount()
+  const { data: unreadMessagesCount = 0 } = useUnreadMessageCount()
 
   // Fetch pending appointment requests count
   const { data: pendingAppointmentsData } = useQuery({
@@ -159,7 +161,7 @@ const DoctorSidebar = () => {
     },
     enabled: !!user,
     retry: 1,
-    refetchInterval: 30000 // Refetch every 30 seconds to keep count updated
+    refetchInterval: 10000
   })
 
   // Extract pending appointments count
@@ -178,7 +180,7 @@ const DoctorSidebar = () => {
     },
     enabled: !!user,
     retry: 1,
-    refetchInterval: 30000 // Refetch every 30 seconds to keep count updated
+    refetchInterval: 10000
   })
 
   // Extract pending reschedule requests count
@@ -377,7 +379,9 @@ const DoctorSidebar = () => {
               <Link to="/chat-doctor">
                 <i className="fa-solid fa-comments"></i>
                 <span>Message</span>
-                {/* <small className="unread-msg">7</small> */}
+                {unreadMessagesCount > 0 && (
+                  <small className="unread-msg">{unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}</small>
+                )}
               </Link>
             </li>
             <li className={isActive('/doctor/admin-chat') ? 'active' : ''}>

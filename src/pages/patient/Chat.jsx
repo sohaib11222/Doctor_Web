@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
+import '../../styles/chat-workspace.css'
 import { useAuth } from '../../contexts/AuthContext'
 import * as chatApi from '../../api/chat'
 import * as appointmentApi from '../../api/appointments'
@@ -432,7 +433,7 @@ const Chat = () => {
   }
 
   return (
-    <div className="content">
+    <div className="content patient-chat-page">
       <div className="container">
         <div className="row">
           {/* Left Area - Conversation List */}
