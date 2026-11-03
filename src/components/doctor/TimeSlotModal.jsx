@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { isValidTime, isStartBeforeEnd, to12Hour, to24Hour } from '../../utils/timeFormat'
+import { isValidTime, isStartBeforeEnd, to12Hour } from '../../utils/timeFormat'
 
 const TimeSlotModal = ({ show, onClose, onSave, dayOfWeek, slot = null, mode = 'add' }) => {
   // Internal state for 12-hour format with AM/PM
@@ -10,9 +10,6 @@ const TimeSlotModal = ({ show, onClose, onSave, dayOfWeek, slot = null, mode = '
   const [endMinute, setEndMinute] = useState('00')
   const [endPeriod, setEndPeriod] = useState('AM')
   
-  // 24-hour format for backend
-  const [startTime, setStartTime] = useState('')
-  const [endTime, setEndTime] = useState('')
   const [isAvailable, setIsAvailable] = useState(true)
   const [errors, setErrors] = useState({})
 
@@ -45,20 +42,12 @@ const TimeSlotModal = ({ show, onClose, onSave, dayOfWeek, slot = null, mode = '
     return `${hours.toString().padStart(2, '0')}:${minutes}`
   }
 
-  // Update 24-hour time when 12-hour components change
-  useEffect(() => {
-    if (startHour && startMinute && startPeriod) {
-      const time24 = convert12To24(startHour, startMinute, startPeriod)
-      setStartTime(time24)
-    }
-  }, [startHour, startMinute, startPeriod])
-
-  useEffect(() => {
-    if (endHour && endMinute && endPeriod) {
-      const time24 = convert12To24(endHour, endMinute, endPeriod)
-      setEndTime(time24)
-    }
-  }, [endHour, endMinute, endPeriod])
+  // Derive the submitted clock directly from the visible controls. Keeping a
+  // second, effect-updated copy caused a quick change-and-save interaction to
+  // submit the previous minute selection (for example 09:15 after choosing
+  // 09:45).
+  const startTime = convert12To24(startHour, startMinute, startPeriod)
+  const endTime = convert12To24(endHour, endMinute, endPeriod)
 
   useEffect(() => {
     if (show) {
@@ -73,8 +62,6 @@ const TimeSlotModal = ({ show, onClose, onSave, dayOfWeek, slot = null, mode = '
         setEndMinute(end12.minute)
         setEndPeriod(end12.period)
         
-        setStartTime(slot.startTime || '')
-        setEndTime(slot.endTime || '')
         setIsAvailable(slot.isAvailable !== undefined ? slot.isAvailable : true)
       } else {
         // Default values
@@ -84,8 +71,6 @@ const TimeSlotModal = ({ show, onClose, onSave, dayOfWeek, slot = null, mode = '
         setEndHour('10')
         setEndMinute('00')
         setEndPeriod('AM')
-        setStartTime('09:00')
-        setEndTime('10:00')
         setIsAvailable(true)
       }
       setErrors({})

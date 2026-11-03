@@ -1,7 +1,7 @@
 /* Shared doctor/patient conversation workspace.  Scoped selectors preserve the
    rest of the dashboard while keeping all real controls visibly interactive. */
 .patient-chat-page { min-height: calc(100vh - 190px); padding-top: 28px; }
-.patient-chat-page .row { min-height: calc(100vh - 245px); }
+.patient-chat-page .row { min-height: 0; }
 .patient-chat-page .chat-list-card,
 .patient-chat-page .chat-details-card {
   background: #fff;
@@ -10,8 +10,11 @@
   box-shadow: 0 12px 30px rgba(23, 61, 73, .07);
   overflow: hidden;
 }
-.patient-chat-page .chat-list-card { min-height: 630px; }
-.patient-chat-page .chat-details-card { height: 100%; min-height: 630px; }
+.patient-chat-page .chat-list-card,
+.patient-chat-page .chat-details-card {
+  height: clamp(430px, 58vh, 560px) !important;
+  min-height: 0;
+}
 .chat-list-header { background: linear-gradient(180deg, #fbfefe, #f3f9fa); padding: 1rem; }
 .chat-list-header h4 { color: #18313d; font-size: 1.15rem; font-weight: 750; }
 .chat-search-box { position: relative; }
@@ -33,7 +36,7 @@
 .chat-details-header { align-items: center; background: #fff; border-bottom: 1px solid #deeaed !important; display: flex; justify-content: space-between; min-height: 76px; }
 .chat-details-user { min-width: 0; }
 .chat-details-user-info h5 { color: #18313d; font-size: 1rem; font-weight: 750; }
-.chat-messages-area { background: #f8fbfc; min-height: 0; padding: 1.35rem !important; }
+.chat-messages-area { background: #f8fbfc; display: flex; flex-direction: column; min-height: 0; padding: 1.35rem !important; }
 .chat-message { display: flex; gap: .5rem; margin: .8rem 0; max-width: min(78%, 620px); }
 .chat-message.outgoing { margin-left: auto; }
 .chat-message-avatar { border-radius: 50%; flex: 0 0 auto; height: 30px; overflow: hidden; width: 30px; }
@@ -58,10 +61,10 @@
 
 @media (max-width: 991px) {
   .patient-chat-page .row { gap: 1rem; }
-  .patient-chat-page .chat-list-card { min-height: auto; }
+  .patient-chat-page .chat-list-card { height: auto !important; }
   .patient-chat-page .chat-list-content { max-height: 300px; min-height: 0; }
-  .patient-chat-page .chat-details-card { min-height: 560px; }
-  .chat-messages-area { max-height: 52vh; }
+  .patient-chat-page .chat-details-card { height: min(560px, 68vh) !important; min-height: 420px; }
+  .chat-messages-area { max-height: none; }
 }
 
 @media (max-width: 575px) {

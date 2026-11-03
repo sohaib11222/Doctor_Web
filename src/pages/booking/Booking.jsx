@@ -8,6 +8,7 @@ import * as specializationApi from '../../api/specialization'
 import * as weeklyScheduleApi from '../../api/weeklySchedule'
 import * as appointmentApi from '../../api/appointments'
 import { formatCurrency } from '../../utils/currency'
+import { getDeviceAppointmentTimeZone } from '../../utils/deviceTimeZone'
 
 const Booking = () => {
   const { user } = useAuth()
@@ -377,18 +378,6 @@ const Booking = () => {
     }
   }
 
-  const getTimezoneOffsetForLocalDateTime = (dateStr, timeStr) => {
-    const [year, month, day] = String(dateStr).split('-').map((x) => Number(x))
-    const [hours, minutes] = String(timeStr).split(':').map((x) => Number(x))
-
-    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(hours) || !Number.isFinite(minutes)) {
-      return -new Date().getTimezoneOffset()
-    }
-
-    const dt = new Date(year, month - 1, day, hours, minutes, 0, 0)
-    return -dt.getTimezoneOffset()
-  }
-
   // Handle final step: hand the booking over to the real checkout page.
   const handleSubmit = () => {
     if (!user) {
@@ -413,6 +402,7 @@ const Booking = () => {
       return
     }
 
+    const deviceTimeZone = getDeviceAppointmentTimeZone(formData.appointmentDate, formData.appointmentTime)
     const booking = {
       doctorId: formData.doctorId,
       doctorName,
@@ -427,8 +417,7 @@ const Booking = () => {
       clinicName: formData.clinicName || '',
       selectedServices: selectedServiceNames,
       paymentMethod: formData.paymentMethod,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      timezoneOffset: getTimezoneOffsetForLocalDateTime(formData.appointmentDate, formData.appointmentTime)
+      ...deviceTimeZone
     }
 
     try {

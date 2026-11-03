@@ -22,6 +22,7 @@ import Pricing from './pages/Pricing'
 import FAQ from './pages/FAQ'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsCondition from './pages/TermsCondition'
+import RefundPolicy from './pages/RefundPolicy'
 import BlogList from './pages/BlogList'
 import BlogDetails from './pages/BlogDetails'
 
@@ -202,6 +203,7 @@ function App() {
             <Route path="/faq" element={<MainLayout><FAQ /></MainLayout>} />
             <Route path="/privacy-policy" element={<MainLayout><PrivacyPolicy /></MainLayout>} />
             <Route path="/terms-condition" element={<MainLayout><TermsCondition /></MainLayout>} />
+            <Route path="/refund-policy" element={<MainLayout><RefundPolicy /></MainLayout>} />
             
             {/* Public Blog Pages */}
             <Route path="/blog-list" element={<MainLayout><BlogList /></MainLayout>} />

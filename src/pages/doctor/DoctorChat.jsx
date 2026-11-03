@@ -735,15 +735,26 @@ const DoctorChat = () => {
           color: #999;
         }
         .chat-message-bubble {
-          background: #f5f5f5;
+          background: #ffffff;
+          border: 1px solid #dce8eb;
           border-radius: 0 15px 15px 15px;
           padding: 14px 20px;
           font-size: 14px;
-          color: #0A0A0A;
+          color: #1c2b34 !important;
+          line-height: 1.5;
         }
         .chat-message.outgoing .chat-message-bubble {
           border-radius: 15px 0 15px 15px;
-          background: #e3f2fd;
+          background: #087d88;
+          border-color: #087d88;
+          color: #ffffff !important;
+        }
+        .doctor-chat-wrapper .chat-message-bubble * {
+          color: inherit !important;
+        }
+        .doctor-chat-wrapper .chat-message.incoming .chat-message-bubble {
+          background: #ffffff;
+          color: #1c2b34 !important;
         }
         .chat-input-area {
           padding: 15px;

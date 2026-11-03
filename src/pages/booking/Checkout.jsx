@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import * as appointmentApi from '../../api/appointments'
 import * as paymentApi from '../../api/payment'
 import { formatCurrency } from '../../utils/currency'
+import { getDeviceAppointmentTimeZone } from '../../utils/deviceTimeZone'
 
 const PENDING_BOOKING_KEY = 'pendingBooking'
 const PENDING_APPOINTMENT_KEY = 'pendingBookingAppointmentId'
@@ -127,6 +128,11 @@ const Checkout = () => {
       let appointmentId = createdAppointmentId
 
       if (!appointmentId) {
+        // Bookings created before device-zone persistence may still be in a
+        // session. Supply the current device zone only for that legacy case;
+        // otherwise preserve the zone at the time the patient selected the
+        // appointment clock.
+        const deviceTimeZone = getDeviceAppointmentTimeZone(booking.appointmentDate, booking.appointmentTime)
         const response = await appointmentApi.createAppointment({
           doctorId: booking.doctorId,
           patientId: user?._id,
@@ -137,8 +143,10 @@ const Checkout = () => {
           selectedServices: booking.selectedServices || [],
           patientNotes: booking.patientNotes || undefined,
           clinicName: booking.clinicName || undefined,
-          timezone: booking.timezone,
-          timezoneOffset: booking.timezoneOffset
+          timezone: booking.timezone || deviceTimeZone.timezone,
+          timezoneOffset: Number.isFinite(Number(booking.timezoneOffset))
+            ? Number(booking.timezoneOffset)
+            : deviceTimeZone.timezoneOffset
         })
 
         const appointment = response?.data || response

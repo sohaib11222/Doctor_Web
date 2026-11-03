@@ -1,0 +1,18 @@
+.legal-document { background: #f5fafb; color: #28414a; }
+.legal-document__hero { background: radial-gradient(circle at 88% 18%, rgba(106, 211, 196, .34), transparent 29%), linear-gradient(120deg, #073c4a, #0b7a8f); color: #fff; padding: 5.4rem 0 4.6rem; }
+.legal-document__eyebrow { color: #c4f5ed; display: block; font-size: .78rem; font-weight: 750; letter-spacing: .1em; margin-bottom: .8rem; text-transform: uppercase; }
+.legal-document__hero h1 { color: inherit; font-size: clamp(2rem, 4vw, 3.35rem); font-weight: 780; letter-spacing: -.035em; margin: 0 0 .85rem; }
+.legal-document__hero p { font-size: 1.05rem; line-height: 1.7; margin: 0; max-width: 690px; opacity: .94; }
+.legal-document__updated { display: inline-block; font-size: .82rem; margin-top: 1.25rem; opacity: .78; }
+.legal-document__content { padding: 3.5rem 0 5rem; }
+.legal-document__card { background: #fff; border: 1px solid #dcebed; border-radius: 20px; box-shadow: 0 16px 42px rgba(15, 65, 77, .08); margin: -1.8rem auto 0; max-width: 920px; padding: clamp(1.5rem, 4vw, 3.3rem); position: relative; }
+.legal-document__card section + section { border-top: 1px solid #e6eff1; margin-top: 1.8rem; padding-top: 1.8rem; }
+.legal-document__card h2 { color: #123d49; font-size: 1.24rem; font-weight: 760; margin: 0 0 .7rem; }
+.legal-document__card p, .legal-document__card li { color: #526a72; line-height: 1.72; }
+.legal-document__card p { margin-bottom: .8rem; }
+.legal-document__card ul { margin: .5rem 0 0; padding-left: 1.25rem; }
+.legal-document__card li + li { margin-top: .38rem; }
+.legal-document__notice { background: #eef9f7; border-left: 4px solid #16a085; border-radius: 8px; color: #285963; margin: 1.5rem 0 0; padding: 1rem 1.1rem; }
+.legal-document__contact { background: #f7fafb; border-radius: 12px; margin-top: 2rem; padding: 1.15rem 1.2rem; }
+.legal-document__contact a { color: #087d88; font-weight: 700; }
+@media (max-width: 575px) { .legal-document__hero { padding: 3.8rem 0 3.5rem; } .legal-document__content { padding: 2rem 0 3rem; } .legal-document__card { border-radius: 14px; margin-top: -1rem; } }
