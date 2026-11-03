@@ -90,6 +90,8 @@ import PharmacyOrders from './pages/pharmacy/PharmacyOrders'
 import PharmacyOrderDetails from './pages/pharmacy/PharmacyOrderDetails'
 import PharmacyPayment from './pages/pharmacy/PharmacyPayment'
 import PharmacySubscriptionPlans from './pages/pharmacy/PharmacySubscriptionPlans'
+import PharmacyPrescriptionRequests from './pages/pharmacy/PharmacyPrescriptionRequests'
+import AdminSupportChat from './pages/pharmacy/AdminSupportChat'
 
 // Patient Pages
 import PatientDashboard from './pages/patient/PatientDashboard'
@@ -445,6 +447,16 @@ function App() {
             <Route path="/pharmacy/subscription-plans" element={
               <ProtectedRoute role="PHARMACY" allowPending={true}>
                 <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Subscription Plans", li2: "Subscription Plans" }}><PharmacySubscriptionPlans /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/pharmacy/prescription-requests" element={
+              <ProtectedRoute role={["PHARMACY", "PARAPHARMACY"]} requireApproved={true}>
+                <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Prescription requests", li2: "Review" }}><PharmacyPrescriptionRequests /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/pharmacy/admin-chat" element={
+              <ProtectedRoute role={["PHARMACY", "PARAPHARMACY"]} allowPending={true}>
+                <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Admin support", li2: "Messages" }}><AdminSupportChat /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/chat-doctor" element={

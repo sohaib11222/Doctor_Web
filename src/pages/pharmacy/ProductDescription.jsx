@@ -1,414 +1,95 @@
-import { useState, useEffect } from 'react'
-import { Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import Breadcrumb from '../../components/common/Breadcrumb'
-import * as productApi from '../../api/product'
-import { useCart } from '../../contexts/CartContext'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
+import Breadcrumb from '../../components/common/Breadcrumb'
+import { useAuth } from '../../contexts/AuthContext'
+import { useCart } from '../../contexts/CartContext'
+import * as productApi from '../../api/product'
+import * as prescriptionApi from '../../api/productPrescriptionRequest'
+import api from '../../api/axios'
+import { getImageUrl } from '../../utils/imageUtils'
+
+const unwrap = (response) => { const outer = response?.data ?? response; return outer?.data ?? outer }
+const detail = (label, value) => value ? <div className="col-md-6 mb-3" key={label}><div className="small text-muted">{label}</div><div style={{ whiteSpace: 'pre-line' }}>{value}</div></div> : null
+const variantLabel = (variant) => variant?.name || [variant?.strengthValue && `${variant.strengthValue} ${variant.strengthUnit || ''}`.trim(), variant?.dosageForm, variant?.unitsPerPack && `${variant.unitsPerPack} ${variant.unitLabel || 'units'}`].filter(Boolean).join(' · ') || 'Default option'
 
 const ProductDescription = () => {
+  const { user } = useAuth()
   const { addToCart } = useCart()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const productId = searchParams.get('id')
-  
+  const requestedVariantId = searchParams.get('variantId')
+  const fileRef = useRef(null)
   const [quantity, setQuantity] = useState(1)
+  const [selectedVariantId, setSelectedVariantId] = useState(requestedVariantId || '')
+  const [uploading, setUploading] = useState(false)
+  const [showApproved, setShowApproved] = useState(false)
 
-  // Fetch product details
-  const { data: productData, isLoading: productLoading, error: productError } = useQuery({
-    queryKey: ['product', productId],
-    queryFn: () => productApi.getProductById(productId),
-    enabled: !!productId
+  const productQuery = useQuery({ queryKey: ['product', productId], queryFn: () => productApi.getProductById(productId), enabled: Boolean(productId) })
+  const product = unwrap(productQuery.data)
+  const variants = Array.isArray(product?.variants) && product.variants.length ? product.variants.filter((variant) => variant.isActive !== false) : []
+  const selectedVariant = variants.find((variant) => String(variant._id) === String(selectedVariantId)) || variants.find((variant) => variant.isDefault) || variants[0] || null
+  useEffect(() => { if (selectedVariant && String(selectedVariantId) !== String(selectedVariant._id)) setSelectedVariantId(String(selectedVariant._id)) }, [selectedVariant, selectedVariantId])
+  const patient = String(user?.role || '').toUpperCase() === 'PATIENT'
+  const eligibilityQuery = useQuery({
+    queryKey: ['product-prescription-eligibility', productId, selectedVariant?._id],
+    queryFn: () => prescriptionApi.getProductPrescriptionEligibility(productId, selectedVariant?._id),
+    enabled: Boolean(product?.requiresPrescription && patient && productId),
+    refetchInterval: product?.requiresPrescription && patient ? 10000 : false,
   })
+  const eligibility = unwrap(eligibilityQuery.data) || { requiresPrescription: Boolean(product?.requiresPrescription), canPurchase: !product?.requiresPrescription, status: product?.requiresPrescription ? 'NOT_SUBMITTED' : 'NOT_REQUIRED' }
+  useEffect(() => { if (eligibility.status === 'APPROVED') setShowApproved(true) }, [eligibility.status])
+  const purchasePrice = selectedVariant?.discountPrice ?? selectedVariant?.price ?? product?.discountPrice ?? product?.price ?? 0
+  const originalPrice = selectedVariant?.discountPrice ? selectedVariant.price : product?.discountPrice ? product.price : null
+  const stock = selectedVariant?.stock ?? product?.stock ?? 0
+  const canPurchase = !product?.requiresPrescription || (patient && eligibility.canPurchase)
 
-  const product = productData?.data || productData
-
-  useEffect(() => {
-    if (product?.stock && quantity > product.stock) {
-      setQuantity(product.stock)
-    }
-  }, [product, quantity])
-
-  const handleQuantityChange = (delta) => {
-    const newQuantity = quantity + delta
-    if (newQuantity < 1) return
-    if (product?.stock && newQuantity > product.stock) {
-      toast.warning(`Only ${product.stock} items available in stock`)
-      return
-    }
-    setQuantity(newQuantity)
+  useEffect(() => { if (quantity > stock) setQuantity(Math.max(1, stock || 1)) }, [stock, quantity])
+  const submitPrescription = useMutation({
+    mutationFn: prescriptionApi.submitProductPrescriptionRequest,
+    onSuccess: () => { toast.success('Prescription submitted for review. We will notify you once it is approved.'); queryClient.invalidateQueries({ queryKey: ['product-prescription-eligibility', productId] }) },
+    onError: (error) => toast.error(error.response?.data?.message || error.message || 'Unable to submit prescription'),
+  })
+  const uploadPrescription = async (event) => {
+    const file = event.target.files?.[0]; if (!file) return
+    try {
+      setUploading(true)
+      const data = new FormData(); data.append('file', file)
+      const response = await api.post('/upload/prescription', data, { headers: { 'Content-Type': 'multipart/form-data' } })
+      const upload = unwrap(response)
+      await submitPrescription.mutateAsync({ productId, variantId: selectedVariant?._id || null, prescriptionUrl: upload?.url, originalName: file.name, mimeType: file.type })
+    } catch (error) { toast.error(error.response?.data?.message || error.message || 'Prescription upload failed') } finally { setUploading(false); event.target.value = '' }
   }
-
-  const handleAddToCart = () => {
-    if (!product) return
-    if (product.stock === 0) {
-      toast.error('Product is out of stock')
-      return
-    }
-    addToCart(product, quantity)
-    toast.success(`${quantity} x ${product.name} added to cart!`)
+  const add = (buyNow) => {
+    if (!user) { toast.info('Please sign in to purchase products.'); navigate('/login'); return }
+    if (!patient) { toast.error('Only patient accounts can purchase products.'); return }
+    if (stock < 1) { toast.error('This option is out of stock.'); return }
+    if (!canPurchase) { toast.info(product.requiresPrescription ? 'Upload an approved prescription before purchasing this product.' : 'This product is not available for purchase.'); return }
+    addToCart(product, quantity, selectedVariant)
+    toast.success(`${quantity} × ${product.name} added to your cart`)
+    if (buyNow) navigate('/product-checkout')
   }
+  if (productQuery.isLoading) return <><Breadcrumb title="Pharmacy" li1="Product" li2="Loading" /><div className="content"><div className="container text-center py-5"><span className="spinner-border text-primary" /></div></div></>
+  if (productQuery.isError || !product) return <><Breadcrumb title="Pharmacy" li1="Product" li2="Not found" /><div className="content"><div className="container"><div className="alert alert-danger">This product is unavailable. <Link to="/product-all">Browse products</Link></div></div></div></>
+  const generalDetails = product.productType === 'PHARMACY_MEDICINE' ? product.medicineDetails : product.parapharmacyDetails
+  const statusMessage = { NOT_SUBMITTED: 'A prescription is required before this product can be purchased.', PENDING: 'Your prescription is under review by the seller.', REJECTED: eligibility.request?.reviewNotes || 'Your prescription was not approved. Please upload another copy.', APPROVED: 'Your prescription is approved. This product is ready to purchase.' }[eligibility.status]
 
-  const handleBuyNow = () => {
-    if (!product) return
-    if (product.stock === 0) {
-      toast.error('Product is out of stock')
-      return
-    }
-    addToCart(product, quantity)
-    navigate('/product-checkout')
-  }
-
-  if (productLoading) {
-    return (
-      <>
-        <Breadcrumb title="Pharmacy" li1="Product Description" li2="Loading..." />
-        <div className="content">
-          <div className="container">
-            <div className="text-center py-5">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
-    )
-  }
-
-  if (productError || !product) {
-    return (
-      <>
-        <Breadcrumb title="Pharmacy" li1="Product Description" li2="Not Found" />
-        <div className="content">
-          <div className="container">
-            <div className="alert alert-danger">
-              <h5>Product Not Found</h5>
-              <p>The product you're looking for doesn't exist.</p>
-              <Link to="/product-all" className="btn btn-primary">Browse Products</Link>
-            </div>
-          </div>
-        </div>
-      </>
-    )
-  }
-
-  const productPrice = product.discountPrice || product.price
-  const originalPrice = product.discountPrice ? product.price : null
-  const discountPercent = originalPrice ? Math.round(((originalPrice - productPrice) / originalPrice) * 100) : 0
-  // Normalize image URL
-  const normalizeImageUrl = (imageUri) => {
-    if (!imageUri || typeof imageUri !== 'string') return null
-    const trimmedUri = imageUri.trim()
-    if (!trimmedUri) return null
-    const apiBaseURL = import.meta.env.VITE_API_URL || 'https://mydoctoradmin.mydoctorplus.it/api'
-    const baseURL = apiBaseURL.replace('/api', '')
-    if (trimmedUri.startsWith('http://') || trimmedUri.startsWith('https://')) {
-      return trimmedUri
-    }
-    const imagePath = trimmedUri.startsWith('/') ? trimmedUri : `/${trimmedUri}`
-    return `${baseURL}${imagePath}`
-  }
-  
-  const productImage = normalizeImageUrl(product.images?.[0]) || '/assets/img/products/product.jpg'
-  const isInStock = product.stock > 0
-
-  return (
-    <>
-      <Breadcrumb title="Pharmacy" li1="Product Description" li2={product.name} />
-      <div className="content">
-        <div className="container">
-          <div className="row">
-            <div className="col-md-7 col-lg-9 col-xl-9">
-              <div className="card">
-                <div className="card-body product-description">
-                  <div className="doctor-widget">
-                    <div className="doc-info-left">
-                      <div className="doctor-img1">
-                        <img src={productImage} className="img-fluid" alt={product.name} />
-                      </div>
-                      <div className="doc-info-cont product-cont">
-                        <h4 className="doc-name mb-2">{product.name}</h4>
-                        {product.sellerId && typeof product.sellerId === 'object' && (
-                          <p>
-                            <span className="text-muted">Sold By </span> {product.sellerId.fullName || 'Unknown Seller'}
-                          </p>
-                        )}
-                        <p>{product.description || 'No description available.'}</p>
-                        {product.tags && product.tags.length > 0 && (
-                          <div className="feature-product pt-4">
-                            <span>Tags:</span>
-                            <ul>
-                              {product.tags.map((tag, idx) => (
-                                <li key={idx}>{tag}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="card">
-                <div className="card-body pt-0">
-                  <h3 className="pt-4">Product Details</h3>
-                  <hr />
-                  <div className="tab-content pt-3">
-                    <div role="tabpanel" id="doc_overview" className="tab-pane fade show active">
-                      <div className="row">
-                        <div className="col-md-9">
-                          <div className="widget about-widget">
-                            <h4 className="widget-title">Description</h4>
-                            <p>{product.description || 'No description available for this product.'}</p>
-                          </div>
-
-                          {product.category && (
-                            <div className="widget awards-widget">
-                              <h4 className="widget-title">Category</h4>
-                              <div className="experience-box">
-                                <ul className="experience-list">
-                                  <li>
-                                    <div className="experience-user">
-                                      <div className="before-circle"></div>
-                                    </div>
-                                    <div className="experience-content">
-                                      <div className="timeline-content">
-                                        <p>{product.category}</p>
-                                      </div>
-                                    </div>
-                                  </li>
-                                  {product.subCategory && (
-                                    <li>
-                                      <div className="experience-user">
-                                        <div className="before-circle"></div>
-                                      </div>
-                                      <div className="experience-content">
-                                        <div className="timeline-content">
-                                          <p>Subcategory: {product.subCategory}</p>
-                                        </div>
-                                      </div>
-                                    </li>
-                                  )}
-                                </ul>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="col-md-5 col-lg-3 col-xl-3 theiaStickySidebar">
-              <div className="card search-filter">
-                <div className="card-body">
-                  <div className="clini-infos mt-0">
-                    <h2>
-                      €{productPrice.toFixed(2)}
-                      {originalPrice && (
-                        <>
-                          {' '}
-                          <b className="text-lg strike">€{originalPrice.toFixed(2)}</b>
-                          {discountPercent > 0 && (
-                            <span className="text-lg text-success">
-                              {' '}
-                              <b>{discountPercent}% off</b>
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </h2>
-                  </div>
-                  <span className={`badge ${isInStock ? 'badge-primary' : 'badge-danger'}`}>
-                    {isInStock ? `In stock (${product.stock} available)` : 'Out of stock'}
-                  </span>
-                  <div className="custom-increment pt-4">
-                    <div className="input-group1">
-                      <span className="input-group-btn float-start">
-                        <button
-                          type="button"
-                          className="quantity-left-minus btn btn-danger btn-number"
-                          onClick={() => handleQuantityChange(-1)}
-                          disabled={quantity <= 1}
-                        >
-                          <span><i className="fas fa-minus"></i></span>
-                        </button>
-                      </span>
-                      <input
-                        type="text"
-                        id="quantity"
-                        name="quantity"
-                        className="input-number"
-                        value={quantity}
-                        readOnly
-                      />
-                      <span className="input-group-btn float-end">
-                        <button
-                          type="button"
-                          className="quantity-right-plus btn btn-success btn-number"
-                          onClick={() => handleQuantityChange(1)}
-                          disabled={!isInStock || (product.stock && quantity >= product.stock)}
-                        >
-                          <span><i className="fas fa-plus"></i></span>
-                        </button>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="clinic-details mt-4">
-                    <div className="clinic-booking">
-                      <button
-                        className="btn btn-outline-primary w-100 mb-3"
-                        onClick={handleAddToCart}
-                        disabled={!isInStock}
-                        style={{
-                          padding: '12px 24px',
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          borderWidth: '2px',
-                          borderRadius: '8px',
-                          transition: 'all 0.3s ease',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          backgroundColor: '#fff',
-                          borderColor: '#0d6efd',
-                          color: '#0d6efd',
-                          cursor: !isInStock ? 'not-allowed' : 'pointer',
-                          opacity: !isInStock ? 0.6 : 1
-                        }}
-                        onMouseEnter={(e) => {
-                          if (isInStock) {
-                            e.currentTarget.style.backgroundColor = '#0d6efd'
-                            e.currentTarget.style.color = '#fff'
-                            e.currentTarget.style.transform = 'translateY(-2px)'
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)'
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (isInStock) {
-                            e.currentTarget.style.backgroundColor = '#fff'
-                            e.currentTarget.style.color = '#0d6efd'
-                            e.currentTarget.style.transform = 'translateY(0)'
-                            e.currentTarget.style.boxShadow = 'none'
-                          }
-                        }}
-                      >
-                        <i className="fas fa-shopping-cart"></i>
-                        Add To Cart
-                      </button>
-                      <button
-                        className="btn btn-primary w-100"
-                        onClick={handleBuyNow}
-                        disabled={!isInStock}
-                        style={{
-                          padding: '14px 24px',
-                          fontSize: '16px',
-                          fontWeight: '700',
-                          border: 'none',
-                          borderRadius: '8px',
-                          transition: 'all 0.3s ease',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          color: '#fff',
-                          cursor: !isInStock ? 'not-allowed' : 'pointer',
-                          opacity: !isInStock ? 0.6 : 1,
-                          boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (isInStock) {
-                            e.currentTarget.style.transform = 'translateY(-2px)'
-                            e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.6)'
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (isInStock) {
-                            e.currentTarget.style.transform = 'translateY(0)'
-                            e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)'
-                          }
-                        }}
-                      >
-                        <i className="fas fa-bolt"></i>
-                        Buy Now
-                      </button>
-                    </div>
-                  </div>
-                  <div className="card flex-fill mt-4 mb-0">
-                    <ul className="list-group list-group-flush">
-                      {product.sku && (
-                        <li className="list-group-item">
-                          SKU <span className="float-end">{product.sku}</span>
-                        </li>
-                      )}
-                      <li className="list-group-item">
-                        Stock <span className="float-end">{product.stock || 0} units</span>
-                      </li>
-                      {product.category && (
-                        <li className="list-group-item">
-                          Category <span className="float-end">{product.category}</span>
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              <div className="card search-filter">
-                <div className="card-body">
-                  <div className="card flex-fill mt-0 mb-0">
-                    <ul className="list-group list-group-flush benifits-col">
-                      <li className="list-group-item d-flex align-items-center">
-                        <div>
-                          <i className="fas fa-shipping-fast"></i>
-                        </div>
-                        <div>
-                          Free Shipping<br />
-                          <span className="text-sm">For orders from €50</span>
-                        </div>
-                      </li>
-                      <li className="list-group-item d-flex align-items-center">
-                        <div>
-                          <i className="far fa-question-circle"></i>
-                        </div>
-                        <div>
-                          Support 24/7<br />
-                          <span className="text-sm">Call us anytime</span>
-                        </div>
-                      </li>
-                      <li className="list-group-item d-flex align-items-center">
-                        <div>
-                          <i className="fas fa-hands"></i>
-                        </div>
-                        <div>
-                          100% Safety<br />
-                          <span className="text-sm">Only secure payments</span>
-                        </div>
-                      </li>
-                      <li className="list-group-item d-flex align-items-center">
-                        <div>
-                          <i className="fas fa-tag"></i>
-                        </div>
-                        <div>
-                          Hot Offers<br />
-                          <span className="text-sm">Discounts up to 90%</span>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+  return <>
+    <Breadcrumb title="Pharmacy" li1="Product details" li2={product.name} />
+    <div className="content"><div className="container"><div className="row">
+      <div className="col-lg-8"><div className="card"><div className="card-body"><div className="row"><div className="col-md-5"><img className="img-fluid rounded-3 w-100" style={{ maxHeight: 390, objectFit: 'cover' }} src={getImageUrl(product.images?.[0], '/assets/img/products/product.jpg')} alt={product.name} /><div className="d-flex gap-2 mt-2 flex-wrap">{product.images?.slice(1).map((image) => <img key={image} src={getImageUrl(image)} alt="" style={{ width: 58, height: 58, borderRadius: 7, objectFit: 'cover' }} />)}</div></div><div className="col-md-7"><span className="badge bg-light text-dark mb-2">{product.productType === 'PHARMACY_MEDICINE' ? 'Pharmacy medicine' : 'Parapharmacy product'}</span><h2>{product.name}</h2>{product.brand && <p className="text-muted mb-2">{product.brand}{product.manufacturer ? ` · ${product.manufacturer}` : ''}</p>}<p style={{ whiteSpace: 'pre-line' }}>{product.description || 'No description provided.'}</p>{product.tags?.length > 0 && <div className="d-flex flex-wrap gap-1">{product.tags.map((tag) => <span key={tag} className="badge bg-light text-dark border">{tag}</span>)}</div>}</div></div></div></div>
+      <div className="card"><div className="card-body"><h4>Product information</h4><div className="row mt-3">{detail('Category', [product.category, product.subCategory].filter(Boolean).join(' · '))}{detail('Active ingredients', generalDetails?.activeIngredients || generalDetails?.ingredients)}{detail('How to use', generalDetails?.dosageInstructions || generalDetails?.usageInstructions)}{detail('Warnings', generalDetails?.warnings)}{detail('Storage', generalDetails?.storageInstructions)}{detail('Allergens', generalDetails?.allergens)}{detail('Authorization holder', generalDetails?.authorizationHolder)}{detail('Registration number', generalDetails?.registrationNumber)}</div>{generalDetails?.indications && <div className="mt-2"><div className="small text-muted">Indications</div><p style={{ whiteSpace: 'pre-line' }}>{generalDetails.indications}</p></div>}{generalDetails?.leafletUrl && <a className="btn btn-sm btn-outline-primary" target="_blank" rel="noreferrer" href={generalDetails.leafletUrl}>View product leaflet</a>}</div></div>
       </div>
-    </>
-  )
+      <div className="col-lg-4"><div className="card search-filter"><div className="card-body"><div className="d-flex align-items-end gap-2"><h2 className="mb-0">€{Number(purchasePrice).toFixed(2)}</h2>{originalPrice && <del className="text-muted">€{Number(originalPrice).toFixed(2)}</del>}</div>{variants.length > 1 && <div className="mt-3"><label className="form-label fw-semibold">Choose an option</label><select className="form-select" value={selectedVariant?._id || ''} onChange={(event) => setSelectedVariantId(event.target.value)}>{variants.map((variant) => <option key={variant._id} value={variant._id}>{variantLabel(variant)} — €{Number(variant.discountPrice ?? variant.price).toFixed(2)}</option>)}</select></div>}<div className="mt-3 d-flex justify-content-between"><span className={`badge ${stock ? 'bg-success' : 'bg-danger'}`}>{stock ? `${stock} in stock` : 'Out of stock'}</span>{selectedVariant?.packageDescription && <small className="text-muted text-end">{selectedVariant.packageDescription}</small>}</div>
+        {product.shippingSettings && <div className="alert alert-light border mt-3 mb-0"><div><i className="fa-solid fa-truck me-2 text-primary" />Delivery: <strong>€{Number(product.shippingSettings.fee || 0).toFixed(2)}</strong></div>{product.shippingSettings.deliveryDays && <small className="text-muted">Estimated delivery in {product.shippingSettings.deliveryDays} day{product.shippingSettings.deliveryDays === 1 ? '' : 's'}.</small>}</div>}
+        {product.requiresPrescription && <div className={`alert mt-3 mb-0 ${eligibility.status === 'APPROVED' ? 'alert-success' : eligibility.status === 'REJECTED' ? 'alert-danger' : 'alert-warning'}`}><strong><i className="fa-solid fa-file-prescription me-2" />Prescription required</strong><div className="small mt-1">{patient ? statusMessage : 'Sign in with a patient account to submit a prescription.'}</div>{patient && eligibility.status !== 'APPROVED' && <><input ref={fileRef} className="d-none" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" onChange={uploadPrescription} /><button type="button" className="btn btn-sm btn-primary mt-2" disabled={uploading || submitPrescription.isPending || eligibility.status === 'PENDING'} onClick={() => fileRef.current?.click()}>{uploading ? 'Uploading…' : eligibility.status === 'PENDING' ? 'Awaiting review' : eligibility.status === 'REJECTED' ? 'Upload a new prescription' : 'Upload prescription'}</button></>}</div>}
+        <div className="input-group mt-4" style={{ maxWidth: 170 }}><button className="btn btn-outline-secondary" type="button" disabled={quantity <= 1} onClick={() => setQuantity((value) => value - 1)}>−</button><input className="form-control text-center" value={quantity} readOnly /><button className="btn btn-outline-secondary" type="button" disabled={quantity >= stock} onClick={() => setQuantity((value) => value + 1)}>+</button></div><div className="d-grid gap-2 mt-3"><button className="btn btn-outline-primary" disabled={!stock || !canPurchase} onClick={() => add(false)}><i className="fa-solid fa-cart-plus me-2" />Add to cart</button><button className="btn btn-primary" disabled={!stock || !canPurchase} onClick={() => add(true)}><i className="fa-solid fa-bag-shopping me-2" />Buy now</button></div><ul className="list-group list-group-flush mt-3"><li className="list-group-item px-0">SKU <span className="float-end">{selectedVariant?.sku || product.sku || '—'}</span></li>{selectedVariant?.packageType && <li className="list-group-item px-0">Package <span className="float-end">{selectedVariant.packageType}</span></li>}</ul></div></div></div>
+    </div></div></div>
+    {showApproved && <><div className="modal-backdrop fade show" /><div className="modal fade show d-block" role="dialog"><div className="modal-dialog modal-dialog-centered"><div className="modal-content"><div className="modal-body text-center p-4"><i className="fa-solid fa-circle-check text-success" style={{ fontSize: 48 }} /><h4 className="mt-3">Prescription approved</h4><p className="text-muted mb-0">You can now purchase {product.name}. Your approval is securely linked to this product option.</p></div><div className="modal-footer justify-content-center"><button className="btn btn-primary" onClick={() => setShowApproved(false)}>Continue shopping</button></div></div></div></div></>}
+  </>
 }
 
 export default ProductDescription

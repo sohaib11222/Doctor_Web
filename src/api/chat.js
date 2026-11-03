@@ -199,3 +199,13 @@ export const sendMessageToDoctor = async (doctorId, appointmentId, message, atta
   return response.data
 }
 
+export const getOrCreateAdminSupportConversation = async (userId = null) => {
+  const response = await axios.post('/chat/admin-support/conversation', userId ? { userId } : {})
+  return response.data
+}
+
+export const sendAdminSupportMessage = async (conversationId, message, attachments = null) => {
+  const response = await axios.post(`/chat/admin-support/conversations/${conversationId}/messages`, { message, ...(attachments?.length ? { attachments } : {}) })
+  return response.data
+}
+

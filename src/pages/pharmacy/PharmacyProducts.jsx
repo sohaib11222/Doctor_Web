@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
@@ -8,496 +8,138 @@ import * as productApi from '../../api/product'
 import * as pharmacyApi from '../../api/pharmacy'
 import { getImageUrl } from '../../utils/imageUtils'
 
+const makeVariant = (medicine, index = 1) => ({
+  name: `Option ${index}`, sku: '', barcode: '', strengthValue: '', strengthUnit: 'mg', dosageForm: medicine ? 'Tablet' : '', packageType: 'Box', unitsPerPack: '', unitLabel: medicine ? 'tablets' : 'units', packageDescription: '', price: '', discountPrice: '', stock: '', isDefault: index === 1, isActive: true,
+})
+
+const emptyForm = (medicine) => ({
+  name: '', brand: '', manufacturer: '', barcode: '', sku: '', description: '', category: '', subCategory: '', tags: '', requiresPrescription: false, isActive: true, images: [],
+  medicineDetails: { activeIngredients: '', administrationRoute: '', indications: '', dosageInstructions: '', warnings: '', storageInstructions: '', authorizationHolder: '', registrationNumber: '', leafletUrl: '' },
+  parapharmacyDetails: { productClass: '', ingredients: '', allergens: '', usageInstructions: '', warnings: '', storageInstructions: '' },
+  variants: [makeVariant(medicine)],
+})
+
+const nullableNumber = (value) => value === '' || value === null || value === undefined ? null : Number(value)
+const optional = (value) => String(value || '').trim() || null
+
 const PharmacyProducts = () => {
   const { user } = useAuth()
-  const status = user?.status?.toUpperCase()
-
-  const userRole = user?.role?.toUpperCase()
-  const isParapharmacy = userRole === 'PARAPHARMACY'
-
-  const { data: myPharmacyResponse } = useQuery({
-    queryKey: ['my-pharmacy'],
-    queryFn: () => pharmacyApi.getMyPharmacy(),
-    enabled: !!user
-  })
-
-  const { data: subscriptionResponse } = useQuery({
-    queryKey: ['my-pharmacy-subscription'],
-    queryFn: () => pharmacyApi.getMyPharmacySubscription(),
-    enabled: !!user && !isParapharmacy
-  })
-
-  const subscriptionData = subscriptionResponse?.data || subscriptionResponse
-  const hasActiveSubscription = isParapharmacy ? true : Boolean(subscriptionData?.hasActiveSubscription)
-
-  const myPharmacy = useMemo(() => {
-    if (!myPharmacyResponse) return null
-    const responseData = myPharmacyResponse.data || myPharmacyResponse
-    return responseData.data || responseData
-  }, [myPharmacyResponse])
-
-  const isProfileComplete = useMemo(() => {
-    if (!myPharmacy) return false
-    const nameOk = Boolean(String(myPharmacy.name || '').trim())
-    const phoneOk = Boolean(String(myPharmacy.phone || '').trim())
-    const line1Ok = Boolean(String(myPharmacy.address?.line1 || '').trim())
-    const cityOk = Boolean(String(myPharmacy.address?.city || '').trim())
-    return nameOk && phoneOk && line1Ok && cityOk
-  }, [myPharmacy])
-
+  const queryClient = useQueryClient()
+  const role = String(user?.role || '').toUpperCase()
+  const isParapharmacy = role === 'PARAPHARMACY'
+  const isMedicine = !isParapharmacy
   const [page, setPage] = useState(1)
-  const [limit] = useState(10)
-
-  const queryParams = useMemo(() => {
-    return {
-      page,
-      limit,
-      sellerType: isParapharmacy ? 'PARAPHARMACY' : 'PHARMACY',
-      sellerId: user?._id
-    }
-  }, [page, limit, user?._id, isParapharmacy])
-
-  const { data: productsResponse, isLoading, refetch } = useQuery({
-    queryKey: ['pharmacy-products', queryParams],
-    queryFn: () => productApi.listProducts(queryParams),
-    enabled: !!user?._id
-  })
-
-  const products = useMemo(() => {
-    if (!productsResponse) return []
-    const responseData = productsResponse.data || productsResponse
-    return Array.isArray(responseData) ? responseData : (responseData.products || [])
-  }, [productsResponse])
-
-  const pagination = useMemo(() => {
-    if (!productsResponse) return null
-    const responseData = productsResponse.data || productsResponse
-    return responseData.pagination || null
-  }, [productsResponse])
-
   const [showModal, setShowModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    price: '',
-    stock: '',
-    description: '',
-    category: '',
-    subCategory: '',
-    images: []
-  })
-  const [imageFiles, setImageFiles] = useState([])
+  const [form, setForm] = useState(() => emptyForm(isMedicine))
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
-  const dummyCategoryMap = useMemo(() => {
-    return {
-      'Family Care': ['Pain Relief', 'Cold & Flu', 'Digestive Health', 'Vitamins'],
-      'Skin Care': ['Moisturizers', 'Acne Care', 'Sunscreen', 'Hand Cream'],
-      'Hair Care': ['Shampoo', 'Conditioner', 'Hair Oil', 'Anti-Dandruff'],
-      'Baby Care': ['Diapers', 'Baby Lotion', 'Baby Shampoo', 'Wipes'],
-      "Men's Care": ['Shaving', 'Deodorants', 'Face Wash'],
-      "Women's Care": ['Feminine Hygiene', 'Supplements', 'Skin Care'],
-      'Personal Hygiene': ['Toothpaste', 'Mouthwash', 'Soap', 'Sanitizers']
-    }
-  }, [])
+  const { data: setupResponse } = useQuery({ queryKey: ['pharmacy-setup-status'], queryFn: pharmacyApi.getPharmacySetupStatus, enabled: Boolean(user?._id) })
+  const setupOuter = setupResponse?.data ?? setupResponse
+  const setup = setupOuter?.data ?? setupOuter
+  const canManageProducts = Boolean(setup?.profileCompleted && (!setup?.requiresSubscription || setup?.hasActiveSubscription) && String(user?.status || '').toUpperCase() === 'APPROVED')
 
-  const categoryOptions = useMemo(() => {
-    const set = new Set()
-    products.forEach((p) => {
-      if (p?.category) set.add(String(p.category))
+  const params = useMemo(() => ({ page, limit: 12, sellerType: isParapharmacy ? 'PARAPHARMACY' : 'PHARMACY', sellerId: user?._id, isActive: 'all' }), [page, user?._id, isParapharmacy])
+  const { data: productsResponse, isLoading, refetch } = useQuery({ queryKey: ['pharmacy-products', params], queryFn: () => productApi.listProducts(params), enabled: Boolean(user?._id) })
+  const payload = productsResponse?.data ?? productsResponse
+  const products = payload?.data?.products || payload?.products || []
+  const pagination = payload?.data?.pagination || payload?.pagination
+
+  const openCreate = () => {
+    if (!canManageProducts) { toast.info('Complete the required account setup before managing products.'); return }
+    setEditingProduct(null); setForm(emptyForm(isMedicine)); setShowModal(true)
+  }
+  const openEdit = (product) => {
+    if (!canManageProducts) { toast.info('Complete the required account setup before managing products.'); return }
+    const variants = Array.isArray(product.variants) && product.variants.length ? product.variants : [{ ...makeVariant(isMedicine), name: product.name, sku: product.sku || '', barcode: product.barcode || '', price: product.price ?? '', discountPrice: product.discountPrice ?? '', stock: product.stock ?? '', isDefault: true }]
+    setEditingProduct(product)
+    setForm({
+      ...emptyForm(isMedicine), name: product.name || '', brand: product.brand || '', manufacturer: product.manufacturer || '', barcode: product.barcode || '', sku: product.sku || '', description: product.description || '', category: product.category || '', subCategory: product.subCategory || '', tags: Array.isArray(product.tags) ? product.tags.join(', ') : '', requiresPrescription: Boolean(product.requiresPrescription), isActive: product.isActive !== false, images: product.images || [],
+      medicineDetails: { ...emptyForm(true).medicineDetails, ...(product.medicineDetails || {}) }, parapharmacyDetails: { ...emptyForm(false).parapharmacyDetails, ...(product.parapharmacyDetails || {}) },
+      variants: variants.map((variant, index) => ({ ...makeVariant(isMedicine, index + 1), ...variant, price: variant.price ?? '', discountPrice: variant.discountPrice ?? '', stock: variant.stock ?? '', strengthValue: variant.strengthValue ?? '', unitsPerPack: variant.unitsPerPack ?? '' })),
     })
-    const fromProducts = Array.from(set).sort()
-    if (fromProducts.length > 0) return fromProducts
-    return Object.keys(dummyCategoryMap)
-  }, [products, dummyCategoryMap])
-
-  const subCategoryOptions = useMemo(() => {
-    const set = new Set()
-    products.forEach((p) => {
-      if (p?.subCategory) set.add(String(p.subCategory))
-    })
-    const fromProducts = Array.from(set).sort()
-    if (fromProducts.length > 0) return fromProducts
-
-    const selectedCategory = String(formData.category || '')
-    const all = Object.values(dummyCategoryMap).flat()
-    const filtered = selectedCategory && dummyCategoryMap[selectedCategory]
-      ? dummyCategoryMap[selectedCategory]
-      : all
-    return Array.from(new Set(filtered)).sort()
-  }, [products, dummyCategoryMap, formData.category])
-
-  const canSell = status === 'APPROVED'
-  const canManageProducts = canSell && isProfileComplete && hasActiveSubscription
+    setShowModal(true)
+  }
+  const change = (key, value) => setForm((current) => ({ ...current, [key]: value }))
+  const changeDetails = (group, key, value) => setForm((current) => ({ ...current, [group]: { ...current[group], [key]: value } }))
+  const changeVariant = (index, key, value) => setForm((current) => ({ ...current, variants: current.variants.map((variant, i) => i === index ? { ...variant, [key]: value } : variant) }))
+  const setDefaultVariant = (index) => setForm((current) => ({ ...current, variants: current.variants.map((variant, i) => ({ ...variant, isDefault: i === index })) }))
+  const removeVariant = (index) => setForm((current) => {
+    if (current.variants.length === 1) return current
+    const variants = current.variants.filter((_, i) => i !== index)
+    if (!variants.some((variant) => variant.isDefault)) variants[0].isDefault = true
+    return { ...current, variants }
+  })
 
   const uploadImages = async (files) => {
-    if (!files || files.length === 0) return []
-
-    const formData = new FormData()
-    Array.from(files).forEach((file) => formData.append('files', file))
-
-    const response = await api.post('/upload/product', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-
-    const responseData = response?.data || response
-    const urls = responseData?.data?.urls || responseData?.urls
-
-    return Array.isArray(urls) ? urls : []
-  }
-
-  const handleCreate = () => {
-    if (!myPharmacy) {
-      toast.error('Please create your pharmacy profile first')
-      return
-    }
-
-    if (!isProfileComplete) {
-      toast.info('Please complete your pharmacy profile first')
-      return
-    }
-
-    if (!canSell) {
-      toast.info('Your account is pending approval. You cannot add products yet.')
-      return
-    }
-
-    if (!hasActiveSubscription) {
-      toast.info('You need an active subscription to manage products.')
-      return
-    }
-
-    setEditingProduct(null)
-    setFormData({ name: '', price: '', stock: '', description: '', category: '', subCategory: '', images: [] })
-    setImageFiles([])
-    setShowModal(true)
-  }
-
-  const handleEdit = (product) => {
-    if (!isProfileComplete) {
-      toast.info('Please complete your pharmacy profile first')
-      return
-    }
-
-    if (!hasActiveSubscription) {
-      toast.info('You need an active subscription to manage products.')
-      return
-    }
-    setEditingProduct(product)
-    setFormData({
-      name: product.name || '',
-      price: product.price !== undefined && product.price !== null ? String(product.price) : '',
-      stock: product.stock !== undefined && product.stock !== null ? String(product.stock) : '',
-      description: product.description || '',
-      category: product.category || '',
-      subCategory: product.subCategory || '',
-      images: Array.isArray(product.images) ? product.images : []
-    })
-    setImageFiles([])
-    setShowModal(true)
-  }
-
-  const handleDelete = async (product) => {
-    if (!isProfileComplete) {
-      toast.info('Please complete your pharmacy profile first')
-      return
-    }
-    if (!canSell) {
-      toast.info('Your account is pending approval. You cannot delete products yet.')
-      return
-    }
-
-    if (!hasActiveSubscription) {
-      toast.info('You need an active subscription to manage products.')
-      return
-    }
-
-    const confirm = window.confirm('Delete this product?')
-    if (!confirm) return
-
+    if (!files?.length) return
+    const data = new FormData(); Array.from(files).forEach((file) => data.append('files', file))
     try {
-      await productApi.deleteProduct(product._id)
-      toast.success('Product deleted')
-      refetch()
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Failed to delete product')
-    }
+      setIsUploading(true)
+      const response = await api.post('/upload/product', data, { headers: { 'Content-Type': 'multipart/form-data' } })
+      const responsePayload = response?.data ?? response
+      const urls = responsePayload?.data?.urls || responsePayload?.urls || []
+      if (!urls.length) throw new Error('No images were uploaded')
+      setForm((current) => ({ ...current, images: [...current.images, ...urls].slice(0, 8) }))
+    } catch (error) { toast.error(error.response?.data?.message || error.message || 'Image upload failed') } finally { setIsUploading(false) }
   }
 
-  const handleSave = async () => {
-    if (!isProfileComplete) {
-      toast.info('Please complete your pharmacy profile first')
-      return
+  const save = async (event) => {
+    event.preventDefault()
+    if (!form.name.trim()) { toast.error('Product name is required'); return }
+    if (isMedicine && !form.medicineDetails.activeIngredients.trim()) { toast.error('Active ingredients are required for medicines'); return }
+    let variants
+    try {
+      variants = form.variants.map((variant, index) => {
+        const price = Number(variant.price); const stock = Number(variant.stock); const discountPrice = nullableNumber(variant.discountPrice)
+        const strengthValue = nullableNumber(variant.strengthValue); const unitsPerPack = nullableNumber(variant.unitsPerPack)
+        if (!Number.isFinite(price) || price < 0) throw new Error(`Enter a valid price for option ${index + 1}`)
+        if (!Number.isInteger(stock) || stock < 0) throw new Error(`Enter a whole stock quantity for option ${index + 1}`)
+        if (discountPrice !== null && (!Number.isFinite(discountPrice) || discountPrice < 0 || discountPrice >= price)) throw new Error(`Sale price must be lower than regular price for option ${index + 1}`)
+        if (strengthValue !== null && (!Number.isFinite(strengthValue) || strengthValue < 0)) throw new Error(`Strength is invalid for option ${index + 1}`)
+        if (unitsPerPack !== null && (!Number.isInteger(unitsPerPack) || unitsPerPack < 0)) throw new Error(`Pack quantity is invalid for option ${index + 1}`)
+        return { ...(variant._id ? { _id: variant._id } : {}), name: optional(variant.name) || `Option ${index + 1}`, sku: optional(variant.sku), barcode: optional(variant.barcode), strengthValue, strengthUnit: optional(variant.strengthUnit), dosageForm: optional(variant.dosageForm), packageType: optional(variant.packageType), unitsPerPack, unitLabel: optional(variant.unitLabel), packageDescription: optional(variant.packageDescription), price, discountPrice, stock, isDefault: variant.isDefault || (!form.variants.some((entry) => entry.isDefault) && index === 0), isActive: variant.isActive !== false }
+      })
+    } catch (error) { toast.error(error.message); return }
+    const payload = {
+      name: form.name.trim(), description: optional(form.description), productType: isMedicine ? 'PHARMACY_MEDICINE' : 'PARAPHARMACY_PRODUCT', brand: optional(form.brand), manufacturer: optional(form.manufacturer), barcode: optional(form.barcode), sku: optional(form.sku), category: optional(form.category), subCategory: optional(form.subCategory), tags: form.tags.split(',').map((tag) => tag.trim()).filter(Boolean), requiresPrescription: Boolean(form.requiresPrescription), isActive: Boolean(form.isActive), images: form.images, variants,
+      price: variants[0].price, stock: variants.reduce((sum, variant) => sum + variant.stock, 0), discountPrice: variants[0].discountPrice,
+      medicineDetails: isMedicine ? { ...form.medicineDetails, manufacturer: optional(form.manufacturer) } : {},
+      parapharmacyDetails: isMedicine ? {} : { ...form.parapharmacyDetails, manufacturer: optional(form.manufacturer) },
     }
-    if (!canSell) {
-      toast.info('Your account is pending approval. You cannot add products yet.')
-      return
-    }
-
-    if (!hasActiveSubscription) {
-      toast.info('You need an active subscription to manage products.')
-      return
-    }
-
-    if (!formData.name.trim()) {
-      toast.error('Product name is required')
-      return
-    }
-
-    const price = parseFloat(formData.price)
-    const stock = parseInt(formData.stock, 10)
-
-    if (Number.isNaN(price) || price < 0) {
-      toast.error('Price must be a valid number')
-      return
-    }
-
-    if (Number.isNaN(stock) || stock < 0) {
-      toast.error('Stock must be a valid number')
-      return
-    }
-
     try {
       setIsSaving(true)
-      let uploaded = []
-      if (imageFiles.length > 0) {
-        uploaded = await uploadImages(imageFiles)
-      }
-
-      const nextImages = uploaded.length > 0
-        ? uploaded
-        : (formData.images || [])
-
-      const payload = {
-        name: formData.name.trim(),
-        price,
-        stock,
-        description: formData.description?.trim() || undefined,
-        category: formData.category?.trim() || undefined,
-        subCategory: formData.subCategory?.trim() || undefined,
-        images: nextImages
-      }
-
-      if (editingProduct?._id) {
-        await productApi.updateProduct(editingProduct._id, payload)
-        toast.success('Product updated')
-      } else {
-        await productApi.createProduct(payload)
-        toast.success('Product created')
-      }
-
-      setShowModal(false)
-      setEditingProduct(null)
-      setImageFiles([])
-      refetch()
-    } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Failed to save product')
-    } finally {
-      setIsSaving(false)
-    }
+      if (editingProduct?._id) await productApi.updateProduct(editingProduct._id, payload)
+      else await productApi.createProduct(payload)
+      toast.success(editingProduct ? 'Product updated' : 'Product created')
+      setShowModal(false); setEditingProduct(null); queryClient.invalidateQueries({ queryKey: ['products'] }); refetch()
+    } catch (error) { toast.error(error.response?.data?.message || error.message || 'Unable to save product') } finally { setIsSaving(false) }
   }
 
-  if (!myPharmacy) {
-    return (
-      <div className="card">
-        <div className="card-body">
-          <h5 className="mb-2">Pharmacy profile required</h5>
-          <p className="text-muted mb-0">Please create your pharmacy profile before managing products.</p>
-        </div>
-      </div>
-    )
+  const removeProduct = async (product) => {
+    if (!window.confirm(`Delete ${product.name}?`)) return
+    try { await productApi.deleteProduct(product._id); toast.success('Product deleted'); refetch() } catch (error) { toast.error(error.response?.data?.message || error.message || 'Unable to delete product') }
   }
+
+  const Input = ({ label, value, onChange, type = 'text', ...props }) => <div className="col-md-6 mb-3"><label className="form-label">{label}</label><input className="form-control" type={type} value={value ?? ''} onChange={(event) => onChange(event.target.value)} {...props} /></div>
+  const DetailInput = ({ group, field, label }) => <Input label={label} value={form[group][field]} onChange={(value) => changeDetails(group, field, value)} />
 
   return (
     <div>
-      <div className="dashboard-header d-flex align-items-center justify-content-between">
-        <div>
-          <h3>Products</h3>
-          <p className="text-muted mb-0">Manage your products</p>
-        </div>
-        <button className="btn btn-primary" onClick={handleCreate} disabled={!canManageProducts}>
-          Add Product
-        </button>
-      </div>
-
-      {status === 'PENDING' && (
-        <div className="alert alert-warning">Your account is pending approval. You cannot add or modify products yet.</div>
-      )}
-
-      {!isProfileComplete && (
-        <div className="alert alert-info">
-          <div className="d-flex align-items-center justify-content-between flex-wrap" style={{ gap: 12 }}>
-            <div>
-              <strong>Complete your profile to add products</strong>
-              <div className="small text-muted">Required: name, phone, address line 1, city.</div>
-            </div>
-            <a className="btn btn-sm btn-primary" href="/pharmacy/profile">Complete Profile</a>
-          </div>
-        </div>
-      )}
-
-      {!hasActiveSubscription && (
-        <div className="alert alert-warning">
-          <div className="d-flex align-items-center justify-content-between flex-wrap" style={{ gap: 12 }}>
-            <div>
-              <strong>Subscription required</strong>
-              <div className="small text-muted">You need an active subscription to add, edit, or delete products.</div>
-            </div>
-            <Link className="btn btn-sm btn-primary" to="/pharmacy/subscription-plans">View Plans</Link>
-          </div>
-        </div>
-      )}
-
-      {isLoading ? (
-        <div className="text-center py-5">
-          <div className="spinner-border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-        </div>
-      ) : (
-        <div className="card">
-          <div className="card-body">
-            <div className="table-responsive">
-              <table className="table table-hover">
-                <thead>
-                  <tr>
-                    <th></th>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Price</th>
-                    <th>Stock</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" className="text-center text-muted">No products</td>
-                    </tr>
-                  ) : (
-                    products.map((p) => (
-                      <tr key={p._id}>
-                        <td>
-                          <img
-                            src={getImageUrl(p.images?.[0], '/assets/img/products/product.jpg')}
-                            alt={p.name}
-                            style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px' }}
-                            onError={(e) => {
-                              e.target.onerror = null
-                              e.target.src = '/assets/img/products/product.jpg'
-                            }}
-                          />
-                        </td>
-                        <td>{p.name}</td>
-                        <td>
-                          {p.category ? (
-                            <>
-                              <div>{p.category}</div>
-                              {p.subCategory && <small className="text-muted">{p.subCategory}</small>}
-                            </>
-                          ) : (
-                            <span className="text-muted">—</span>
-                          )}
-                        </td>
-                        <td>{p.price}</td>
-                        <td>{p.stock}</td>
-                        <td className="text-end">
-                          <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEdit(p)} disabled={!canManageProducts}>Edit</button>
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(p)} disabled={!canManageProducts}>Delete</button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {pagination && pagination.pages > 1 && (
-              <div className="d-flex justify-content-between align-items-center">
-                <button className="btn btn-outline-secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
-                  Prev
-                </button>
-                <div className="text-muted">Page {pagination.page} of {pagination.pages}</div>
-                <button className="btn btn-outline-secondary" onClick={() => setPage((p) => p + 1)} disabled={page >= pagination.pages}>
-                  Next
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {showModal && (
-        <div className="modal show d-block" tabIndex="-1" role="dialog">
-          <div className="modal-dialog" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">{editingProduct ? 'Edit Product' : 'Add Product'}</h5>
-                <button type="button" className="btn-close" onClick={() => setShowModal(false)} disabled={isSaving} />
-              </div>
-              <div className="modal-body">
-                <div className="form-group mb-2">
-                  <label>Name</label>
-                  <input className="form-control" value={formData.name} onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))} />
-                </div>
-                <div className="form-group mb-2">
-                  <label>Price</label>
-                  <input className="form-control" value={formData.price} onChange={(e) => setFormData((p) => ({ ...p, price: e.target.value }))} />
-                </div>
-                <div className="form-group mb-2">
-                  <label>Stock</label>
-                  <input className="form-control" value={formData.stock} onChange={(e) => setFormData((p) => ({ ...p, stock: e.target.value }))} />
-                </div>
-                <div className="form-group mb-2">
-                  <label>Description</label>
-                  <textarea className="form-control" value={formData.description} onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))} />
-                </div>
-                <div className="form-group mb-2">
-                  <label>Category</label>
-                  <select
-                    className="form-control"
-                    value={formData.category}
-                    onChange={(e) => {
-                      const nextCategory = e.target.value
-                      setFormData((p) => ({
-                        ...p,
-                        category: nextCategory,
-                        subCategory: p.category !== nextCategory ? '' : p.subCategory
-                      }))
-                    }}
-                  >
-                    <option value="">Select category</option>
-                    {categoryOptions.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group mb-2">
-                  <label>Subcategory</label>
-                  <select
-                    className="form-control"
-                    value={formData.subCategory}
-                    onChange={(e) => setFormData((p) => ({ ...p, subCategory: e.target.value }))}
-                  >
-                    <option value="">Select subcategory</option>
-                    {subCategoryOptions.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group mb-2">
-                  <label>Images</label>
-                  <input type="file" className="form-control" multiple accept="image/*" onChange={(e) => setImageFiles(Array.from(e.target.files || []))} />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={isSaving}>Cancel</button>
-                <button type="button" className="btn btn-primary" onClick={handleSave} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <div className="dashboard-header d-flex align-items-center justify-content-between flex-wrap gap-2"><div><h3>Products</h3><p className="text-muted mb-0">Create detailed, patient-ready {isParapharmacy ? 'parapharmacy' : 'pharmacy'} listings.</p></div><button className="btn btn-primary" onClick={openCreate} disabled={!canManageProducts}><i className="fa-solid fa-plus me-2" />Add product</button></div>
+      {!canManageProducts && <div className="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2"><span>Complete your business profile{setup?.requiresSubscription ? ' and activate a subscription' : ''} before managing products.</span><Link className="btn btn-sm btn-outline-dark" to="/pharmacy/profile">Complete setup</Link></div>}
+      <div className="card"><div className="card-body p-0"><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Product</th><th>Type / category</th><th>Options</th><th>Price</th><th>Stock</th><th>Status</th><th /></tr></thead><tbody>
+        {isLoading ? <tr><td colSpan="7" className="text-center py-4"><span className="spinner-border spinner-border-sm" /></td></tr> : products.length === 0 ? <tr><td colSpan="7" className="text-center py-4 text-muted">No products yet.</td></tr> : products.map((product) => <tr key={product._id}><td><div className="d-flex align-items-center gap-2"><img src={getImageUrl(product.images?.[0], '/assets/img/products/product.jpg')} alt="" style={{ width: 46, height: 46, objectFit: 'cover', borderRadius: 8 }} /><div><strong>{product.name}</strong>{product.requiresPrescription && <div><span className="badge bg-warning text-dark">Prescription</span></div>}</div></div></td><td><div>{product.productType === 'PHARMACY_MEDICINE' ? 'Medicine' : 'Parapharmacy'}</div><small className="text-muted">{[product.category, product.subCategory].filter(Boolean).join(' · ') || 'Uncategorized'}</small></td><td>{product.variants?.length || 1}</td><td>€{Number(product.discountPrice ?? product.price ?? 0).toFixed(2)}</td><td>{product.stock ?? 0}</td><td><span className={`badge ${product.isActive === false ? 'bg-secondary' : 'bg-success'}`}>{product.isActive === false ? 'Hidden' : 'Active'}</span></td><td className="text-end"><button className="btn btn-sm btn-outline-secondary me-2" onClick={() => openEdit(product)}>Edit</button><button className="btn btn-sm btn-outline-danger" onClick={() => removeProduct(product)}>Delete</button></td></tr>)}
+      </tbody></table></div>{pagination?.pages > 1 && <div className="p-3 d-flex justify-content-between"><button className="btn btn-sm btn-outline-secondary" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</button><span className="text-muted small">Page {pagination.page} of {pagination.pages}</span><button className="btn btn-sm btn-outline-secondary" disabled={page >= pagination.pages} onClick={() => setPage((value) => value + 1)}>Next</button></div>}</div></div>
+      {showModal && <><div className="modal-backdrop fade show" /><div className="modal fade show d-block" role="dialog" aria-modal="true"><div className="modal-dialog modal-xl modal-dialog-scrollable"><form className="modal-content" onSubmit={save}><div className="modal-header"><div><h5 className="modal-title">{editingProduct ? 'Edit product' : 'Add product'}</h5><small className="text-muted">{isMedicine ? 'Medicine details and patient-safe dispensing options' : 'Product details and selectable options'}</small></div><button type="button" className="btn-close" onClick={() => setShowModal(false)} /></div><div className="modal-body">
+        <h6 className="border-bottom pb-2">Basic information</h6><div className="row"><Input label="Product name *" value={form.name} onChange={(value) => change('name', value)} required /><Input label="Brand" value={form.brand} onChange={(value) => change('brand', value)} /><Input label="Manufacturer" value={form.manufacturer} onChange={(value) => change('manufacturer', value)} /><Input label="Product SKU" value={form.sku} onChange={(value) => change('sku', value)} /><Input label="Barcode" value={form.barcode} onChange={(value) => change('barcode', value)} /><Input label="Category" value={form.category} onChange={(value) => change('category', value)} /><Input label="Subcategory" value={form.subCategory} onChange={(value) => change('subCategory', value)} /><Input label="Tags (comma separated)" value={form.tags} onChange={(value) => change('tags', value)} /><div className="col-12 mb-3"><label className="form-label">Description</label><textarea className="form-control" rows="3" value={form.description} onChange={(event) => change('description', event.target.value)} /></div></div>
+        <div className="d-flex flex-wrap gap-4 mb-4"><label className="form-check"><input className="form-check-input me-2" type="checkbox" checked={form.requiresPrescription} onChange={(event) => change('requiresPrescription', event.target.checked)} />Requires a prescription before purchase</label><label className="form-check"><input className="form-check-input me-2" type="checkbox" checked={form.isActive} onChange={(event) => change('isActive', event.target.checked)} />Visible in storefront</label></div>
+        <h6 className="border-bottom pb-2">Images</h6><div className="mb-4"><input className="form-control" type="file" multiple accept="image/*" disabled={isUploading || form.images.length >= 8} onChange={(event) => uploadImages(event.target.files)} /><small className="text-muted">Up to eight images. The first image is used in product and order lists.</small><div className="d-flex flex-wrap gap-2 mt-2">{form.images.map((url) => <div key={url} className="position-relative"><img src={getImageUrl(url, '/assets/img/products/product.jpg')} alt="" style={{ width: 76, height: 76, objectFit: 'cover', borderRadius: 8 }} /><button type="button" className="btn btn-sm btn-danger position-absolute top-0 end-0" aria-label="Remove image" onClick={() => change('images', form.images.filter((image) => image !== url))}>×</button></div>)}</div></div>
+        <h6 className="border-bottom pb-2">{isMedicine ? 'Medicine information' : 'Product information'}</h6><div className="row mb-3">{isMedicine ? <><DetailInput group="medicineDetails" field="activeIngredients" label="Active ingredients *" /><DetailInput group="medicineDetails" field="administrationRoute" label="Administration route" /><DetailInput group="medicineDetails" field="indications" label="Indications" /><DetailInput group="medicineDetails" field="dosageInstructions" label="Dosage / usage instructions" /><DetailInput group="medicineDetails" field="warnings" label="Warnings" /><DetailInput group="medicineDetails" field="storageInstructions" label="Storage instructions" /><DetailInput group="medicineDetails" field="authorizationHolder" label="Authorization holder" /><DetailInput group="medicineDetails" field="registrationNumber" label="Registration number" /><DetailInput group="medicineDetails" field="leafletUrl" label="Leaflet URL" /></> : <><DetailInput group="parapharmacyDetails" field="productClass" label="Product class" /><DetailInput group="parapharmacyDetails" field="ingredients" label="Ingredients" /><DetailInput group="parapharmacyDetails" field="allergens" label="Allergens" /><DetailInput group="parapharmacyDetails" field="usageInstructions" label="Usage instructions" /><DetailInput group="parapharmacyDetails" field="warnings" label="Warnings" /><DetailInput group="parapharmacyDetails" field="storageInstructions" label="Storage instructions" /></>}</div>
+        <div className="d-flex justify-content-between align-items-center border-bottom pb-2"><h6 className="mb-0">Options, price & stock</h6><button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setForm((current) => ({ ...current, variants: [...current.variants, makeVariant(isMedicine, current.variants.length + 1)] }))}><i className="fa-solid fa-plus me-1" />Add option</button></div>
+        {form.variants.map((variant, index) => <div className="border rounded-3 p-3 mt-3" key={variant._id || index}><div className="d-flex justify-content-between align-items-center mb-2"><strong>Option {index + 1}</strong><div className="d-flex gap-2"><label className="form-check small m-0"><input className="form-check-input me-1" type="radio" checked={variant.isDefault} onChange={() => setDefaultVariant(index)} />Default</label><button type="button" className="btn btn-sm btn-outline-danger" disabled={form.variants.length === 1} onClick={() => removeVariant(index)}>Remove</button></div></div><div className="row"><Input label="Option name" value={variant.name} onChange={(value) => changeVariant(index, 'name', value)} /><Input label="Option SKU" value={variant.sku} onChange={(value) => changeVariant(index, 'sku', value)} /><Input label="Regular price (€) *" type="number" min="0" step="0.01" value={variant.price} onChange={(value) => changeVariant(index, 'price', value)} /><Input label="Sale price (€)" type="number" min="0" step="0.01" value={variant.discountPrice} onChange={(value) => changeVariant(index, 'discountPrice', value)} /><Input label="Stock quantity *" type="number" min="0" step="1" value={variant.stock} onChange={(value) => changeVariant(index, 'stock', value)} /><Input label="Barcode" value={variant.barcode} onChange={(value) => changeVariant(index, 'barcode', value)} /><Input label="Strength" type="number" min="0" step="0.01" value={variant.strengthValue} onChange={(value) => changeVariant(index, 'strengthValue', value)} /><Input label="Strength unit" value={variant.strengthUnit} onChange={(value) => changeVariant(index, 'strengthUnit', value)} /><Input label="Dosage form" value={variant.dosageForm} onChange={(value) => changeVariant(index, 'dosageForm', value)} /><Input label="Package type" value={variant.packageType} onChange={(value) => changeVariant(index, 'packageType', value)} /><Input label="Units per pack" type="number" min="0" step="1" value={variant.unitsPerPack} onChange={(value) => changeVariant(index, 'unitsPerPack', value)} /><Input label="Unit label" value={variant.unitLabel} onChange={(value) => changeVariant(index, 'unitLabel', value)} /><div className="col-12"><label className="form-label">Package description</label><input className="form-control" value={variant.packageDescription || ''} onChange={(event) => changeVariant(index, 'packageDescription', event.target.value)} /></div></div></div>)}
+      </div><div className="modal-footer"><button type="button" className="btn btn-light" onClick={() => setShowModal(false)} disabled={isSaving}>Cancel</button><button className="btn btn-primary" type="submit" disabled={isSaving || isUploading}>{isSaving ? 'Saving…' : editingProduct ? 'Save changes' : 'Create product'}</button></div></form></div></div></>}
     </div>
   )
 }

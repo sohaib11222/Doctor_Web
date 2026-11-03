@@ -7,22 +7,23 @@ import { getImageUrl } from '../../utils/imageUtils'
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCart()
 
-  const handleQuantityChange = (productId, newQuantity) => {
+  const handleQuantityChange = (productId, variantId, newQuantity) => {
     if (newQuantity < 1) {
-      removeFromCart(productId)
+      removeFromCart(productId, variantId)
       toast.info('Item removed from cart')
     } else {
-      updateQuantity(productId, newQuantity)
+      updateQuantity(productId, newQuantity, variantId)
     }
   }
 
-  const handleRemoveItem = (productId, productName) => {
-    removeFromCart(productId)
+  const handleRemoveItem = (productId, variantId, productName) => {
+    removeFromCart(productId, variantId)
     toast.info(`${productName} removed from cart`)
   }
 
   const subtotal = getCartTotal()
-  const shipping = subtotal >= 50 ? 0 : 25
+  const shipping = Array.from(new Map(cartItems.map((item) => [String(item.sellerId || item._id), Number(item.shippingSettings?.fee || 0)])).values())
+    .reduce((sum, fee) => sum + fee, 0)
   const tax = 0
   const total = subtotal + shipping + tax
 
@@ -57,14 +58,15 @@ const Cart = () => {
                       </thead>
                       <tbody>
                         {cartItems.map((item) => (
-                          <tr key={item._id}>
+                          <tr key={item.cartItemId || `${item._id}:${item.variantId || ''}`}>
                             <td>
                               <h2 className="table-avatar">
                                 <Link to={`/product-description?id=${item._id}`} className="avatar avatar-sm me-2">
                                   <img className="avatar-img" src={getImageUrl(item.image, '/assets/img/products/product.jpg')} alt={item.name} />
                                 </Link>
                               </h2>
-                              <Link to={`/product-description?id=${item._id}`}>{item.name}</Link>
+                              <Link to={`/product-description?id=${item._id}${item.variantId ? `&variantId=${item.variantId}` : ''}`}>{item.name}</Link>
+                              {item.variantName && <div className="small text-muted">{item.variantName}</div>}
                             </td>
                             <td>{item.sku || 'N/A'}</td>
                             <td>${item.price.toFixed(2)}</td>
@@ -74,15 +76,15 @@ const Cart = () => {
                                   <button
                                     type="button"
                                     className="quantity-left-minus btn btn-danger btn-number"
-                                    onClick={() => handleQuantityChange(item._id, item.quantity - 1)}
+                                    onClick={() => handleQuantityChange(item._id, item.variantId, item.quantity - 1)}
                                   >
                                     <span><i className="fas fa-minus"></i></span>
                                   </button>
                                 </span>
                                 <input
                                   type="text"
-                                  id={`quantity${item._id}`}
-                                  name={`quantity${item._id}`}
+                                  id={`quantity${item.cartItemId || item._id}`}
+                                  name={`quantity${item.cartItemId || item._id}`}
                                   className="input-number cart-qty-value"
                                   value={item.quantity}
                                   readOnly
@@ -91,7 +93,7 @@ const Cart = () => {
                                   <button
                                     type="button"
                                     className="quantity-right-plus btn btn-success btn-number"
-                                    onClick={() => handleQuantityChange(item._id, item.quantity + 1)}
+                                    onClick={() => handleQuantityChange(item._id, item.variantId, item.quantity + 1)}
                                     disabled={item.stock && item.quantity >= item.stock}
                                   >
                                     <span><i className="fas fa-plus"></i></span>
@@ -107,7 +109,7 @@ const Cart = () => {
                                   className="btn btn-sm bg-danger-light"
                                   onClick={(e) => {
                                     e.preventDefault()
-                                    handleRemoveItem(item._id, item.name)
+                                    handleRemoveItem(item._id, item.variantId, item.name)
                                   }}
                                 >
                                   <i className="fas fa-times"></i>
@@ -154,11 +156,7 @@ const Cart = () => {
                       <li>
                         <span>Shipping</span>
                         <span className="total-cost">
-                          {shipping === 0 ? (
-                            <span className="text-success">Free</span>
-                          ) : (
-                            `$${shipping.toFixed(2)}`
-                          )}
+                          €{shipping.toFixed(2)}
                         </span>
                       </li>
                       {tax > 0 && (

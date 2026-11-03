@@ -32,6 +32,8 @@ export const getMyPharmacy = async () => {
   return api.get('/pharmacy/me')
 }
 
+export const getPharmacySetupStatus = async () => api.get('/pharmacy/setup-status')
+
 export const getPharmacyActivePlans = async () => {
   return api.get('/admin/subscription-plan/active', { params: { targetRole: 'PHARMACY' } })
 }

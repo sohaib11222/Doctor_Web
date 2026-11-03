@@ -1,6 +1,9 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useUnreadOrderCount } from '../../queries/orderQueries'
+import { useQuery } from '@tanstack/react-query'
+import * as prescriptionApi from '../../api/productPrescriptionRequest'
+import * as chatApi from '../../api/chat'
 
 const PharmacySidebar = () => {
   const location = useLocation()
@@ -10,6 +13,12 @@ const PharmacySidebar = () => {
   const userRole = user?.role?.toUpperCase()
   const showSubscriptionPlans = userRole === 'PHARMACY'
   const { data: unreadOrdersCount = 0 } = useUnreadOrderCount(Boolean(user?._id))
+  const { data: prescriptionResponse } = useQuery({ queryKey: ['pending-product-prescriptions'], queryFn: prescriptionApi.getPendingProductPrescriptionCount, enabled: Boolean(user?._id), refetchInterval: 10000 })
+  const prescriptionPayload = prescriptionResponse?.data?.data || prescriptionResponse?.data || prescriptionResponse
+  const pendingPrescriptions = prescriptionPayload?.pendingCount || 0
+  const { data: chatUnreadResponse } = useQuery({ queryKey: ['chat-unread-count'], queryFn: chatApi.getUnreadCount, enabled: Boolean(user?._id), refetchInterval: 7000 })
+  const chatPayload = chatUnreadResponse?.data || chatUnreadResponse
+  const chatUnread = chatPayload?.unreadCount || 0
 
   return (
     <div className="profile-sidebar">
@@ -50,6 +59,12 @@ const PharmacySidebar = () => {
                   <small className="unread-msg">{unreadOrdersCount > 99 ? '99+' : unreadOrdersCount}</small>
                 )}
               </Link>
+            </li>
+            <li className={isActive('/pharmacy/prescription-requests') ? 'active' : ''}>
+              <Link to="/pharmacy/prescription-requests"><i className="fas fa-file-prescription" /><span>Prescription Requests</span>{pendingPrescriptions > 0 && <small className="unread-msg">{pendingPrescriptions > 99 ? '99+' : pendingPrescriptions}</small>}</Link>
+            </li>
+            <li className={isActive('/pharmacy/admin-chat') ? 'active' : ''}>
+              <Link to="/pharmacy/admin-chat"><i className="fas fa-headset" /><span>Admin Support</span>{chatUnread > 0 && <small className="unread-msg">{chatUnread > 99 ? '99+' : chatUnread}</small>}</Link>
             </li>
             {showSubscriptionPlans && (
               <li className={isActive('/pharmacy/subscription-plans') ? 'active' : ''}>

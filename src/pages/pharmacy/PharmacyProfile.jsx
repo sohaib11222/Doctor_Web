@@ -35,6 +35,10 @@ const PharmacyProfile = () => {
       lat: '',
       lng: ''
     },
+    shippingSettings: {
+      fee: '',
+      deliveryDays: ''
+    },
     isActive: true
   })
 
@@ -57,6 +61,10 @@ const PharmacyProfile = () => {
         lat: myPharmacy.location?.lat !== undefined && myPharmacy.location?.lat !== null ? String(myPharmacy.location.lat) : '',
         lng: myPharmacy.location?.lng !== undefined && myPharmacy.location?.lng !== null ? String(myPharmacy.location.lng) : ''
       },
+      shippingSettings: {
+        fee: myPharmacy.shippingSettings?.fee !== undefined && myPharmacy.shippingSettings?.fee !== null ? String(myPharmacy.shippingSettings.fee) : '0',
+        deliveryDays: myPharmacy.shippingSettings?.deliveryDays || ''
+      },
       isActive: myPharmacy.isActive !== undefined ? myPharmacy.isActive : true
     })
   }, [myPharmacy])
@@ -65,6 +73,7 @@ const PharmacyProfile = () => {
     mutationFn: (data) => pharmacyApi.createPharmacy(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-pharmacy'] })
+      queryClient.invalidateQueries({ queryKey: ['pharmacy-setup-status'] })
       toast.success('Pharmacy profile created successfully!')
     }
   })
@@ -73,6 +82,7 @@ const PharmacyProfile = () => {
     mutationFn: ({ id, data }) => pharmacyApi.updatePharmacy(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-pharmacy'] })
+      queryClient.invalidateQueries({ queryKey: ['pharmacy-setup-status'] })
       toast.success('Pharmacy profile updated successfully!')
     }
   })
@@ -95,6 +105,12 @@ const PharmacyProfile = () => {
         ...prev,
         location: { ...prev.location, [field]: value }
       }))
+      return
+    }
+
+    if (name.startsWith('shippingSettings.')) {
+      const field = name.split('.')[1]
+      setPharmacyData((prev) => ({ ...prev, shippingSettings: { ...prev.shippingSettings, [field]: value } }))
       return
     }
 
@@ -169,6 +185,18 @@ const PharmacyProfile = () => {
     if (!Number.isNaN(lat) && !Number.isNaN(lng) && lat !== null && lng !== null) {
       submitData.location = { lat, lng }
     }
+
+    const shippingFee = pharmacyData.shippingSettings.fee === '' ? 0 : Number(pharmacyData.shippingSettings.fee)
+    const deliveryDays = pharmacyData.shippingSettings.deliveryDays === '' ? null : Number(pharmacyData.shippingSettings.deliveryDays)
+    if (!Number.isFinite(shippingFee) || shippingFee < 0) {
+      toast.error('Shipping fee must be a valid non-negative amount')
+      return
+    }
+    if (deliveryDays !== null && (!Number.isInteger(deliveryDays) || deliveryDays < 1 || deliveryDays > 60)) {
+      toast.error('Delivery commitment must be between 1 and 60 days')
+      return
+    }
+    submitData.shippingSettings = { fee: shippingFee, deliveryDays }
 
     try {
       if (myPharmacy?._id) {
@@ -245,6 +273,27 @@ const PharmacyProfile = () => {
                 <div className="form-wrap">
                   <label className="form-label">Address Line 2</label>
                   <input className="form-control" name="address.line2" value={pharmacyData.address.line2} onChange={handleChange} />
+                </div>
+              </div>
+            </div>
+
+            <div className="card border bg-light mb-3">
+              <div className="card-body">
+                <h5 className="mb-1">Shipping & delivery commitment</h5>
+                <p className="text-muted small mb-3">Patients see these terms before checkout. They are copied into every order for a clear delivery commitment.</p>
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="form-wrap mb-0">
+                      <label className="form-label">Shipping fee (€)</label>
+                      <input type="number" min="0" step="0.01" className="form-control" name="shippingSettings.fee" value={pharmacyData.shippingSettings.fee} onChange={handleChange} />
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="form-wrap mb-0">
+                      <label className="form-label">Estimated delivery (days)</label>
+                      <input type="number" min="1" max="60" step="1" className="form-control" name="shippingSettings.deliveryDays" value={pharmacyData.shippingSettings.deliveryDays} onChange={handleChange} placeholder="e.g. 3" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

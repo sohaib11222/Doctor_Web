@@ -52,7 +52,7 @@ export const useUpdateShippingFee = () => {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: ({ orderId, shippingFee }) => orderApi.updateShippingFee(orderId, shippingFee),
+    mutationFn: ({ orderId, shippingFee, deliveryDays }) => orderApi.updateShippingFee(orderId, shippingFee, deliveryDays),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['order', variables.orderId] })
       queryClient.invalidateQueries({ queryKey: ['pharmacyOrders'] })

@@ -31,46 +31,60 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cart', JSON.stringify(cartItems))
   }, [cartItems])
 
-  const addToCart = (product, quantity = 1) => {
+  const addToCart = (product, quantity = 1, selectedVariant = null) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item._id === product._id)
+      const variantId = selectedVariant?._id || selectedVariant?.id || null
+      const existingItem = prevItems.find(item => item._id === product._id && String(item.variantId || '') === String(variantId || ''))
       
       if (existingItem) {
         // Update quantity if item already exists
         return prevItems.map(item =>
-          item._id === product._id
+          item._id === product._id && String(item.variantId || '') === String(variantId || '')
             ? { ...item, quantity: item.quantity + quantity }
             : item
         )
       } else {
         // Add new item to cart
         return [...prevItems, {
+          cartItemId: `${product._id}:${variantId || 'default'}`,
           _id: product._id,
           name: product.name,
-          price: product.discountPrice || product.price,
-          originalPrice: product.price,
           image: product.images?.[0] || '/assets/img/products/product.jpg',
           quantity,
           sku: product.sku,
-          stock: product.stock
+          stock: selectedVariant?.stock ?? product.stock,
+          variantId,
+          variantName: selectedVariant?.name || null,
+          variantSnapshot: selectedVariant ? {
+            strengthValue: selectedVariant.strengthValue ?? null,
+            strengthUnit: selectedVariant.strengthUnit ?? null,
+            dosageForm: selectedVariant.dosageForm ?? null,
+            packageType: selectedVariant.packageType ?? null,
+            unitsPerPack: selectedVariant.unitsPerPack ?? null,
+            unitLabel: selectedVariant.unitLabel ?? null,
+          } : null,
+          sellerId: product.sellerId?._id || product.sellerId || null,
+          shippingSettings: product.shippingSettings || null,
+          price: selectedVariant?.discountPrice ?? selectedVariant?.price ?? product.discountPrice ?? product.price,
+          originalPrice: selectedVariant?.price ?? product.price,
         }]
       }
     })
   }
 
-  const removeFromCart = (productId) => {
-    setCartItems(prevItems => prevItems.filter(item => item._id !== productId))
+  const removeFromCart = (productId, variantId = undefined) => {
+    setCartItems(prevItems => prevItems.filter(item => item._id !== productId || (variantId !== undefined && String(item.variantId || '') !== String(variantId || ''))))
   }
 
-  const updateQuantity = (productId, quantity) => {
+  const updateQuantity = (productId, quantity, variantId = undefined) => {
     if (quantity <= 0) {
-      removeFromCart(productId)
+      removeFromCart(productId, variantId)
       return
     }
     
     setCartItems(prevItems =>
       prevItems.map(item =>
-        item._id === productId ? { ...item, quantity } : item
+        item._id === productId && (variantId === undefined || String(item.variantId || '') === String(variantId || '')) ? { ...item, quantity } : item
       )
     )
   }
@@ -89,8 +103,8 @@ export const CartProvider = ({ children }) => {
     return cartItems.reduce((count, item) => count + item.quantity, 0)
   }
 
-  const isInCart = (productId) => {
-    return cartItems.some(item => item._id === productId)
+  const isInCart = (productId, variantId = undefined) => {
+    return cartItems.some(item => item._id === productId && (variantId === undefined || String(item.variantId || '') === String(variantId || '')))
   }
 
   const value = {

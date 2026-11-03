@@ -15,6 +15,7 @@ const PharmacyOrderDetails = () => {
   const updateShippingFeeMutation = useUpdateShippingFee()
   const [showShippingModal, setShowShippingModal] = useState(false)
   const [shippingFee, setShippingFee] = useState('')
+  const [deliveryDays, setDeliveryDays] = useState('')
 
   // Handle both response.data and direct data (axios interceptor already returns response.data)
   const order = orderResponse?.data || orderResponse
@@ -88,8 +89,12 @@ const PharmacyOrderDetails = () => {
       toast.error('Please enter a valid shipping fee (non-negative number)')
       return
     }
+    if (deliveryDays !== '' && (!Number.isInteger(Number(deliveryDays)) || Number(deliveryDays) < 1 || Number(deliveryDays) > 60)) {
+      toast.error('Delivery commitment must be between 1 and 60 days')
+      return
+    }
     updateShippingFeeMutation.mutate(
-      { orderId: order._id, shippingFee: fee },
+      { orderId: order._id, shippingFee: fee, ...(deliveryDays !== '' ? { deliveryDays: Number(deliveryDays) } : {}) },
       {
         onSuccess: () => {
           setShowShippingModal(false)
@@ -103,6 +108,7 @@ const PharmacyOrderDetails = () => {
   const handleOpenShippingModal = () => {
     if (!order) return
     setShippingFee(order.shipping?.toString() || order.initialShipping?.toString() || '0')
+    setDeliveryDays(order.promisedDeliveryDays?.toString() || '')
     setShowShippingModal(true)
   }
 
@@ -276,6 +282,7 @@ const PharmacyOrderDetails = () => {
                         <h5 className="mb-1">{productName}</h5>
                         <p className="text-muted mb-1">Quantity: {item.quantity}</p>
                         <p className="text-muted mb-0">{formatCurrency(itemPrice)} each</p>
+                        {item.variantName && <p className="text-muted small mb-0">Option: {item.variantName}</p>}
                       </div>
                       <div>
                         <h5 className="mb-0">{formatCurrency(item.total)}</h5>
@@ -316,6 +323,8 @@ const PharmacyOrderDetails = () => {
                   </div>
                   <span>{formatCurrency(order.shipping)}</span>
                 </div>
+                {order.promisedDeliveryDays && <div className="d-flex justify-content-between mb-2"><span>Delivery commitment</span><span>{order.promisedDeliveryDays} day{order.promisedDeliveryDays === 1 ? '' : 's'}</span></div>}
+                {order.expectedDeliveryDate && <div className="small text-muted mb-2">Expected delivery: {formatDate(order.expectedDeliveryDate)}</div>}
                 <hr />
                 <div className="d-flex justify-content-between">
                   <strong>Total</strong>
@@ -476,7 +485,7 @@ const PharmacyOrderDetails = () => {
                   </div>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="shippingFee" className="form-label">New Shipping Fee ($)</label>
+                  <label htmlFor="shippingFee" className="form-label">New Shipping Fee (€)</label>
                   <input
                     type="number"
                     className="form-control"
@@ -491,6 +500,10 @@ const PharmacyOrderDetails = () => {
                     Subtotal: {formatCurrency(order.subtotal)} + Tax: {formatCurrency(order.tax)} + Shipping = New Total
                   </small>
                 </div>
+                <div className="mb-3">
+                  <label htmlFor="deliveryDays" className="form-label">Delivery commitment (days)</label>
+                  <input type="number" className="form-control" id="deliveryDays" min="1" max="60" step="1" value={deliveryDays} onChange={(e) => setDeliveryDays(e.target.value)} placeholder="e.g. 3" />
+                </div>
                 {shippingFee && !isNaN(parseFloat(shippingFee)) && (
                   <div className="alert alert-info">
                     <strong>New Total:</strong> {formatCurrency(order.subtotal + order.tax + parseFloat(shippingFee))}
@@ -504,6 +517,7 @@ const PharmacyOrderDetails = () => {
                   onClick={() => {
                     setShowShippingModal(false)
                     setShippingFee('')
+                    setDeliveryDays('')
                   }}
                 >
                   Cancel

@@ -15,6 +15,10 @@
   height: clamp(430px, 58vh, 560px) !important;
   min-height: 0;
 }
+.patient-chat-page .chat-details-card { display: flex; }
+.patient-chat-page .chat-details-card > .card-body { flex: 1 1 auto; height: 100%; min-height: 0; overflow: hidden; }
+.patient-chat-page .chat-details-card .chat-messages-area { flex: 1 1 0; max-height: none; overflow-y: auto !important; overscroll-behavior: contain; }
+.patient-chat-page .chat-details-card .chat-input-area { flex: 0 0 auto; margin-top: auto; }
 .chat-list-header { background: linear-gradient(180deg, #fbfefe, #f3f9fa); padding: 1rem; }
 .chat-list-header h4 { color: #18313d; font-size: 1.15rem; font-weight: 750; }
 .chat-search-box { position: relative; }

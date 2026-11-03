@@ -213,6 +213,7 @@ const OrderDetails = () => {
                       <div className="flex-grow-1">
                         <h5 className="mb-1">{productName}</h5>
                         <p className="text-muted mb-1">Quantity: {item.quantity}</p>
+                        {item.variantName && <p className="text-muted small mb-1">Option: {item.variantName}</p>}
                         <p className="text-muted mb-0">{formatCurrency(itemPrice)} each</p>
                       </div>
                       <div>
@@ -259,6 +260,10 @@ const OrderDetails = () => {
                   <span>Shipping</span>
                   <span>{formatCurrency(order.shipping)}</span>
                 </div>
+                {order.promisedDeliveryDays && (
+                  <div className="d-flex justify-content-between mb-2"><span>Delivery commitment</span><span>{order.promisedDeliveryDays} day{order.promisedDeliveryDays === 1 ? '' : 's'}</span></div>
+                )}
+                {order.expectedDeliveryDate && <div className="small text-muted mb-2">Expected delivery: {formatDate(order.expectedDeliveryDate)}</div>}
                 <hr />
                 <div className="d-flex justify-content-between">
                   <strong>Total</strong>

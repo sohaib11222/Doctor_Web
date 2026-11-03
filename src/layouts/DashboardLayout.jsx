@@ -6,6 +6,7 @@ import PharmacySidebar from '../components/common/PharmacySidebar'
 import Footer from '../components/common/Footer'
 import Breadcrumb from '../components/common/Breadcrumb'
 import IncomingCallNotifier from '../components/video/IncomingCallNotifier'
+import PharmacySetupModal from '../components/common/PharmacySetupModal'
 
 const DashboardLayout = ({ children, breadcrumb }) => {
   const location = useLocation()
@@ -81,6 +82,7 @@ const DashboardLayout = ({ children, breadcrumb }) => {
         )}
       </div>
       <IncomingCallNotifier />
+      <PharmacySetupModal />
       <Footer />
     </div>
   )

@@ -68,8 +68,8 @@ export const updateOrderStatus = async (orderId, status) => {
  * @param {number} shippingFee - New shipping fee
  * @returns {Promise} Order response
  */
-export const updateShippingFee = async (orderId, shippingFee) => {
-  return api.put(API_ROUTES.ORDER.UPDATE_SHIPPING(orderId), { shippingFee })
+export const updateShippingFee = async (orderId, shippingFee, deliveryDays = undefined) => {
+  return api.put(API_ROUTES.ORDER.UPDATE_SHIPPING(orderId), { shippingFee, ...(deliveryDays !== undefined ? { deliveryDays } : {}) })
 }
 
 /**

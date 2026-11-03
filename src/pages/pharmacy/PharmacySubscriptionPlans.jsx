@@ -32,6 +32,7 @@ const PharmacySubscriptionPlans = () => {
     mutationFn: ({ planId }) => pharmacyApi.buyPharmacySubscriptionPlan(planId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-pharmacy-subscription'] })
+      queryClient.invalidateQueries({ queryKey: ['pharmacy-setup-status'] })
       toast.success('Subscription plan purchased successfully!')
       setSelectedPlan(null)
     },
