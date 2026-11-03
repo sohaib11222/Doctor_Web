@@ -33,6 +33,7 @@ const DoctorChat = () => {
   }, [])
 
   // Get patientId from URL params (if coming from appointments page)
+  const conversationIdFromUrl = searchParams.get('conversationId')
   const patientIdFromUrl = searchParams.get('patientId')
   const appointmentIdFromUrl = searchParams.get('appointmentId')
 
@@ -41,7 +42,7 @@ const DoctorChat = () => {
     queryKey: ['doctorPatientConversations'],
     queryFn: () => chatApi.getConversations(),
     enabled: !!user,
-    refetchInterval: 5000, // Poll every 5 seconds for new conversations
+    refetchInterval: 5000,
     refetchIntervalInBackground: true
   })
 
@@ -55,16 +56,27 @@ const DoctorChat = () => {
       return response
     },
     enabled: !!selectedConversation?._id,
-    refetchInterval: 2000, // Poll every 2 seconds for real-time updates
-    refetchIntervalInBackground: true // Continue polling even when tab is in background
+    refetchInterval: 2000,
+    refetchIntervalInBackground: true
   })
+
+  // Conversation status (from getMessages response or conversation list)
+  const conversationStatus = useMemo(() => {
+    if (messagesData) {
+      const responseData = messagesData.data || messagesData
+      return responseData.conversation?.status || selectedConversation?.status || 'ACTIVE'
+    }
+    return selectedConversation?.status || 'ACTIVE'
+  }, [messagesData, selectedConversation])
+
+  const isCompleted = conversationStatus === 'COMPLETED'
 
   // Fetch unread count
   const { data: unreadData } = useQuery({
     queryKey: ['unreadCount'],
     queryFn: () => chatApi.getUnreadCount(),
     enabled: !!user,
-    refetchInterval: 30000 // Poll every 30 seconds
+    refetchInterval: 30000
   })
 
   // Upload chat file mutation
@@ -76,24 +88,22 @@ const DoctorChat = () => {
       if (!selectedConversation || !user) {
         throw new Error('Conversation or user not found')
       }
-      
-      console.log('Sending message to conversation:', selectedConversation)
-      
-      // For doctor-patient conversation
+
+      if (isCompleted) {
+        throw new Error('This chat has been completed. No further messages can be sent.')
+      }
+
       if (selectedConversation.conversationType === 'DOCTOR_PATIENT') {
         const appointmentId = selectedConversation.appointmentId?._id || selectedConversation.appointmentId
         const patientId = selectedConversation.patientId?._id || selectedConversation.patientId
-        
-        console.log('Message data:', { doctorId: user._id, patientId, appointmentId, message, attachments: attachments?.length || 0 })
-        
+
         if (!appointmentId) {
           throw new Error('Appointment ID is required for patient conversations')
         }
-        
         if (!patientId) {
           throw new Error('Patient ID is required for patient conversations')
         }
-        
+
         const response = await chatApi.sendMessageToPatient(
           user._id,
           patientId,
@@ -101,23 +111,17 @@ const DoctorChat = () => {
           message || null,
           attachments
         )
-        console.log('Message sent successfully:', response)
         return response
       } else {
         throw new Error('Invalid conversation type')
       }
     },
     onSuccess: async () => {
-      // Invalidate queries to refetch updated data
       await queryClient.invalidateQueries(['conversationMessages', selectedConversation?._id])
       await queryClient.invalidateQueries(['doctorPatientConversations'])
       await queryClient.invalidateQueries(['unreadCount'])
-      
-      // Refetch messages to show the new message
       await refetchMessages()
-      // Refetch conversations to update the list (in case conversation was just created)
       await refetchConversations()
-      
       setNewMessage('')
       setTimeout(() => scrollToBottom(), 100)
     },
@@ -136,6 +140,26 @@ const DoctorChat = () => {
     }
   })
 
+  // Mark conversation as completed (doctor only)
+  const markCompleteMutation = useMutation({
+    mutationFn: async (conversationId) => {
+      if (!user) throw new Error('User not found')
+      return chatApi.markConversationComplete(conversationId)
+    },
+    onSuccess: async (response) => {
+      const completed = response?.data || response
+      toast.success('Chat marked as completed')
+      await queryClient.invalidateQueries(['conversationMessages', selectedConversation?._id])
+      await queryClient.invalidateQueries(['doctorPatientConversations'])
+      await refetchConversations()
+      setSelectedConversation(prev => prev ? { ...prev, status: 'COMPLETED', ...completed } : null)
+    },
+    onError: (error) => {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to complete chat'
+      toast.error(errorMessage)
+    }
+  })
+
   // Start conversation mutation (if coming from appointments page)
   const startConversationMutation = useMutation({
     mutationFn: async ({ patientId, appointmentId }) => {
@@ -144,34 +168,20 @@ const DoctorChat = () => {
       return response
     },
     onSuccess: async (response) => {
-      // Extract conversation from response
       const conversation = response?.data || response
       console.log('Created conversation:', conversation)
-      
-      // Invalidate and refetch conversations to get the new one in the list
       await queryClient.invalidateQueries(['doctorPatientConversations'])
-      
-      // Wait a bit for the refetch to complete
       setTimeout(async () => {
-        // Refetch conversations to get updated list
         const refetchResult = await queryClient.refetchQueries(['doctorPatientConversations'])
-        console.log('Refetched conversations:', refetchResult)
-        
-        // Find the newly created conversation in the updated list
         const conversations = refetchResult[0]?.data?.data?.conversations || refetchResult[0]?.data?.conversations || []
         const newConversation = conversations.find(
           conv => conv._id === conversation._id || conv._id?.toString() === conversation._id?.toString()
         ) || conversation
-        
         console.log('Selected conversation:', newConversation)
         setSelectedConversation(newConversation)
       }, 500)
-      
-      // Also set it immediately in case refetch takes time
       setSelectedConversation(conversation)
-      
-      // Clear URL params
-      navigate('/chat-doctor', { replace: true })
+      navigate(`/chat-doctor?conversationId=${encodeURIComponent(conversation._id)}`, { replace: true })
       toast.success('Conversation started successfully')
     },
     onError: (error) => {
@@ -181,12 +191,11 @@ const DoctorChat = () => {
     }
   })
 
-  // Extract conversations from response (handle both direct data and nested data structure)
+  // Extract conversations from response
   const allConversations = useMemo(() => {
     return conversationsData?.data?.conversations || conversationsData?.conversations || []
   }, [conversationsData])
-  
-  // Filter conversations by search
+
   const filteredConversations = useMemo(() => {
     return allConversations.filter(conv => {
       if (!searchQuery) return true
@@ -196,14 +205,12 @@ const DoctorChat = () => {
     })
   }, [allConversations, searchQuery])
 
-  // Filter only doctor-patient conversations
   const patientConversations = useMemo(() => {
     return filteredConversations.filter(
       conv => conv.conversationType === 'DOCTOR_PATIENT'
     )
   }, [filteredConversations])
-  
-  // If we have a selected conversation that's not in the list, add it temporarily
+
   const conversationsToShow = useMemo(() => {
     const list = [...patientConversations]
     if (selectedConversation && !patientConversations.find(c => c._id === selectedConversation._id)) {
@@ -211,13 +218,20 @@ const DoctorChat = () => {
     }
     return list
   }, [patientConversations, selectedConversation])
-  
-  // Extract messages from response
+
   const messages = useMemo(() => {
     return messagesData?.data?.messages || messagesData?.messages || []
   }, [messagesData])
-  
-  // Debug logging (remove in production)
+
+  // Detail pages create/reuse the conversation before redirecting here. Honor
+  // that ID so the chat screen opens the same historical conversation rather
+  // than attempting a second creation from appointment query parameters.
+  useEffect(() => {
+    if (!conversationIdFromUrl) return
+    const conversation = allConversations.find((item) => String(item._id) === String(conversationIdFromUrl))
+    if (conversation) setSelectedConversation(conversation)
+  }, [conversationIdFromUrl, allConversations])
+
   useEffect(() => {
     if (conversationsData) {
       console.log('Conversations Data:', conversationsData)
@@ -229,8 +243,7 @@ const DoctorChat = () => {
 
   // Handle URL params - start conversation if patientId and appointmentId are provided
   useEffect(() => {
-    if (patientIdFromUrl && appointmentIdFromUrl && user && !startConversationMutation.isLoading && conversationsData) {
-      // Check if conversation already exists in the list
+    if (!conversationIdFromUrl && patientIdFromUrl && appointmentIdFromUrl && user && !startConversationMutation.isLoading && conversationsData) {
       const existingConv = patientConversations.find(
         conv => {
           const convPatientId = conv.patientId?._id || conv.patientId
@@ -238,29 +251,25 @@ const DoctorChat = () => {
           return convPatientId === patientIdFromUrl && convAppointmentId === appointmentIdFromUrl
         }
       )
-      
       if (existingConv) {
-        // Conversation exists, just select it
         setSelectedConversation(existingConv)
         navigate('/chat-doctor', { replace: true })
       } else if (!startConversationMutation.isLoading) {
-        // Conversation doesn't exist, create it
         startConversationMutation.mutate({
           patientId: patientIdFromUrl,
           appointmentId: appointmentIdFromUrl
         })
       }
     }
-  }, [patientIdFromUrl, appointmentIdFromUrl, user, conversationsData, patientConversations, startConversationMutation])
+  }, [conversationIdFromUrl, patientIdFromUrl, appointmentIdFromUrl, user, conversationsData, patientConversations, startConversationMutation])
 
   // Select first conversation on load if none selected and no URL params
   useEffect(() => {
-    if (!selectedConversation && conversationsToShow.length > 0 && !patientIdFromUrl) {
+    if (!selectedConversation && conversationsToShow.length > 0 && !patientIdFromUrl && !conversationIdFromUrl) {
       handleSelectConversation(conversationsToShow[0])
     }
-  }, [conversationsToShow, patientIdFromUrl, selectedConversation])
+  }, [conversationsToShow, patientIdFromUrl, conversationIdFromUrl, selectedConversation])
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (messages && messages.length > 0) {
       scrollToBottom()
@@ -274,20 +283,16 @@ const DoctorChat = () => {
     }
   }, [selectedConversation?._id])
 
-  // Auto-scroll to bottom when new messages arrive (only scroll messages container, not entire page)
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
-      // Scroll only the messages container, not the entire page
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
     } else if (messagesEndRef.current) {
-      // Fallback: scroll the end element into view within its container
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
   }
 
   const handleSelectConversation = (conversation) => {
     setSelectedConversation(conversation)
-    // Mark as read
     if (conversation.unreadCount > 0) {
       markAsReadMutation.mutate(conversation._id)
     }
@@ -298,7 +303,6 @@ const DoctorChat = () => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
 
-    // Validate file sizes (50MB max)
     const maxSize = 50 * 1024 * 1024
     const oversizedFiles = files.filter(file => file.size > maxSize)
     if (oversizedFiles.length > 0) {
@@ -313,7 +317,6 @@ const DoctorChat = () => {
     const uploadedAttachments = []
 
     try {
-      // Upload files one by one
       for (const file of files) {
         const formData = new FormData()
         formData.append('file', file)
@@ -321,12 +324,11 @@ const DoctorChat = () => {
         try {
           const uploadResponse = await uploadChatFileMutation.mutateAsync(formData)
           const fileUrl = uploadResponse.data?.url || uploadResponse.url
-          
+
           if (fileUrl) {
-            // Determine file type
             const fileExtension = file.name.split('.').pop()?.toLowerCase() || ''
             const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(fileExtension)
-            
+
             uploadedAttachments.push({
               type: isImage ? 'image' : 'file',
               url: fileUrl,
@@ -341,10 +343,9 @@ const DoctorChat = () => {
       }
 
       if (uploadedAttachments.length > 0) {
-        // Send message with attachments
-        sendMessageMutation.mutate({ 
+        sendMessageMutation.mutate({
           message: newMessage.trim() || null,
-          attachments: uploadedAttachments 
+          attachments: uploadedAttachments
         })
         setSelectedFiles([])
         setNewMessage('')
@@ -354,7 +355,6 @@ const DoctorChat = () => {
       toast.error('Failed to upload files')
     } finally {
       setUploadingFiles(false)
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -363,12 +363,15 @@ const DoctorChat = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault()
-    if ((!newMessage.trim() && selectedFiles.length === 0) || !selectedConversation) {
-      toast.error('Please enter a message or select a file')
+    if ((!newMessage.trim() && selectedFiles.length === 0) || !selectedConversation || isCompleted) {
+      if (isCompleted) {
+        toast.error('This chat has been completed. No further messages can be sent.')
+      } else {
+        toast.error('Please enter a message or select a file')
+      }
       return
     }
 
-    // If files are selected, upload them first
     if (selectedFiles.length > 0) {
       handleFileSelect({ target: { files: selectedFiles } })
     } else {
@@ -376,7 +379,6 @@ const DoctorChat = () => {
     }
   }
 
-  // Format time
   const formatTime = (dateString) => {
     if (!dateString) return ''
     const date = new Date(dateString)
@@ -394,21 +396,16 @@ const DoctorChat = () => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
-  // Format message time
   const formatMessageTime = (dateString) => {
     if (!dateString) return ''
     const date = new Date(dateString)
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
   }
 
-  // Get last message preview
   const getLastMessagePreview = (conversation) => {
-    // This would ideally come from the conversation's last message
-    // For now, we'll show a placeholder
     return 'Click to view messages'
   }
-  
-  // Group messages by date
+
   const groupMessagesByDate = (messages) => {
     if (!messages || !Array.isArray(messages)) return {}
     const groups = {}
@@ -422,7 +419,6 @@ const DoctorChat = () => {
     return groups
   }
 
-  // Format date for separator
   const formatDateSeparator = (dateString) => {
     const date = new Date(dateString)
     const today = new Date()
@@ -440,7 +436,6 @@ const DoctorChat = () => {
 
   const groupedMessages = useMemo(() => groupMessagesByDate(messages), [messages])
 
-  // Show error if any
   if (error) {
     return (
       <div className="page-wrapper chat-page-wrapper doctor-chat-wrapper">
@@ -449,9 +444,7 @@ const DoctorChat = () => {
             <div className="alert alert-danger">
               <h4>Error</h4>
               <p>{error}</p>
-              <button className="btn btn-primary" onClick={() => setError(null)}>
-                Dismiss
-              </button>
+              <button className="btn btn-primary" onClick={() => setError(null)}>Dismiss</button>
             </div>
           </div>
         </div>
@@ -826,8 +819,8 @@ const DoctorChat = () => {
               <div className="chat-list-sidebar">
                 <div className="chat-list-header">
                   <div className="d-flex align-items-center mb-2">
-                    <Link 
-                      to="/doctor/dashboard" 
+                    <Link
+                      to="/doctor/dashboard"
                       className="btn btn-sm btn-outline-secondary me-2"
                       style={{ minWidth: '40px', padding: '4px 8px' }}
                       title="Back to Dashboard"
@@ -850,7 +843,6 @@ const DoctorChat = () => {
                   </div>
                 </div>
                 <div className="chat-list-content">
-                  {/* Recent Chat Section */}
                   <div className="recent-chat-section">
                     <div className="section-header">
                       <h6>Recent Chat</h6>
@@ -870,10 +862,12 @@ const DoctorChat = () => {
                       conversationsToShow.map((conversation) => {
                         const patient = conversation.patientId
                         const isSelected = selectedConversation?._id === conversation._id
+                        const isConvCompleted = conversation.status === 'COMPLETED'
+
                         return (
                           <div
                             key={conversation._id}
-                            className={`chat-item ${isSelected ? 'active' : ''}`}
+                            className={`chat-item ${isSelected ? 'active' : ''} ${isConvCompleted ? 'completed' : ''}`}
                             onClick={() => handleSelectConversation(conversation)}
                           >
                             <div className="chat-item-avatar">
@@ -887,7 +881,12 @@ const DoctorChat = () => {
                             </div>
                             <div className="chat-item-content">
                               <div className="chat-item-header">
-                                <h5 className="chat-item-name">{patient?.fullName || 'Patient'}</h5>
+                                <div className="d-flex justify-content-between align-items-start">
+                                  <h5 className="chat-item-name">{patient?.fullName || 'Patient'}</h5>
+                                  {isConvCompleted && (
+                                    <span className="badge bg-success">Completed</span>
+                                  )}
+                                </div>
                                 <div className="chat-item-time">
                                   <small>{formatTime(conversation.lastMessageAt)}</small>
                                   {conversation.unreadCount > 0 && (
@@ -927,8 +926,28 @@ const DoctorChat = () => {
                         </div>
                         <div className="chat-details-user-info">
                           <h5>{selectedConversation.patientId?.fullName || 'Patient'}</h5>
-                          <small>Patient</small>
+                          <small className={isCompleted ? 'text-success' : 'text-muted'}>
+                            {isCompleted ? 'Chat completed' : 'Patient'}
+                          </small>
                         </div>
+                      </div>
+                      <div className="d-flex align-items-center gap-2">
+                        {isCompleted ? (
+                          <span className="badge bg-success">Completed</span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-outline-success btn-sm"
+                            onClick={() => {
+                              if (window.confirm('Mark this chat as completed? No further messages can be sent after completion.')) {
+                                markCompleteMutation.mutate(selectedConversation._id)
+                              }
+                            }}
+                            disabled={markCompleteMutation.isLoading}
+                          >
+                            {markCompleteMutation.isLoading ? 'Completing...' : 'Mark as Completed'}
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -942,129 +961,135 @@ const DoctorChat = () => {
                       ) : messages.length === 0 ? (
                         <div className="text-center py-5 text-muted">
                           <p>No messages yet</p>
-                          <small>Start the conversation by sending a message</small>
+                          <small>{isCompleted ? 'This chat has been completed.' : 'Start the conversation by sending a message'}</small>
                         </div>
                       ) : (
-                        Object.keys(groupedMessages).map((date) => (
-                          <div key={date}>
-                            <div className="chat-date-separator">
-                              <span>{formatDateSeparator(date)}</span>
-                            </div>
-                            {groupedMessages[date].map((msg) => {
-                              const isDoctor =
-                                msg.senderId?._id === user?._id || msg.senderId === user?._id
-                              return (
-                                <div
-                                  key={msg._id}
-                                  className={`chat-message ${isDoctor ? 'outgoing' : 'incoming'}`}
-                                >
-                                  <div className="chat-message-avatar">
-                                    <img
-                                      src={
-                                        isDoctor
-                                          ? user?.profileImage || '/assets/img/doctors-dashboard/profile-01.jpg'
-                                          : selectedConversation.patientId?.profileImage ||
-                                            '/assets/img/doctors-dashboard/profile-01.jpg'
-                                      }
-                                      alt={isDoctor ? user?.fullName : selectedConversation.patientId?.fullName}
-                                      onError={(e) => {
-                                        e.target.src = '/assets/img/doctors-dashboard/profile-01.jpg'
-                                      }}
-                                    />
-                                  </div>
-                                  <div className="chat-message-content">
-                                    <div className="chat-message-header">
-                                      <h6>
-                                        {isDoctor
-                                          ? user?.fullName || 'You'
-                                          : selectedConversation.patientId?.fullName || 'Patient'}
-                                      </h6>
-                                      <span>{formatMessageTime(msg.createdAt)}</span>
+                        <>
+                          {Object.keys(groupedMessages).map((date) => (
+                            <div key={date}>
+                              <div className="chat-date-separator">
+                                <span>{formatDateSeparator(date)}</span>
+                              </div>
+                              {groupedMessages[date].map((msg) => {
+                                const isDoctor =
+                                  msg.senderId?._id === user?._id || msg.senderId === user?._id
+                                return (
+                                  <div
+                                    key={msg._id}
+                                    className={`chat-message ${isDoctor ? 'outgoing' : 'incoming'}`}
+                                  >
+                                    <div className="chat-message-avatar">
+                                      <img
+                                        src={
+                                          isDoctor
+                                            ? user?.profileImage || '/assets/img/doctors-dashboard/profile-01.jpg'
+                                            : selectedConversation.patientId?.profileImage ||
+                                              '/assets/img/doctors-dashboard/profile-01.jpg'
+                                        }
+                                        alt={isDoctor ? user?.fullName : selectedConversation.patientId?.fullName}
+                                        onError={(e) => {
+                                          e.target.src = '/assets/img/doctors-dashboard/profile-01.jpg'
+                                        }}
+                                      />
                                     </div>
-                                    <div className="chat-message-bubble">
-                                      {msg.message && <div style={{ marginBottom: msg.attachments?.length > 0 ? '12px' : '0' }}>{msg.message}</div>}
-                                      
-                                      {/* Display attachments */}
-                                      {msg.attachments && msg.attachments.length > 0 && (
-                                        <div className="chat-attachments" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: msg.message ? '8px' : '0' }}>
-                                          {msg.attachments.map((attachment, attIndex) => {
-                                            const fileUrl = normalizeImageUrl(attachment.url) || attachment.url
-                                            const isImage = attachment.type === 'image' || 
-                                                           ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(
-                                                             attachment.url?.split('.').pop()?.toLowerCase() || ''
-                                                           )
-                                            
-                                            return (
-                                              <div key={attIndex} className="chat-attachment-item" style={{ 
-                                                maxWidth: '100%',
-                                                borderRadius: '8px',
-                                                overflow: 'hidden',
-                                                border: '1px solid #e0e0e0'
-                                              }}>
-                                                {isImage ? (
-                                                  <a href={fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
-                                                    <img 
-                                                      src={fileUrl} 
-                                                      alt={attachment.name || 'Attachment'} 
-                                                      style={{ 
-                                                        maxWidth: '100%', 
-                                                        maxHeight: '300px', 
-                                                        objectFit: 'contain',
-                                                        display: 'block'
-                                                      }}
-                                                      onError={(e) => {
-                                                        e.target.style.display = 'none'
-                                                        e.target.nextSibling.style.display = 'flex'
-                                                      }}
-                                                    />
-                                                    <div style={{ display: 'none', padding: '12px', backgroundColor: '#f5f5f5', alignItems: 'center', gap: '8px' }}>
-                                                      <i className="fa-solid fa-image" style={{ fontSize: '20px', color: '#999' }}></i>
-                                                      <span style={{ fontSize: '12px', color: '#666' }}>Image preview unavailable</span>
-                                                    </div>
-                                                  </a>
-                                                ) : (
-                                                  <a 
-                                                    href={fileUrl} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    style={{ 
-                                                      display: 'flex', 
-                                                      alignItems: 'center', 
-                                                      gap: '12px', 
-                                                      padding: '12px',
-                                                      backgroundColor: '#f5f5f5',
-                                                      textDecoration: 'none',
-                                                      color: '#333'
-                                                    }}
-                                                  >
-                                                    <i className="fa-solid fa-file" style={{ fontSize: '24px', color: '#2196F3' }}></i>
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                      <div style={{ fontSize: '14px', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                        {attachment.name || 'File'}
+                                    <div className="chat-message-content">
+                                      <div className="chat-message-header">
+                                        <h6>
+                                          {isDoctor
+                                            ? user?.fullName || 'You'
+                                            : selectedConversation.patientId?.fullName || 'Patient'}
+                                        </h6>
+                                        <span>{formatMessageTime(msg.createdAt)}</span>
+                                      </div>
+                                      <div className="chat-message-bubble">
+                                        {msg.message && <div style={{ marginBottom: msg.attachments?.length > 0 ? '12px' : '0' }}>{msg.message}</div>}
+
+                                        {msg.attachments && msg.attachments.length > 0 && (
+                                          <div className="chat-attachments" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: msg.message ? '8px' : '0' }}>
+                                            {msg.attachments.map((attachment, attIndex) => {
+                                              const fileUrl = normalizeImageUrl(attachment.url) || attachment.url
+                                              const isImage = attachment.type === 'image' ||
+                                                ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(
+                                                  attachment.url?.split('.').pop()?.toLowerCase() || ''
+                                                )
+
+                                              return (
+                                                <div key={attIndex} className="chat-attachment-item" style={{
+                                                  maxWidth: '100%',
+                                                  borderRadius: '8px',
+                                                  overflow: 'hidden',
+                                                  border: '1px solid #e0e0e0'
+                                                }}>
+                                                  {isImage ? (
+                                                    <a href={fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block' }}>
+                                                      <img
+                                                        src={fileUrl}
+                                                        alt={attachment.name || 'Attachment'}
+                                                        style={{
+                                                          maxWidth: '100%',
+                                                          maxHeight: '300px',
+                                                          objectFit: 'contain',
+                                                          display: 'block'
+                                                        }}
+                                                        onError={(e) => {
+                                                          e.target.style.display = 'none'
+                                                          e.target.nextSibling.style.display = 'flex'
+                                                        }}
+                                                      />
+                                                      <div style={{ display: 'none', padding: '12px', backgroundColor: '#f5f5f5', alignItems: 'center', gap: '8px' }}>
+                                                        <i className="fa-solid fa-image" style={{ fontSize: '20px', color: '#999' }}></i>
+                                                        <span style={{ fontSize: '12px', color: '#666' }}>Image preview unavailable</span>
                                                       </div>
-                                                      {attachment.size && (
-                                                        <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
-                                                          {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                                                    </a>
+                                                  ) : (
+                                                    <a
+                                                      href={fileUrl}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '12px',
+                                                        padding: '12px',
+                                                        backgroundColor: '#f5f5f5',
+                                                        textDecoration: 'none',
+                                                        color: '#333'
+                                                      }}
+                                                    >
+                                                      <i className="fa-solid fa-file" style={{ fontSize: '24px', color: '#2196F3' }}></i>
+                                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ fontSize: '14px', fontWeight: '500', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                          {attachment.name || 'File'}
                                                         </div>
-                                                      )}
-                                                    </div>
-                                                    <i className="fa-solid fa-download" style={{ color: '#2196F3' }}></i>
-                                                  </a>
-                                                )}
-                                              </div>
-                                            )
-                                          })}
-                                        </div>
-                                      )}
+                                                        {attachment.size && (
+                                                          <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
+                                                            {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                      <i className="fa-solid fa-download" style={{ color: '#2196F3' }}></i>
+                                                    </a>
+                                                  )}
+                                                </div>
+                                              )
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        ))
+                                )
+                              })}
+                            </div>
+                          ))}
+                          <div ref={messagesEndRef} />
+                        </>
                       )}
-                      <div ref={messagesEndRef} />
+                      {isCompleted && (
+                        <div className="text-center py-3 text-muted">
+                          <small>This chat has been completed. No further messages can be sent.</small>
+                        </div>
+                      )}
                     </div>
 
                     {/* Chat Input Area */}
@@ -1089,42 +1114,42 @@ const DoctorChat = () => {
                           background: 'transparent',
                           borderRadius: '50%',
                           color: '#666',
-                          cursor: uploadingFiles ? 'not-allowed' : 'pointer',
+                          cursor: (uploadingFiles || isCompleted) ? 'not-allowed' : 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontSize: '20px',
                           flexShrink: 0,
-                          opacity: uploadingFiles ? 0.5 : 1,
+                          opacity: (uploadingFiles || isCompleted) ? 0.5 : 1,
                           transition: 'color 0.2s ease'
                         }}
                         onMouseEnter={(e) => {
-                          if (!uploadingFiles) {
+                          if (!(uploadingFiles || isCompleted)) {
                             e.target.style.color = '#2196F3'
                           }
                         }}
                         onMouseLeave={(e) => {
-                          if (!uploadingFiles) {
+                          if (!(uploadingFiles || isCompleted)) {
                             e.target.style.color = '#666'
                           }
                         }}
                         title="Attach file"
-                        disabled={uploadingFiles}
+                        disabled={uploadingFiles || isCompleted}
                       >
                         <i className="fa-solid fa-paperclip" style={{ display: 'block' }}></i>
                       </button>
                       <input
                         type="text"
                         className="chat-input-field"
-                        placeholder="Type your message here..."
+                        placeholder={isCompleted ? 'This chat is completed. No new messages can be sent.' : 'Type your message here...'}
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        disabled={sendMessageMutation.isLoading || uploadingFiles}
+                        disabled={sendMessageMutation.isLoading || uploadingFiles || isCompleted}
                       />
                       <button
                         type="submit"
                         className="chat-send-button"
-                        disabled={(!newMessage.trim() && selectedFiles.length === 0) || sendMessageMutation.isLoading || uploadingFiles}
+                        disabled={(!newMessage.trim() && selectedFiles.length === 0) || sendMessageMutation.isLoading || uploadingFiles || isCompleted}
                         title="Send"
                       >
                         {uploadingFiles ? (

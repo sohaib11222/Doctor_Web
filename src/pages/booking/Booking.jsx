@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 import * as doctorApi from '../../api/doctor'
 import * as specializationApi from '../../api/specialization'
 import * as weeklyScheduleApi from '../../api/weeklySchedule'
 import * as appointmentApi from '../../api/appointments'
-import * as paymentApi from '../../api/payment'
+import { formatCurrency } from '../../utils/currency'
 
 const Booking = () => {
   const { user } = useAuth()
@@ -26,8 +26,7 @@ const Booking = () => {
     appointmentTime: '',
     patientNotes: '',
     clinicName: '',
-    paymentMethod: 'DUMMY',
-    amount: 0
+    paymentMethod: 'DUMMY'
   })
 
   // Update formData when doctorId changes
@@ -139,6 +138,16 @@ const Booking = () => {
     return Array.isArray(responseData) ? responseData : (responseData.slots || [])
   }, [availableSlotsData])
 
+  // A slot belongs to the selected calendar date. Never carry a selected
+  // clock time from one date into another, and clear it if a polling/refetch
+  // response says another patient has just taken it.
+  useEffect(() => {
+    if (!formData.appointmentTime || slotsLoading) return
+    if (!availableSlots.some((slot) => slot.startTime === formData.appointmentTime)) {
+      setFormData((previous) => ({ ...previous, appointmentTime: '' }))
+    }
+  }, [availableSlots, formData.appointmentTime, slotsLoading])
+
   // Get doctor's specialization (singular - backend returns one specialization)
   const doctorSpecialization = useMemo(() => {
     if (!doctor) {
@@ -173,6 +182,31 @@ const Booking = () => {
     if (!doctor?.services) return []
     return Array.isArray(doctor.services) ? doctor.services : []
   }, [doctor])
+
+  // Selected service names are the only service data sent to the server.
+  // Prices are always resolved server-side from the doctor profile.
+  const selectedServiceNames = useMemo(() => {
+    return formData.selectedServices
+      .map((index) => doctorServices[index]?.name || doctorServices[index])
+      .filter(Boolean)
+  }, [formData.selectedServices, doctorServices])
+
+  // Server-authoritative price breakdown shown on the review steps.
+  const { data: quoteData, isLoading: quoteLoading, error: quoteError } = useQuery({
+    queryKey: ['bookingQuote', doctorId, formData.bookingType, selectedServiceNames.join('|')],
+    queryFn: () => appointmentApi.getBookingQuote({
+      doctorId,
+      bookingType: formData.bookingType,
+      selectedServices: selectedServiceNames
+    }),
+    enabled: !!doctorId && currentStep >= 5,
+    retry: 1
+  })
+
+  const quote = useMemo(() => {
+    if (!quoteData) return null
+    return quoteData.data || quoteData
+  }, [quoteData])
 
   // Get specialization name (must be after doctorSpecialization is defined)
   const doctorSpecializationName = useMemo(() => {
@@ -269,35 +303,17 @@ const Booking = () => {
   }, [doctor, formData.selectedSpecialization])
 
 
-  // Create appointment mutation
-  const createAppointmentMutation = useMutation({
-    mutationFn: (data) => appointmentApi.createAppointment(data),
-    onSuccess: (response) => {
-      const appointment = response.data || response
-      toast.success('Appointment request created successfully!')
-      navigate(`/booking-success?appointmentId=${appointment._id}`)
-    },
-    onError: (error) => {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to create appointment'
-      toast.error(errorMessage)
-    }
-  })
-
-  // Process payment mutation (optional)
-  const processPaymentMutation = useMutation({
-    mutationFn: (data) => paymentApi.processAppointmentPayment(data.appointmentId, data.amount, data.paymentMethod),
-    onSuccess: () => {
-      toast.success('Payment processed successfully')
-    },
-    onError: (error) => {
-      const errorMessage = error.response?.data?.message || error.message || 'Payment failed'
-      toast.error(errorMessage)
-    }
-  })
-
   // Update form data
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleAppointmentDateChange = (value) => {
+    setFormData((previous) => ({
+      ...previous,
+      appointmentDate: value,
+      appointmentTime: '',
+    }))
   }
 
   // Handle service selection
@@ -339,6 +355,16 @@ const Booking = () => {
     if (currentStep === 4) {
       // Basic info is optional, can proceed
     }
+    if (currentStep === 5) {
+      if (quoteError) {
+        toast.error('Could not calculate the booking price. Please try again.')
+        return
+      }
+      if (!quote) {
+        toast.error('Price details are still loading. Please wait a moment.')
+        return
+      }
+    }
     if (currentStep < 6) {
       setCurrentStep(prev => prev + 1)
     }
@@ -351,8 +377,20 @@ const Booking = () => {
     }
   }
 
-  // Handle final submission
-  const handleSubmit = async () => {
+  const getTimezoneOffsetForLocalDateTime = (dateStr, timeStr) => {
+    const [year, month, day] = String(dateStr).split('-').map((x) => Number(x))
+    const [hours, minutes] = String(timeStr).split(':').map((x) => Number(x))
+
+    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(hours) || !Number.isFinite(minutes)) {
+      return -new Date().getTimezoneOffset()
+    }
+
+    const dt = new Date(year, month - 1, day, hours, minutes, 0, 0)
+    return -dt.getTimezoneOffset()
+  }
+
+  // Handle final step: hand the booking over to the real checkout page.
+  const handleSubmit = () => {
     if (!user) {
       toast.error('Please login to book an appointment')
       navigate('/login')
@@ -365,68 +403,72 @@ const Booking = () => {
       return
     }
 
-    const getTimezoneOffsetForLocalDateTime = (dateStr, timeStr) => {
-      const [year, month, day] = String(dateStr).split('-').map((x) => Number(x))
-      const [hours, minutes] = String(timeStr).split(':').map((x) => Number(x))
-
-      if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(hours) || !Number.isFinite(minutes)) {
-        return -new Date().getTimezoneOffset()
-      }
-
-      const dt = new Date(year, month - 1, day, hours, minutes, 0, 0)
-      return -dt.getTimezoneOffset()
+    if (!formData.appointmentDate || !formData.appointmentTime) {
+      toast.error('Please select date and time')
+      return
     }
 
-    const appointmentData = {
+    if (!quote) {
+      toast.error('Price details are still loading. Please wait a moment.')
+      return
+    }
+
+    const booking = {
       doctorId: formData.doctorId,
-      patientId: user._id,
+      doctorName,
+      doctorImage,
+      specializationName: doctorSpecializationName,
+      doctorLocation,
+      bookingType: formData.bookingType,
       appointmentDate: formData.appointmentDate,
       appointmentTime: formData.appointmentTime,
+      appointmentDuration: quote.appointmentDuration,
+      patientNotes: formData.patientNotes || '',
+      clinicName: formData.clinicName || '',
+      selectedServices: selectedServiceNames,
+      paymentMethod: formData.paymentMethod,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      timezoneOffset: getTimezoneOffsetForLocalDateTime(formData.appointmentDate, formData.appointmentTime),
-      bookingType: formData.bookingType,
-      patientNotes: formData.patientNotes || undefined,
-      clinicName: formData.clinicName || undefined
+      timezoneOffset: getTimezoneOffsetForLocalDateTime(formData.appointmentDate, formData.appointmentTime)
     }
 
     try {
-      const response = await createAppointmentMutation.mutateAsync(appointmentData)
-      const appointment = response.data || response
-
-      // Process payment if amount > 0
-      if (formData.amount > 0) {
-        await processPaymentMutation.mutateAsync({
-          appointmentId: appointment._id,
-          amount: formData.amount,
-          paymentMethod: formData.paymentMethod
-        })
-      }
-    } catch (error) {
-      // Error already handled in mutation
+      // A new booking must never reuse the appointment created by a previous
+      // checkout attempt that was never completed.
+      sessionStorage.removeItem('pendingBookingAppointmentId')
+      sessionStorage.setItem('pendingBooking', JSON.stringify(booking))
+    } catch (storageError) {
+      console.warn('Could not persist pending booking:', storageError)
     }
+
+    navigate('/checkout', { state: { booking } })
   }
 
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return ''
-    const date = new Date(dateString)
+    const date = new Date(`${dateString}T00:00:00`)
     return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   }
 
-  // Get minimum date (today)
-  const getMinDate = () => {
-    const today = new Date()
-    return today.toISOString().split('T')[0]
+  // Format a Date using local calendar parts so the selected day never shifts.
+  const formatLocalDate = (date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 
-  // Get dates for next 30 days
+  // Get minimum date (today, local calendar)
+  const getMinDate = () => formatLocalDate(new Date())
+
+  // Get dates for next 30 days (local calendar)
   const getAvailableDates = () => {
     const dates = []
     const today = new Date()
     for (let i = 0; i < 30; i++) {
       const date = new Date(today)
       date.setDate(today.getDate() + i)
-      dates.push(date.toISOString().split('T')[0])
+      dates.push(formatLocalDate(date))
     }
     return dates
   }
@@ -468,7 +510,7 @@ const Booking = () => {
                           {step === 2 && 'Appointment Type'}
                           {step === 3 && 'Date & Time'}
                           {step === 4 && 'Basic Information'}
-                          {step === 5 && 'Payment'}
+                          {step === 5 && 'Review'}
                           {step === 6 && 'Confirmation'}
                         </h6>
                       </div>
@@ -755,7 +797,7 @@ const Booking = () => {
                             className="form-control"
                             min={getMinDate()}
                             value={formData.appointmentDate}
-                            onChange={(e) => updateFormData('appointmentDate', e.target.value)}
+                            onChange={(e) => handleAppointmentDateChange(e.target.value)}
                           />
                         </div>
                         <div className="col-md-6 mb-4">
@@ -778,7 +820,7 @@ const Booking = () => {
                                   style={{ marginBottom: '10px' }}
                                   onClick={() => updateFormData('appointmentTime', slot.startTime)}
                                 >
-                                  {slot.startTime}
+                                  {slot.startTime}{slot.endTime ? ` – ${slot.endTime}` : ''}
                                 </button>
                               ))}
                             </div>
@@ -863,15 +905,43 @@ const Booking = () => {
                     </fieldset>
                   )}
 
-                  {/* Step 5: Payment (Optional) */}
+                  {/* Step 5: Review charges & payment method */}
                   {currentStep === 5 && (
                     <fieldset style={{ display: 'block', visibility: 'visible', opacity: 1, minHeight: '400px' }}>
                       <div className="card booking-card mb-0" style={{ display: 'block', visibility: 'visible', opacity: 1, border: '2px solid #6f42c1' }}>
                     <div className="card-body booking-body">
-                      <h5 className="mb-4">Payment</h5>
-                      <div className="alert alert-info">
-                        <p className="mb-0">Payment is optional. You can proceed without payment and pay later.</p>
-                      </div>
+                      <h5 className="mb-4">Review Charges & Payment Method</h5>
+                      {quoteLoading ? (
+                        <div className="text-center py-3">
+                          <div className="spinner-border spinner-border-sm text-primary" role="status"></div>
+                          <p className="mt-2 mb-0 text-muted">Calculating your total...</p>
+                        </div>
+                      ) : quoteError ? (
+                        <div className="alert alert-danger">
+                          <p className="mb-0">
+                            {quoteError.response?.data?.message || quoteError.message || 'Could not calculate the booking price.'}
+                          </p>
+                        </div>
+                      ) : quote && (
+                        <div className="booking-summary mb-4">
+                          <ul className="booking-fee list-unstyled mb-0">
+                            <li className="d-flex justify-content-between py-1">
+                              <span>Consultation Fee</span>
+                              <span>{formatCurrency(quote.consultationFee, quote.currency)}</span>
+                            </li>
+                            {(quote.selectedServices || []).map((service, index) => (
+                              <li key={`${service.name}-${index}`} className="d-flex justify-content-between py-1">
+                                <span>{service.name}</span>
+                                <span>{formatCurrency(service.price, quote.currency)}</span>
+                              </li>
+                            ))}
+                            <li className="d-flex justify-content-between py-2 mt-2 border-top fw-bold">
+                              <span>Total</span>
+                              <span>{formatCurrency(quote.totalAmount, quote.currency)}</span>
+                            </li>
+                          </ul>
+                        </div>
+                      )}
                       <div className="mb-3">
                         <label className="form-label">Payment Method</label>
                         <select
@@ -885,17 +955,8 @@ const Booking = () => {
                           <option value="BANK">Bank Transfer</option>
                         </select>
                       </div>
-                      <div className="mb-3">
-                        <label className="form-label">Amount (Optional)</label>
-                        <input
-                          type="number"
-                          className="form-control"
-                          placeholder="0.00"
-                          min="0"
-                          step="0.01"
-                          value={formData.amount}
-                          onChange={(e) => updateFormData('amount', parseFloat(e.target.value) || 0)}
-                        />
+                      <div className="alert alert-info mb-0">
+                        <p className="mb-0">The appointment is created and paid on the checkout page. The amount is always calculated by the server.</p>
                       </div>
                     </div>
                     <div className="card-footer">
@@ -912,6 +973,7 @@ const Booking = () => {
                           type="button"
                           className="btn btn-md btn-primary-gradient inline-flex align-items-center rounded-pill"
                           onClick={handleNext}
+                          disabled={quoteLoading || !!quoteError || !quote}
                         >
                           Review & Confirm
                           <i className="isax isax-arrow-right-3 ms-1"></i>
@@ -955,6 +1017,13 @@ const Booking = () => {
                             </div>
                           )}
                         </div>
+                        {selectedServiceNames.length > 0 && (
+                          <div className="row mb-3">
+                            <div className="col-12">
+                              <strong>Services:</strong> {selectedServiceNames.join(', ')}
+                            </div>
+                          </div>
+                        )}
                         {formData.patientNotes && (
                           <div className="row mb-3">
                             <div className="col-12">
@@ -962,10 +1031,10 @@ const Booking = () => {
                             </div>
                           </div>
                         )}
-                        {formData.amount > 0 && (
+                        {quote && (
                           <div className="row mb-3">
                             <div className="col-12">
-                              <strong>Payment Amount:</strong> ${formData.amount.toFixed(2)}
+                              <strong>Total Amount:</strong> {formatCurrency(quote.totalAmount, quote.currency)}
                             </div>
                           </div>
                         )}
@@ -985,19 +1054,10 @@ const Booking = () => {
                           type="button"
                           className="btn btn-md btn-primary-gradient inline-flex align-items-center rounded-pill"
                           onClick={handleSubmit}
-                          disabled={createAppointmentMutation.isLoading}
+                          disabled={quoteLoading || !!quoteError || !quote}
                         >
-                          {createAppointmentMutation.isLoading ? (
-                            <>
-                              <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                              Creating...
-                            </>
-                          ) : (
-                            <>
-                              Confirm Appointment
-                              <i className="isax isax-check ms-1"></i>
-                            </>
-                          )}
+                          <i className="isax isax-arrow-right-3 me-1"></i>
+                          Proceed to Checkout
                         </button>
                       </div>
                     </div>

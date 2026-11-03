@@ -3,12 +3,18 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as appointmentApi from '../../api/appointments'
+import { useAppointmentChat } from '../../hooks/useAppointmentChat'
+import {
+  formatAppointmentDate as formatStoredAppointmentDate,
+  formatAppointmentTime as formatStoredAppointmentTime,
+} from '../../utils/appointmentDateTime'
 
 const DoctorAppointmentDetails = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const appointmentId = searchParams.get('id')
+  const { openAppointmentChat, isOpening: isOpeningChat } = useAppointmentChat('/chat-doctor')
 
   const [rejectModal, setRejectModal] = useState({ show: false, reason: '' })
 
@@ -71,19 +77,12 @@ const DoctorAppointmentDetails = () => {
 
   // Format date for display
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    return dateString ? formatStoredAppointmentDate(dateString) : 'N/A'
   }
 
   // Format time for display
   const formatTime = (timeString) => {
-    if (!timeString) return 'N/A'
-    const [hours, minutes] = timeString.split(':')
-    const hour = parseInt(hours)
-    const ampm = hour >= 12 ? 'PM' : 'AM'
-    const hour12 = hour % 12 || 12
-    return `${hour12}:${minutes} ${ampm}`
+    return timeString ? formatStoredAppointmentTime(timeString) : 'N/A'
   }
 
   // Format date and time together
@@ -170,6 +169,15 @@ const DoctorAppointmentDetails = () => {
     const statusText = newStatus === 'COMPLETED' ? 'completed' : 'marked as no-show'
     if (window.confirm(`Are you sure you want to mark this appointment as ${statusText}?`)) {
       updateStatusMutation.mutate({ appointmentId, status: newStatus })
+    }
+  }
+
+  const handleChatClick = async (event, selectedAppointment) => {
+    event.preventDefault()
+    try {
+      await openAppointmentChat(selectedAppointment)
+    } catch (chatError) {
+      toast.error(chatError?.response?.data?.message || chatError?.message || 'Unable to open chat for this appointment.')
     }
   }
 
@@ -292,17 +300,8 @@ const DoctorAppointmentDetails = () => {
                 <li>
                   <a
                     href="#"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      // Navigate to chat with patient (requires both patientId and appointmentId)
-                      const patientId = appointment.patientId?._id || appointment.patientId
-                      const appointmentId = appointment._id
-                      if (patientId && appointmentId) {
-                        navigate(`/chat-doctor?patientId=${patientId}&appointmentId=${appointmentId}`)
-                      } else {
-                        toast.error('Unable to start chat: Missing patient or appointment information')
-                      }
-                    }}
+                    onClick={(event) => handleChatClick(event, appointment)}
+                    aria-disabled={isOpeningChat(appointment._id)}
                   >
                     <i className="fa-solid fa-comments"></i>
                   </a>

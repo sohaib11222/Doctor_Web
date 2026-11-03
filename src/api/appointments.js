@@ -62,6 +62,20 @@ export const updateAppointmentStatus = async (id, data) => {
 }
 
 /**
+ * Get the server-calculated price breakdown for a booking.
+ * Amounts are always derived on the server from the doctor profile, never from
+ * client input.
+ * @param {Object} data - Quote data
+ * @param {string} data.doctorId - Doctor ID
+ * @param {string} data.bookingType - Booking type (VISIT, ONLINE)
+ * @param {string[]} data.selectedServices - Selected service names
+ * @returns {Promise<Object>} Quote with consultation fee, services and total
+ */
+export const getBookingQuote = async (data) => {
+  return api.post('/appointment/quote', data)
+}
+
+/**
  * Create appointment (patient only)
  * @param {Object} data - Appointment data
  * @param {string} data.doctorId - Doctor ID

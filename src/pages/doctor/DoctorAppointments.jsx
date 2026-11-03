@@ -3,6 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as appointmentApi from '../../api/appointments'
+import {
+  formatAppointmentDate as formatStoredAppointmentDate,
+  formatAppointmentTime as formatStoredAppointmentTime
+} from '../../utils/appointmentDateTime'
 
 const DoctorAppointments = () => {
   const navigate = useNavigate()
@@ -160,18 +164,13 @@ const DoctorAppointments = () => {
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return '—'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    return formatStoredAppointmentDate(dateString)
   }
 
   // Format time for display
   const formatTime = (timeString) => {
     if (!timeString) return '—'
-    const [hours, minutes] = timeString.split(':')
-    const hour = parseInt(hours)
-    const ampm = hour >= 12 ? 'PM' : 'AM'
-    const hour12 = hour % 12 || 12
-    return `${hour12}:${minutes} ${ampm}`
+    return formatStoredAppointmentTime(timeString)
   }
 
   // Get booking type display

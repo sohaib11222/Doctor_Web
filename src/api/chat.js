@@ -11,6 +11,16 @@ export const getConversations = async (params = {}) => {
 }
 
 /**
+ * Mark a conversation as completed (doctor only).
+ * @param {string} conversationId - Conversation ID
+ * @returns {Promise<Object>} Updated conversation
+ */
+export const markConversationComplete = async (conversationId) => {
+  const response = await axios.post(`/chat/conversations/${conversationId}/complete`)
+  return response.data
+}
+
+/**
  * Get unread message count for the current user
  * @returns {Promise<Object>} Unread count
  */

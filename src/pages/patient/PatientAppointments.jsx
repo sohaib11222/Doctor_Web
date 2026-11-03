@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as appointmentApi from '../../api/appointments'
 import { useAuth } from '../../contexts/AuthContext'
+import { formatAppointmentDateTime } from '../../utils/appointmentDateTime'
 
 const PatientAppointments = () => {
   const { user } = useAuth()
@@ -161,12 +162,7 @@ const PatientAppointments = () => {
   }, [appointmentsData])
 
   // Format date and time
-  const formatDateTime = (date, time) => {
-    if (!date) return 'N/A'
-    const d = new Date(date)
-    const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
-    return time ? `${dateStr} ${time}` : dateStr
-  }
+  const formatDateTime = formatAppointmentDateTime
 
   // Get booking type display
   const getBookingTypeDisplay = (bookingType) => {

@@ -7,6 +7,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useCreateReview } from '../../mutations/reviewMutations'
 import * as reviewsApi from '../../api/reviews'
 import * as rescheduleApi from '../../api/rescheduleRequest'
+import { useAppointmentChat } from '../../hooks/useAppointmentChat'
+import { formatAppointmentDateTime } from '../../utils/appointmentDateTime'
 
 const PatientAppointmentDetails = () => {
   const { user } = useAuth()
@@ -14,6 +16,7 @@ const PatientAppointmentDetails = () => {
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const appointmentId = searchParams.get('id')
+  const { openAppointmentChat, isOpening: isOpeningChat } = useAppointmentChat('/chat')
 
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
@@ -208,12 +211,7 @@ const PatientAppointmentDetails = () => {
   }, [recentAppointmentsData])
 
   // Format date and time
-  const formatDateTime = (date, time) => {
-    if (!date) return '—'
-    const d = new Date(date)
-    const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
-    return time ? `${dateStr} - ${time}` : dateStr
-  }
+  const formatDateTime = formatAppointmentDateTime
 
   // Get status badge class
   const getStatusBadgeClass = (status) => {
@@ -284,9 +282,13 @@ const PatientAppointmentDetails = () => {
   }
 
   // Handle chat navigation
-  const handleChatClick = (e, appointmentId, doctorId) => {
+  const handleChatClick = async (e, selectedAppointment) => {
     e.preventDefault()
-    navigate(`/chat?appointmentId=${appointmentId}&doctorId=${doctorId}`)
+    try {
+      await openAppointmentChat(selectedAppointment)
+    } catch (chatError) {
+      toast.error(chatError?.response?.data?.message || chatError?.message || 'Unable to open chat for this appointment.')
+    }
   }
 
   if (isLoading) {
@@ -434,7 +436,8 @@ const PatientAppointmentDetails = () => {
                       <li>
                         <a
                           href="#"
-                          onClick={(e) => handleChatClick(e, appointment._id, doctorId)}
+                          onClick={(e) => handleChatClick(e, appointment)}
+                          aria-disabled={isOpeningChat(appointment._id)}
                         >
                           <i className="isax isax-messages-25"></i>
                         </a>

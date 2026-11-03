@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import Header from '../components/common/Header'
 import Footer from '../components/common/Footer'
 import ScrollToTop from '../components/common/ScrollToTop'
+import IncomingCallNotifier from '../components/video/IncomingCallNotifier'
 
 const MainLayout = ({ children, showHeader = true, showFooter = true }) => {
   useEffect(() => {
@@ -26,6 +27,7 @@ const MainLayout = ({ children, showHeader = true, showFooter = true }) => {
       {showHeader && <Header />}
       {children}
       {showFooter && <Footer />}
+      <IncomingCallNotifier />
       <ScrollToTop />
     </div>
   )

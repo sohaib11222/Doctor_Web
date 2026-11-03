@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import Breadcrumb from '../../components/common/Breadcrumb'
 import * as appointmentApi from '../../api/appointments'
+import { formatAppointmentDateTime } from '../../utils/appointmentDateTime'
 
 const BookingSuccess = () => {
   const [searchParams] = useSearchParams()
@@ -19,12 +20,7 @@ const BookingSuccess = () => {
   const appointment = appointmentData?.data || appointmentData
 
   // Format date and time
-  const formatDateTime = (date, time) => {
-    if (!date) return 'N/A'
-    const d = new Date(date)
-    const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
-    return time ? `${dateStr} ${time}` : dateStr
-  }
+  const formatDateTime = (date, time) => date ? formatAppointmentDateTime(date, time) : 'N/A'
 
   if (isLoading) {
     return (
