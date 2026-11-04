@@ -4,6 +4,8 @@ import { useUnreadOrderCount } from '../../queries/orderQueries'
 import { useQuery } from '@tanstack/react-query'
 import * as prescriptionApi from '../../api/productPrescriptionRequest'
 import * as chatApi from '../../api/chat'
+import * as pharmacyApi from '../../api/pharmacy'
+import { getImageUrl } from '../../utils/imageUtils'
 
 const PharmacySidebar = () => {
   const location = useLocation()
@@ -12,11 +14,22 @@ const PharmacySidebar = () => {
 
   const userRole = user?.role?.toUpperCase()
   const showSubscriptionPlans = userRole === 'PHARMACY'
-  const { data: unreadOrdersCount = 0 } = useUnreadOrderCount(Boolean(user?._id))
-  const { data: prescriptionResponse } = useQuery({ queryKey: ['pending-product-prescriptions'], queryFn: prescriptionApi.getPendingProductPrescriptionCount, enabled: Boolean(user?._id), refetchInterval: 10000 })
+  const { data: pharmacyResponse } = useQuery({
+    queryKey: ['my-pharmacy'],
+    queryFn: pharmacyApi.getMyPharmacy,
+    enabled: Boolean(user?._id || user?.id),
+    staleTime: 10 * 1000,
+    refetchOnWindowFocus: true,
+  })
+  const pharmacyPayload = pharmacyResponse?.data?.data || pharmacyResponse?.data || pharmacyResponse || {}
+  const businessName = pharmacyPayload?.name || user?.fullName || (userRole === 'PARAPHARMACY' ? 'Parapharmacy' : 'Pharmacy')
+  const profileImage = getImageUrl(pharmacyPayload?.logo || user?.profileImage, '/assets/img/placeholder.jpg')
+  const hasUser = Boolean(user?._id || user?.id)
+  const { data: unreadOrdersCount = 0 } = useUnreadOrderCount(hasUser)
+  const { data: prescriptionResponse } = useQuery({ queryKey: ['pending-product-prescriptions'], queryFn: prescriptionApi.getPendingProductPrescriptionCount, enabled: hasUser, refetchInterval: 10000 })
   const prescriptionPayload = prescriptionResponse?.data?.data || prescriptionResponse?.data || prescriptionResponse
   const pendingPrescriptions = prescriptionPayload?.pendingCount || 0
-  const { data: chatUnreadResponse } = useQuery({ queryKey: ['chat-unread-count'], queryFn: chatApi.getUnreadCount, enabled: Boolean(user?._id), refetchInterval: 7000 })
+  const { data: chatUnreadResponse } = useQuery({ queryKey: ['chat-unread-count'], queryFn: chatApi.getUnreadCount, enabled: hasUser, refetchInterval: 7000 })
   const chatPayload = chatUnreadResponse?.data || chatUnreadResponse
   const chatUnread = chatPayload?.unreadCount || 0
 
@@ -24,8 +37,12 @@ const PharmacySidebar = () => {
     <div className="profile-sidebar">
       <div className="widget-profile pro-widget-content">
         <div className="profile-info-widget">
+          <Link to="/pharmacy/profile" className="booking-doc-img" aria-label="Open business profile">
+            <img src={profileImage} alt={`${businessName} profile`} onError={(event) => { event.currentTarget.src = '/assets/img/placeholder.jpg' }} />
+          </Link>
           <div className="profile-det-info">
-            <h3>Pharmacy</h3>
+            <h3>{businessName}</h3>
+            <div className="patient-details"><h5 className="mb-0">{userRole === 'PARAPHARMACY' ? 'Parapharmacy account' : 'Pharmacy account'}</h5></div>
           </div>
         </div>
       </div>

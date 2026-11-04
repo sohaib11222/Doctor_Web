@@ -209,3 +209,11 @@ export const sendAdminSupportMessage = async (conversationId, message, attachmen
   return response.data
 }
 
+/** Upload one attachment before including its trusted URL in a chat message. */
+export const uploadChatFile = async (file) => {
+  const formData = new FormData()
+  formData.append('file', file, file.name)
+  const response = await axios.post('/upload/chat', formData)
+  return response?.data ?? response
+}
+

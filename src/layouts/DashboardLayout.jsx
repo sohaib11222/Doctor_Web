@@ -42,7 +42,8 @@ const DashboardLayout = ({ children, breadcrumb }) => {
                         location.pathname === '/chat' ||
                         location.pathname === '/dependent' ||
                         location.pathname === '/medical-records' ||
-                        location.pathname === '/medical-details'
+                        location.pathname === '/medical-details' ||
+                        location.pathname.startsWith('/support-tickets')
   const isPharmacyRoute = location.pathname.startsWith('/pharmacy/')
   const isChatRoute = location.pathname === '/chat' || location.pathname === '/chat-doctor' || location.pathname === '/doctor/admin-chat'
 

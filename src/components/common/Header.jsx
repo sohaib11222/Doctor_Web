@@ -645,10 +645,9 @@ const Header = () => {
                   </li>
                 )}
 
-                {/* Contact Us */}
-                {/* <li className={isActive('/contact-us') ? 'active' : ''}>
+                <li className={isActive('/contact-us') ? 'active' : ''}>
                   <Link to="/contact-us">Contact Us</Link>
-                </li> */}
+                </li>
               </ul>
             </div>
 

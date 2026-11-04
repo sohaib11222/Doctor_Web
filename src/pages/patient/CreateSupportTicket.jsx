@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createSupportTicket, uploadSupportAttachments, unwrapTicketData } from '../../api/supportTickets'
 import { useAppointments } from '../../queries/appointmentQueries'
 import { usePatientOrders } from '../../queries/orderQueries'
@@ -26,6 +26,7 @@ const recordText = (record) => {
 
 const CreateSupportTicket = () => {
   const navigate = useNavigate()
+  const client = useQueryClient()
   const fileInput = useRef(null)
   const [form, setForm] = useState({ subject: '', category: 'APPOINTMENT', priority: 'MEDIUM', relatedType: '', relatedRecordId: '', description: '' })
   const [files, setFiles] = useState([])
@@ -69,6 +70,8 @@ const CreateSupportTicket = () => {
         relatedRecord: form.relatedType ? { type: form.relatedType, recordId: form.relatedRecordId } : null,
         attachments,
       }))
+      if (!ticket?._id) throw new Error('Support created the ticket, but its details could not be opened. Please return to your ticket list.')
+      client.invalidateQueries({ queryKey: ['support-tickets'] })
       toast.success(`Ticket ${ticket.ticketNumber || ''} was sent to support.`)
       navigate(`/support-tickets/${ticket._id}`)
     } catch (error) {

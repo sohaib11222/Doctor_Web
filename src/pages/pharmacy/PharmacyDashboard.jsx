@@ -3,103 +3,43 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../contexts/AuthContext'
 import * as pharmacyApi from '../../api/pharmacy'
+import * as orderApi from '../../api/order'
+import * as productApi from '../../api/product'
+import * as prescriptionApi from '../../api/productPrescriptionRequest'
+
+const orderStatuses = [
+  { value: 'PENDING', label: 'Awaiting action', icon: 'fa-clock', tone: 'warning' },
+  { value: 'CONFIRMED', label: 'Confirmed', icon: 'fa-circle-check', tone: 'info' },
+  { value: 'PROCESSING', label: 'Preparing', icon: 'fa-box-open', tone: 'primary' },
+  { value: 'SHIPPED', label: 'In delivery', icon: 'fa-truck', tone: 'secondary' },
+  { value: 'DELIVERED', label: 'Delivered', icon: 'fa-circle-check', tone: 'success' },
+  { value: 'CANCELLED', label: 'Cancelled', icon: 'fa-ban', tone: 'danger' },
+]
+const unwrap = (response) => { const first = response?.data ?? response; return first?.data ?? first ?? {} }
+const price = (amount) => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR' }).format(Number(amount || 0))
+const orderName = (order) => order?.patientId?.fullName || order?.patientId?.email || order?.shippingAddress?.fullName || 'Patient'
+const orderTotal = (order) => order?.totalAmount ?? order?.total ?? order?.amount ?? 0
 
 const PharmacyDashboard = () => {
   const { user } = useAuth()
-
-  const { data: myPharmacyResponse, isLoading } = useQuery({
-    queryKey: ['my-pharmacy'],
-    queryFn: () => pharmacyApi.getMyPharmacy(),
-    enabled: !!user
-  })
-
-  const myPharmacy = useMemo(() => {
-    if (!myPharmacyResponse) return null
-    const responseData = myPharmacyResponse.data || myPharmacyResponse
-    return responseData.data || responseData
-  }, [myPharmacyResponse])
-
-  const isProfileComplete = useMemo(() => {
-    if (!myPharmacy) return false
-    const nameOk = Boolean(String(myPharmacy.name || '').trim())
-    const phoneOk = Boolean(String(myPharmacy.phone || '').trim())
-    const line1Ok = Boolean(String(myPharmacy.address?.line1 || '').trim())
-    const cityOk = Boolean(String(myPharmacy.address?.city || '').trim())
-    return nameOk && phoneOk && line1Ok && cityOk
-  }, [myPharmacy])
-
-  const status = user?.status?.toUpperCase()
-
-  if (isLoading) {
-    return (
-      <div className="text-center py-5">
-        <div className="spinner-border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      <div className="dashboard-header">
-        <h3>Pharmacy Dashboard</h3>
-        <p className="text-muted mb-0">Manage your pharmacy profile, products and orders</p>
-      </div>
-
-      {status === 'PENDING' && (
-        <div className="alert alert-warning">
-          Your account is pending admin approval. You can complete your pharmacy profile, but you cannot sell products until approved.
-        </div>
-      )}
-
-      {myPharmacy && !isProfileComplete && (
-        <div className="alert alert-info">
-          <div className="d-flex align-items-center justify-content-between flex-wrap" style={{ gap: 12 }}>
-            <div>
-              <strong>Complete your profile</strong>
-              <div className="small text-muted">Add name, phone, address line 1, and city to start adding products.</div>
-            </div>
-            <Link className="btn btn-sm btn-primary" to="/pharmacy/profile">Complete Profile</Link>
-          </div>
-        </div>
-      )}
-
-      {!myPharmacy ? (
-        <div className="card">
-          <div className="card-body">
-            <h5 className="mb-2">Create your pharmacy profile</h5>
-            <p className="text-muted mb-3">You need to create your pharmacy profile before you can manage products.</p>
-            <Link className="btn btn-primary" to="/pharmacy/profile">Go to Pharmacy Profile</Link>
-          </div>
-        </div>
-      ) : (
-        <div className="row">
-          <div className="col-md-6">
-            <div className="card">
-              <div className="card-body">
-                <h5 className="mb-1">{myPharmacy.name || 'My Pharmacy'}</h5>
-                <p className="text-muted mb-3">{myPharmacy.address?.city || '—'}</p>
-                <Link className="btn btn-outline-primary" to="/pharmacy/profile">Edit Profile</Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-6">
-            <div className="card">
-              <div className="card-body">
-                <h5 className="mb-2">Quick Links</h5>
-                <div className="d-flex gap-2 flex-wrap">
-                  <Link className="btn btn-outline-secondary" to="/pharmacy/products">Products</Link>
-                  <Link className="btn btn-outline-secondary" to="/pharmacy/orders">Orders</Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
+  const role = String(user?.role || '').toUpperCase()
+  const title = role === 'PARAPHARMACY' ? 'Parapharmacy' : 'Pharmacy'
+  const pharmacy = useQuery({ queryKey: ['my-pharmacy'], queryFn: pharmacyApi.getMyPharmacy, enabled: Boolean(user) })
+  const orders = useQuery({ queryKey: ['pharmacy-dashboard-orders'], queryFn: async () => Promise.all(orderStatuses.map(({ value }) => orderApi.getPharmacyOrders({ page: 1, limit: 8, status: value }))), enabled: Boolean(user), refetchInterval: 15000 })
+  const products = useQuery({ queryKey: ['pharmacy-dashboard-products', user?._id || user?.id], queryFn: () => productApi.listProducts({ sellerId: user?._id || user?.id, page: 1, limit: 100, isActive: 'all' }), enabled: Boolean(user?._id || user?.id), refetchInterval: 30000 })
+  const prescriptions = useQuery({ queryKey: ['pharmacy-dashboard-prescriptions'], queryFn: prescriptionApi.getPendingProductPrescriptionCount, enabled: role === 'PHARMACY' || role === 'PARAPHARMACY', refetchInterval: 15000 })
+  const subscription = useQuery({ queryKey: ['pharmacy-dashboard-subscription'], queryFn: pharmacyApi.getMyPharmacySubscription, enabled: role === 'PHARMACY', retry: 1 })
+  const business = unwrap(pharmacy.data)
+  const productList = useMemo(() => { const value = unwrap(products.data); return Array.isArray(value.products) ? value.products : [] }, [products.data])
+  const statusStats = useMemo(() => orderStatuses.map((definition, index) => { const value = unwrap(orders.data?.[index]); return { ...definition, count: Number(value?.pagination?.total || value?.total || 0), orders: Array.isArray(value?.orders) ? value.orders : [] } }), [orders.data])
+  const recentOrders = useMemo(() => statusStats.flatMap((item) => item.orders).sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)).filter((order, index, list) => list.findIndex((item) => String(item._id) === String(order._id)) === index).slice(0, 8), [statusStats])
+  const profileComplete = Boolean(business?.name && business?.phone && business?.address?.line1 && business?.address?.city)
+  const pendingPrescriptionCount = Number(unwrap(prescriptions.data)?.pendingCount || unwrap(prescriptions.data)?.count || 0)
+  const lowStock = productList.filter((product) => Number(product.stock || 0) <= 5).length
+  const totalSales = recentOrders.filter((order) => String(order.paymentStatus || '').toUpperCase() === 'PAID').reduce((total, order) => total + Number(orderTotal(order)), 0)
+  const subscriptionInfo = unwrap(subscription.data)
+  const activeSubscription = Boolean(subscriptionInfo?.subscriptionPlan || subscriptionInfo?.plan || subscriptionInfo?.isActive)
+  const status = String(user?.status || '').toUpperCase()
+  return <div><div className="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4"><div><h3 className="mb-1">{title} dashboard</h3><p className="text-muted mb-0">Keep your products, orders, prescriptions and fulfilment on track.</p></div><div className="d-flex gap-2 flex-wrap"><Link className="btn btn-outline-primary" to="/pharmacy/products"><i className="fa-solid fa-plus me-2" />Add product</Link><Link className="btn btn-primary" to="/pharmacy/orders"><i className="fa-solid fa-box me-2" />Manage orders</Link></div></div>{status === 'PENDING' && <div className="alert alert-warning d-flex align-items-center gap-2"><i className="fa-solid fa-hourglass-half" /><span>Your account is awaiting administrator approval. You can finish setup while review is in progress.</span></div>}{!business?._id ? <div className="card border-primary mb-4"><div className="card-body d-flex align-items-center justify-content-between gap-3 flex-wrap"><div><h5 className="mb-1">Create your {title.toLowerCase()} profile</h5><p className="text-muted mb-0">Set up the public business information customers see before publishing products.</p></div><Link className="btn btn-primary" to="/pharmacy/profile">Set up profile</Link></div></div> : !profileComplete ? <div className="alert alert-info d-flex align-items-center justify-content-between gap-3 flex-wrap"><div><strong>Complete your business profile</strong><div className="small">Add a name, phone number and address to complete your storefront.</div></div><Link className="btn btn-sm btn-primary" to="/pharmacy/profile">Complete profile</Link></div> : null}{role === 'PHARMACY' && !activeSubscription && <div className="alert alert-primary d-flex align-items-center justify-content-between gap-3 flex-wrap"><div><strong>Choose a subscription</strong><div className="small">Activate a Pharmacy plan to continue selling and managing your catalogue.</div></div><Link className="btn btn-sm btn-primary" to="/pharmacy/subscription-plans">View plans</Link></div>}<div className="row g-3 mb-4"><div className="col-sm-6 col-xl-3"><div className="card h-100"><div className="card-body d-flex align-items-center gap-3"><span className="avatar avatar-lg bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"><i className="fa-solid fa-boxes-stacked" /></span><div><small className="text-muted">Products</small><h3 className="mb-0">{productList.length}</h3><small className="text-warning">{lowStock} low in stock</small></div></div></div></div><div className="col-sm-6 col-xl-3"><div className="card h-100"><div className="card-body d-flex align-items-center gap-3"><span className="avatar avatar-lg bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center"><i className="fa-solid fa-file-prescription" /></span><div><small className="text-muted">Prescription reviews</small><h3 className="mb-0">{pendingPrescriptionCount}</h3><small className="text-muted">Awaiting your decision</small></div></div></div></div><div className="col-sm-6 col-xl-3"><div className="card h-100"><div className="card-body d-flex align-items-center gap-3"><span className="avatar avatar-lg bg-info text-white rounded-circle d-flex align-items-center justify-content-center"><i className="fa-solid fa-cart-shopping" /></span><div><small className="text-muted">Open orders</small><h3 className="mb-0">{statusStats.slice(0, 4).reduce((total, item) => total + item.count, 0)}</h3><small className="text-muted">Need fulfilment attention</small></div></div></div></div><div className="col-sm-6 col-xl-3"><div className="card h-100"><div className="card-body d-flex align-items-center gap-3"><span className="avatar avatar-lg bg-success text-white rounded-circle d-flex align-items-center justify-content-center"><i className="fa-solid fa-chart-line" /></span><div><small className="text-muted">Recent paid sales</small><h3 className="mb-0">{price(totalSales)}</h3><small className="text-muted">Latest paid orders</small></div></div></div></div></div><div className="row g-3 mb-4">{statusStats.map((item) => <div className="col-6 col-md-4 col-xl-2" key={item.value}><Link to={`/pharmacy/orders?status=${item.value}`} className="card h-100 text-decoration-none"><div className="card-body text-center"><i className={`fa-solid ${item.icon} text-${item.tone} mb-2`} /><div className="h4 mb-1 text-dark">{orders.isLoading ? '—' : item.count}</div><small className="text-muted">{item.label}</small></div></Link></div>)}</div><div className="row g-4"><div className="col-xl-8"><div className="card h-100"><div className="card-header d-flex justify-content-between align-items-center"><h5 className="mb-0">Recent orders</h5><Link to="/pharmacy/orders" className="small">View all</Link></div><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Payment</th><th>Status</th><th /></tr></thead><tbody>{orders.isLoading ? <tr><td colSpan="6" className="text-center py-4"><span className="spinner-border spinner-border-sm" /></td></tr> : recentOrders.length ? recentOrders.map((order) => <tr key={order._id}><td><strong>{order.orderNumber || `#${String(order._id).slice(-6)}`}</strong><div className="small text-muted">{new Date(order.createdAt).toLocaleDateString()}</div></td><td>{orderName(order)}</td><td>{price(orderTotal(order))}</td><td><span className={`badge ${String(order.paymentStatus || '').toUpperCase() === 'PAID' ? 'bg-success' : 'bg-warning text-dark'}`}>{String(order.paymentStatus || 'PENDING').replace(/_/g, ' ')}</span></td><td><span className="badge bg-light text-dark border">{String(order.status || 'PENDING').replace(/_/g, ' ')}</span></td><td className="text-end"><Link to={`/pharmacy/orders/${order._id}`} className="btn btn-sm btn-outline-primary">Open</Link></td></tr>) : <tr><td colSpan="6" className="text-center py-5 text-muted">New orders will appear here when customers complete checkout.</td></tr>}</tbody></table></div></div></div><div className="col-xl-4"><div className="card mb-4"><div className="card-header"><h5 className="mb-0">Quick actions</h5></div><div className="list-group list-group-flush"><Link to="/pharmacy/products" className="list-group-item list-group-item-action d-flex justify-content-between"><span><i className="fa-solid fa-box me-2 text-primary" />Manage products</span><i className="fa-solid fa-chevron-right" /></Link><Link to="/pharmacy/orders" className="list-group-item list-group-item-action d-flex justify-content-between"><span><i className="fa-solid fa-truck me-2 text-primary" />Fulfil orders</span><i className="fa-solid fa-chevron-right" /></Link><Link to="/pharmacy/prescription-requests" className="list-group-item list-group-item-action d-flex justify-content-between"><span><i className="fa-solid fa-file-prescription me-2 text-primary" />Review prescriptions</span>{pendingPrescriptionCount ? <span className="badge bg-danger">{pendingPrescriptionCount}</span> : <i className="fa-solid fa-chevron-right" />}</Link><Link to="/pharmacy/admin-chat" className="list-group-item list-group-item-action d-flex justify-content-between"><span><i className="fa-solid fa-headset me-2 text-primary" />Admin support</span><i className="fa-solid fa-chevron-right" /></Link><Link to="/pharmacy/profile" className="list-group-item list-group-item-action d-flex justify-content-between"><span><i className="fa-solid fa-store me-2 text-primary" />Business profile</span><i className="fa-solid fa-chevron-right" /></Link></div></div><div className="card"><div className="card-body"><h5 className="mb-2">Inventory overview</h5><p className="text-muted small mb-3">{lowStock ? `${lowStock} product${lowStock === 1 ? '' : 's'} need stock attention.` : 'Your visible product stock levels are healthy.'}</p><Link to="/pharmacy/products" className="btn btn-outline-primary btn-sm">Review inventory</Link></div></div></div></div></div>
 }
-
 export default PharmacyDashboard
