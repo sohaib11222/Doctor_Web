@@ -138,6 +138,9 @@ import MapView from './pages/patient/MapView'
 import OrderHistory from './pages/patient/OrderHistory'
 import OrderDetails from './pages/patient/OrderDetails'
 import DocumentsDownload from './pages/patient/DocumentsDownload'
+import SupportTickets from './pages/patient/SupportTickets'
+import CreateSupportTicket from './pages/patient/CreateSupportTicket'
+import SupportTicketDetail from './pages/patient/SupportTicketDetail'
 
 import Prescription from './pages/prescription/Prescription'
 
@@ -564,6 +567,21 @@ function App() {
                 <Route path="/chat" element={
                   <ProtectedRoute role="PATIENT">
                     <DashboardLayout breadcrumb={{ title: "Patient", li1: "Message", li2: "Message" }}><Chat /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/support-tickets" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Support", li2: "Support Tickets" }}><SupportTickets /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/support-tickets/new" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Support", li2: "New Ticket" }}><CreateSupportTicket /></DashboardLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/support-tickets/:ticketId" element={
+                  <ProtectedRoute role="PATIENT">
+                    <DashboardLayout breadcrumb={{ title: "Patient", li1: "Support", li2: "Ticket Details" }}><SupportTicketDetail /></DashboardLayout>
                   </ProtectedRoute>
                 } />
                 <Route path="/dependent" element={

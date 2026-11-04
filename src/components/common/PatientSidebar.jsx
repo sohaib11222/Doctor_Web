@@ -5,6 +5,7 @@ import * as profileApi from '../../api/profile'
 import { useUnreadNotificationsCount } from '../../queries/notificationQueries'
 import { useUnreadMessageCount } from '../../queries/chatQueries'
 import { useUnreadOrderCount } from '../../queries/orderQueries'
+import { getSupportTicketUnreadCount, unwrapTicketData } from '../../api/supportTickets'
 import { normalizeImageUrl } from '../../utils/imageUtils'
 
 const PatientSidebar = () => {
@@ -66,6 +67,13 @@ const PatientSidebar = () => {
   const { data: unreadNotificationsCount = 0 } = useUnreadNotificationsCount()
   const { data: unreadMessagesCount = 0 } = useUnreadMessageCount()
   const { data: unreadOrdersCount = 0 } = useUnreadOrderCount(Boolean(user?._id))
+  const { data: supportUnreadResponse } = useQuery({
+    queryKey: ['support-ticket-unread'],
+    queryFn: getSupportTicketUnreadCount,
+    enabled: Boolean(user?._id),
+    refetchInterval: 10000,
+  })
+  const supportUnreadCount = Number(unwrapTicketData(supportUnreadResponse)?.unreadCount || 0)
 
   return (
     <div className="profile-sidebar patient-sidebar profile-sidebar-new">
@@ -182,6 +190,13 @@ const PatientSidebar = () => {
                 {unreadMessagesCount > 0 && (
                   <small className="unread-msg">{unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}</small>
                 )}
+              </Link>
+            </li>
+            <li className={isActive('/support-tickets') ? 'active' : ''}>
+              <Link to="/support-tickets">
+                <i className="isax isax-headphone"></i>
+                <span>Support Tickets</span>
+                {supportUnreadCount > 0 && <small className="unread-msg">{supportUnreadCount > 99 ? '99+' : supportUnreadCount}</small>}
               </Link>
             </li>
             <li className={isActive('/patient-notifications') ? 'active' : ''}>

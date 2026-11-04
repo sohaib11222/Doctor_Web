@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import '../styles/auth-modern.css'
 
 const AuthLayoutContext = createContext(false)
@@ -9,7 +9,16 @@ const AuthLayout = ({ children }) => {
   // route also wraps them.  Treat the inner wrapper as transparent so every
   // auth screen still renders one consistent shell.
   const isNested = useContext(AuthLayoutContext)
+  const { pathname } = useLocation()
   if (isNested) return children
+  const path = pathname.toLowerCase()
+  const context = path.includes('doctor')
+    ? { eyebrow: 'For medical professionals', title: 'Bring better care within reach.', description: 'Set up your professional account, manage consultations and give every patient a more connected care experience.', icon: 'fa-user-doctor' }
+    : path.includes('pharmacy')
+      ? { eyebrow: 'For healthcare businesses', title: 'Care that continues beyond the consultation.', description: 'Join My Doctor to manage your pharmacy, serve patients and keep healthcare essentials within reach.', icon: 'fa-briefcase-medical' }
+      : path.includes('register')
+        ? { eyebrow: 'Welcome to My Doctor', title: 'Your care, organized around you.', description: 'Create your account to find trusted care, manage appointments and keep health conversations together.', icon: 'fa-heart-pulse' }
+        : { eyebrow: 'My Doctor secure access', title: 'Healthcare that feels personal.', description: 'Find trusted doctors, manage appointments and stay connected to the care that matters.', icon: 'fa-shield-heart' }
 
   return (
     <AuthLayoutContext.Provider value={true}>
@@ -17,9 +26,9 @@ const AuthLayout = ({ children }) => {
         <aside className="md-auth-visual" aria-label="My Doctor care team">
           <div className="md-auth-visual-overlay" />
           <div className="md-auth-visual-content">
-            <span className="md-auth-kicker"><i className="fa-solid fa-heart-pulse" /> Care, connected</span>
-            <h1>Healthcare that feels personal.</h1>
-            <p>Find trusted doctors, manage appointments and stay connected to the care that matters.</p>
+            <span className="md-auth-kicker"><i className={`fa-solid ${context.icon}`} /> {context.eyebrow}</span>
+            <h1>{context.title}</h1>
+            <p>{context.description}</p>
             <div className="md-auth-trust-row">
               <span><i className="fa-solid fa-shield-heart" /> Secure by design</span>
               <span><i className="fa-solid fa-video" /> Care from anywhere</span>
