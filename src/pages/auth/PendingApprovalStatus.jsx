@@ -4,10 +4,12 @@ import AuthLayout from '../../layouts/AuthLayout'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../api/axios'
 import { toast } from 'react-toastify'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PendingApprovalStatus = () => {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const { translateText: tr } = useLanguage()
   const [checkingStatus, setCheckingStatus] = useState(true)
   const [currentStatus, setCurrentStatus] = useState(null)
 
@@ -22,13 +24,13 @@ const PendingApprovalStatus = () => {
           
           if (status === 'APPROVED') {
             // Doctor is approved, logout and redirect to login
-            toast.success('Your account has been approved! Please login again.')
+            toast.success(tr('Your account has been approved! Please login again.'))
             logout()
             navigate('/login')
             return
           } else if (status === 'REJECTED' || status === 'BLOCKED') {
             // Doctor is rejected or blocked
-            toast.error('Your account has been rejected or blocked. Please contact support.')
+            toast.error(tr('Your account has been rejected or blocked. Please contact support.'))
             setCheckingStatus(false)
             return
           }
@@ -48,7 +50,7 @@ const PendingApprovalStatus = () => {
               setCurrentStatus(userStatus)
               
               if (userStatus === 'APPROVED') {
-                toast.success('Your account has been approved! Redirecting to dashboard...')
+                toast.success(tr('Your account has been approved! Redirecting to dashboard...'))
                 if (user?.role?.toUpperCase() === 'PHARMACY' || user?.role?.toUpperCase() === 'PARAPHARMACY') {
                   navigate('/pharmacy/dashboard')
                 } else {
@@ -56,7 +58,7 @@ const PendingApprovalStatus = () => {
                 }
                 return
               } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
-                toast.error('Your account has been rejected or blocked. Please contact support.')
+                toast.error(tr('Your account has been rejected or blocked. Please contact support.'))
                 setCheckingStatus(false)
                 return
               }
@@ -74,7 +76,7 @@ const PendingApprovalStatus = () => {
                 setCurrentStatus(userStatus)
                 
                 if (userStatus === 'APPROVED') {
-                  toast.success('Your account has been approved! Redirecting to dashboard...')
+                  toast.success(tr('Your account has been approved! Redirecting to dashboard...'))
                   if (user?.role?.toUpperCase() === 'PHARMACY' || user?.role?.toUpperCase() === 'PARAPHARMACY') {
                     navigate('/pharmacy/dashboard')
                   } else {
@@ -82,7 +84,7 @@ const PendingApprovalStatus = () => {
                   }
                   return
                 } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
-                  toast.error('Your account has been rejected or blocked. Please contact support.')
+                  toast.error(tr('Your account has been rejected or blocked. Please contact support.'))
                   setCheckingStatus(false)
                   return
                 }
@@ -107,7 +109,7 @@ const PendingApprovalStatus = () => {
     // Poll for status updates every 30 seconds
     const interval = setInterval(checkApprovalStatus, 30000)
     return () => clearInterval(interval)
-  }, [navigate, user])
+  }, [navigate, user, tr])
 
   const handleLogout = () => {
     logout()
@@ -118,7 +120,7 @@ const PendingApprovalStatus = () => {
     setCheckingStatus(true)
     try {
       if (!user?._id && !user?.id) {
-        toast.error('User information not available. Please login again.')
+        toast.error(tr('User information not available. Please login again.'))
         setCheckingStatus(false)
         return
       }
@@ -135,14 +137,14 @@ const PendingApprovalStatus = () => {
           setCurrentStatus(userStatus)
           
           if (userStatus === 'APPROVED') {
-            toast.success('Your account has been approved! Please login again.')
+            toast.success(tr('Your account has been approved! Please login again.'))
             logout()
             navigate('/login')
             return
           } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
-            toast.error('Your account has been rejected or blocked.')
+            toast.error(tr('Your account has been rejected or blocked.'))
           } else {
-            toast.info('Your account is still pending approval.')
+            toast.info(tr('Your account is still pending approval.'))
           }
           setCheckingStatus(false)
           return
@@ -162,25 +164,25 @@ const PendingApprovalStatus = () => {
           setCurrentStatus(userStatus)
           
           if (userStatus === 'APPROVED') {
-            toast.success('Your account has been approved! Please login again.')
+            toast.success(tr('Your account has been approved! Please login again.'))
             logout()
             navigate('/login')
             return
           } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
-            toast.error('Your account has been rejected or blocked.')
+            toast.error(tr('Your account has been rejected or blocked.'))
           } else {
-            toast.info('Your account is still pending approval.')
+            toast.info(tr('Your account is still pending approval.'))
           }
         } else {
-          toast.warning('Unable to determine account status.')
+          toast.warning(tr('Unable to determine account status.'))
         }
       } catch (profileError) {
         console.error('Error fetching doctor profile:', profileError)
-        toast.error('Failed to check status. Please try again.')
+        toast.error(tr('Failed to check status. Please try again.'))
       }
     } catch (error) {
       console.error('Error checking status:', error)
-      toast.error('Failed to check status. Please try again.')
+      toast.error(tr('Failed to check status. Please try again.'))
     } finally {
       setCheckingStatus(false)
     }

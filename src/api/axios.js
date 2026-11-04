@@ -51,6 +51,10 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+
+    // Keep API-backed, manually authored translations (products, blog posts,
+    // announcements and notifications) aligned with the UI choice.
+    config.headers['Accept-Language'] = localStorage.getItem('mydoctor-language') || 'it'
     
     // For FormData, let axios set Content-Type automatically with boundary
     // Don't override Content-Type if it's FormData

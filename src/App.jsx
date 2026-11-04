@@ -1,15 +1,18 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
 import { AuthProvider } from './contexts/AuthContext'
 import { CartProvider } from './contexts/CartContext'
+import { LanguageProvider } from './contexts/LanguageContext'
+import { useLanguage } from './contexts/LanguageContext'
 import MainLayout from './layouts/MainLayout'
 import AuthLayout from './layouts/AuthLayout'
 import DashboardLayout from './layouts/DashboardLayout'
 import ProtectedRoute from './components/common/ProtectedRoute'
-import GoogleTranslate from './components/common/GoogleTranslate'
+import TranslationBoundary from './components/common/TranslationBoundary'
 import PrescriptionApprovalNotifier from './components/pharmacy/PrescriptionApprovalNotifier'
 
 // Public Pages - Home
@@ -191,12 +194,29 @@ const queryClient = new QueryClient({
   },
 })
 
+// Refetch resources that the backend can localize after an immediate UI
+// language change. Existing page state stays intact; only cached API data is
+// refreshed with the updated Accept-Language header.
+const LanguageQuerySynchronizer = () => {
+  const { language } = useLanguage()
+  const client = useQueryClient()
+
+  useEffect(() => {
+    client.invalidateQueries()
+  }, [client, language])
+
+  return null
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
           <BrowserRouter>
+          <LanguageProvider>
+          <LanguageQuerySynchronizer />
+          <TranslationBoundary>
           <Routes>
             {/* Public Home Pages */}
             <Route path="/" element={<MainLayout><Index /></MainLayout>} />
@@ -755,8 +775,9 @@ function App() {
             <Route path="*" element={<Error404 />} />
           </Routes>
           <PrescriptionApprovalNotifier />
-          <GoogleTranslate />
           <ToastContainer position="top-right" autoClose={3000} />
+          </TranslationBoundary>
+          </LanguageProvider>
         </BrowserRouter>
         </CartProvider>
       </AuthProvider>

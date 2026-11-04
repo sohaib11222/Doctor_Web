@@ -5,10 +5,12 @@ import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
 import api from '../../api/axios'
 import { API_ROUTES } from '../../utils/apiConfig'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PharmacyPhoneVerification = () => {
   const navigate = useNavigate()
   const { user, refreshUser } = useAuth()
+  const { translateText: tr } = useLanguage()
 
   const [phone, setPhone] = useState(user?.phone || '')
   const [code, setCode] = useState('')
@@ -34,9 +36,9 @@ const PharmacyPhoneVerification = () => {
     setSending(true)
     try {
       await api.post(API_ROUTES.AUTH.SEND_PHONE_OTP, phoneTrimmed ? { phone: phoneTrimmed } : {})
-      toast.success('Verification code sent to your phone')
+      toast.success(tr('Verification code sent to your phone'))
     } catch (error) {
-      toast.error(error?.response?.data?.message || error?.message || 'Failed to send verification code')
+      toast.error(tr(error?.response?.data?.message || error?.message || 'Failed to send verification code'))
     } finally {
       setSending(false)
     }
@@ -46,7 +48,7 @@ const PharmacyPhoneVerification = () => {
     e.preventDefault()
 
     if (!code.trim()) {
-      toast.error('Please enter the verification code')
+      toast.error(tr('Please enter the verification code'))
       return
     }
 
@@ -57,12 +59,12 @@ const PharmacyPhoneVerification = () => {
         phone: phoneTrimmed || undefined,
       })
 
-      toast.success('Phone verified successfully')
+      toast.success(tr('Phone verified successfully'))
       await refreshUser?.()
       localStorage.removeItem('pharmacy_documents_submitted')
       navigate('/pharmacy-verification-upload')
     } catch (error) {
-      toast.error(error?.response?.data?.message || error?.message || 'Invalid verification code')
+      toast.error(tr(error?.response?.data?.message || error?.message || 'Invalid verification code'))
     } finally {
       setVerifying(false)
     }

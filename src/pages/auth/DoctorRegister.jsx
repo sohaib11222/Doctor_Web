@@ -9,19 +9,12 @@ import AuthLayout from '../../layouts/AuthLayout'
 import { useQuery } from '@tanstack/react-query'
 import * as profileApi from '../../api/profile'
 import ProfileIncompleteModal from '../../components/common/ProfileIncompleteModal'
-
-const schema = yup.object({
-  fullName: yup.string().min(2, 'Full name must be at least 2 characters').required('Full name is required'),
-  email: yup.string().email('Invalid email').required('Email is required'),
-  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
-  password_confirmation: yup.string().oneOf([yup.ref('password')], 'Passwords must match').required('Confirm password is required'),
-  phone: yup.string().required('Phone is required'),
-  gender: yup.string().oneOf(['MALE', 'FEMALE', 'OTHER'], 'Invalid gender').required('Gender is required'),
-})
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DoctorRegister = () => {
   const navigate = useNavigate()
   const { register: registerUser, user } = useAuth()
+  const { translateText: tr } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
 
@@ -57,7 +50,14 @@ const DoctorRegister = () => {
   }, [user, doctorProfile, profileLoading])
   
   const { register, handleSubmit, formState: { errors } } = useForm({
-    resolver: yupResolver(schema)
+    resolver: yupResolver(yup.object({
+      fullName: yup.string().min(2, tr('Full name must be at least 2 characters')).required(tr('Full name is required')),
+      email: yup.string().email(tr('Invalid email')).required(tr('Email is required')),
+      password: yup.string().min(6, tr('Password must be at least 6 characters')).required(tr('Password is required')),
+      password_confirmation: yup.string().oneOf([yup.ref('password')], tr('Passwords must match')).required(tr('Confirm password is required')),
+      phone: yup.string().required(tr('Phone is required')),
+      gender: yup.string().oneOf(['MALE', 'FEMALE', 'OTHER'], tr('Invalid gender')).required(tr('Gender is required')),
+    }))
   })
 
   const onSubmit = async (data) => {
@@ -74,7 +74,7 @@ const DoctorRegister = () => {
       }
       
       const response = await registerUser(registrationData, 'doctor')
-      toast.success('Registration successful! Please upload verification documents.')
+      toast.success(tr('Registration successful! Please upload verification documents.'))
       
       // Navigate to verification upload
       if (response.user) {
@@ -88,7 +88,7 @@ const DoctorRegister = () => {
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Registration failed'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     } finally {
       setLoading(false)
     }

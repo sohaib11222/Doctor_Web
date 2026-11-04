@@ -63,3 +63,46 @@ body {
   line-height: 36px !important;
 }
 
+/* Manual Italian/English switcher shared by the public site and auth shell. */
+.language-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  min-width: 3.8rem;
+  min-height: 2.35rem;
+  padding: 0.42rem 0.62rem;
+  border: 1px solid rgba(29, 78, 216, 0.28);
+  border-radius: 999px;
+  background: #fff;
+  color: #174ea6;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  transition: color .2s ease, background-color .2s ease, border-color .2s ease, transform .2s ease;
+}
+
+.language-toggle:hover,
+.language-toggle:focus-visible {
+  border-color: #174ea6;
+  background: #174ea6;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.language-toggle:focus-visible {
+  outline: 3px solid rgba(29, 78, 216, 0.25);
+  outline-offset: 2px;
+}
+
+.md-auth-language-control {
+  position: fixed;
+  z-index: 20;
+  top: 1.25rem;
+  right: 1.25rem;
+}
+
+@media (max-width: 991px) {
+  .header-navbar-rht .language-toggle { min-width: 3.25rem; }
+}

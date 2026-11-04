@@ -4,6 +4,7 @@ import { toast } from 'react-toastify'
 
 import AuthLayout from '../../layouts/AuthLayout'
 import api from '../../api/axios'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ACCEPT = '.jpg,.jpeg,.png,.webp,.pdf,.doc,.docx'
@@ -25,6 +26,7 @@ const uploadError = (error) => {
 
 const DoctorVerificationUpload = () => {
   const navigate = useNavigate()
+  const { translateText: tr } = useLanguage()
   const [files, setFiles] = useState({})
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -34,7 +36,7 @@ const DoctorVerificationUpload = () => {
     const file = event.target.files?.[0]
     if (!file) return
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(`“${file.name}” is too large. Each document must be 10 MB or smaller.`)
+      toast.error(tr('Each document must be 10 MB or smaller.'))
       event.target.value = ''
       return
     }
@@ -44,7 +46,7 @@ const DoctorVerificationUpload = () => {
   const submit = async (event) => {
     event.preventDefault()
     if (!complete) {
-      toast.error('Please add each required verification document before continuing.')
+      toast.error(tr('Please add each required verification document before continuing.'))
       return
     }
     const formData = new FormData()
@@ -64,10 +66,10 @@ const DoctorVerificationUpload = () => {
         },
       })
       if (response?.success === false) throw new Error(response.message || 'Upload failed')
-      toast.success('Documents uploaded successfully. Your doctor account is now under review.')
+      toast.success(tr('Documents uploaded successfully. Your doctor account is now under review.'))
       navigate('/pending-approval')
     } catch (error) {
-      toast.error(uploadError(error))
+      toast.error(tr(uploadError(error)))
     } finally {
       setLoading(false)
     }

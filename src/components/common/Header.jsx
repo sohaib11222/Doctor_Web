@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import * as profileApi from '../../api/profile'
 import * as pharmacyApi from '../../api/pharmacy'
+import LanguageToggle from './LanguageToggle'
 
 const Header = () => {
   const location = useLocation()
@@ -12,7 +13,6 @@ const Header = () => {
   const { user, logout } = useAuth()
   const { getCartItemCount } = useCart()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [hasGoogleTranslateBanner, setHasGoogleTranslateBanner] = useState(false)
   const [openSubmenus, setOpenSubmenus] = useState({
     doctors: false,
     patients: false,
@@ -151,67 +151,6 @@ const Header = () => {
     return canAccess(allowedRoles, requireApproved)
   }
 
-  // Detect Google Translate banner and adjust header position
-  useEffect(() => {
-    const checkGoogleTranslateBanner = () => {
-      // Check for Google Translate banner in multiple ways
-      const bannerFrame = document.querySelector('.goog-te-banner-frame')
-      const skiptranslate = document.querySelector('.skiptranslate')
-      const bodyTop = document.body.classList.contains('top')
-      
-      // Check if body has top class or padding-top (Google Translate adds this)
-      const bodyStyle = window.getComputedStyle(document.body)
-      const bodyTopValue = bodyStyle.top
-      const bodyPaddingTop = bodyStyle.paddingTop
-      
-      // Check for visible banner frame (even if display:none is set, it might still affect layout)
-      const bannerVisible = bannerFrame && 
-        window.getComputedStyle(bannerFrame).display !== 'none' &&
-        bannerFrame.offsetHeight > 0
-      
-      // Check if there's a translate banner at the top of the page
-      const hasBanner = !!(
-        (bannerFrame && bannerVisible) || 
-        (skiptranslate && window.getComputedStyle(skiptranslate).display !== 'none') || 
-        bodyTop ||
-        (bodyTopValue && bodyTopValue !== '0px' && bodyTopValue !== 'auto') ||
-        (bodyPaddingTop && parseFloat(bodyPaddingTop) > 0)
-      )
-      
-      setHasGoogleTranslateBanner(hasBanner)
-    }
-
-    // Initial check with delay to allow Google Translate to load
-    const initialTimeout = setTimeout(checkGoogleTranslateBanner, 100)
-
-    // Watch for changes in DOM
-    const observer = new MutationObserver(() => {
-      checkGoogleTranslateBanner()
-    })
-    
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class', 'style']
-    })
-
-    // Also check periodically (Google Translate can add banner dynamically)
-    const interval = setInterval(checkGoogleTranslateBanner, 300)
-
-    // Check on scroll/resize
-    window.addEventListener('scroll', checkGoogleTranslateBanner, { passive: true })
-    window.addEventListener('resize', checkGoogleTranslateBanner)
-
-    return () => {
-      clearTimeout(initialTimeout)
-      observer.disconnect()
-      clearInterval(interval)
-      window.removeEventListener('scroll', checkGoogleTranslateBanner)
-      window.removeEventListener('resize', checkGoogleTranslateBanner)
-    }
-  }, [])
-
   // Determine header class based on route
   const getHeaderClass = () => {
     const path = location.pathname
@@ -234,7 +173,6 @@ const Header = () => {
 
   return (
     <>
-      {/* Add CSS to handle Google Translate banner */}
       <style>{`
         /* Mobile menu submenu toggle styles */
         @media (max-width: 991px) {
@@ -252,74 +190,12 @@ const Header = () => {
             transition: transform 0.3s ease;
           }
         }
-        
-        /* CRITICAL: Remove ALL body padding-top by default - only allow when Google Translate banner is visible */
-        body {
-          padding-top: 0 !important;
-        }
-        
-        /* When Google Translate banner is active (body has .top class), allow minimal padding if needed */
-        body.top {
-          padding-top: 0 !important;
-        }
-        
-        /* Adjust header when Google Translate banner is present */
-        .header.header-fixed,
-        .header.header-custom {
-          transition: margin-top 0.3s ease, top 0.3s ease !important;
-          margin-top: 0 !important;
-        }
-        
-        /* When Google Translate banner is active, push header down */
-        body.top .header.header-fixed,
-        body.top .header.header-custom {
-          margin-top: 42px !important;
-        }
-        
-        /* When Google Translate banner is NOT active, ensure no margin-top */
-        body:not(.top) .header.header-fixed,
-        body:not(.top) .header.header-custom,
-        .header.header-fixed:not(body.top .header),
-        .header.header-custom:not(body.top .header) {
-          margin-top: 0 !important;
-        }
-        
-        /* Handle Google Translate banner frame */
-        .goog-te-banner-frame {
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          width: 100% !important;
-          z-index: 9998 !important;
-        }
-        
-        /* Ensure header stays below banner */
-        .header {
-          z-index: 9999 !important;
-        }
-        
-        /* Pharmacy top header adjustment - only when Google Translate is active */
-        body.top .top-header {
-          margin-top: 42px !important;
-        }
-        
-        /* Pharmacy top header - no margin when Google Translate is NOT active */
-        body:not(.top) .top-header,
-        .top-header {
-          margin-top: 0 !important;
-        }
       `}</style>
 
       {/* Pharmacy Top Header */}
       {isPharmacyIndex && (
         <>
-          <div 
-            className="top-header"
-            style={{
-              marginTop: hasGoogleTranslateBanner ? '42px' : '0',
-              transition: 'margin-top 0.3s ease'
-            }}
-          >
+          <div className="top-header">
             <div className="container">
               <div className="row align-items-center">
                 <div className="col-md-6">
@@ -412,13 +288,7 @@ const Header = () => {
       )}
 
       {/* Main Header */}
-      <header 
-        className={getHeaderClass()}
-        style={{
-          marginTop: hasGoogleTranslateBanner ? '42px' : '0',
-          transition: 'margin-top 0.3s ease'
-        }}
-      >
+      <header className={getHeaderClass()}>
         <div className="container">
           <nav className="navbar navbar-expand-lg header-nav">
             <div className="navbar-header">
@@ -475,7 +345,7 @@ const Header = () => {
               <ul className="main-nav">
                 {/* Home Menu */}
                 <li className={isActive('/') || location.pathname === '/index' ? 'active' : ''}>
-                  <Link to="/"><span className="notranslate" translate="no">Home</span></Link>
+                  <Link to="/">Home</Link>
                 </li>
                 <li className={location.pathname === '/search' && new URLSearchParams(location.search).get('isAvailableOnline') === 'true' ? 'active' : ''}>
                   <Link to="/search?isAvailableOnline=true" onClick={() => setIsMenuOpen(false)}>
@@ -645,6 +515,10 @@ const Header = () => {
                   </li>
                 )}
 
+                <li className="d-block d-lg-none">
+                  <LanguageToggle />
+                </li>
+
                 <li className={isActive('/contact-us') ? 'active' : ''}>
                   <Link to="/contact-us">Contact Us</Link>
                 </li>
@@ -654,6 +528,7 @@ const Header = () => {
             {/* Right Side Navigation */}
             {!user ? (
               <ul className="nav header-navbar-rht">
+                <li className="nav-item"><LanguageToggle /></li>
                 <li className="searchbar">
                   <Link to="/search"><i className="feather-search"></i></Link>
                 </li>
@@ -670,6 +545,7 @@ const Header = () => {
               </ul>
             ) : (
               <ul className="nav header-navbar-rht">
+                <li className="nav-item"><LanguageToggle /></li>
                 <li className="searchbar">
                   <Link to="/search"><i className="feather-search"></i></Link>
                 </li>

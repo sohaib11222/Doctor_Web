@@ -5,23 +5,23 @@ import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
-
-const schema = yup.object({
-  fullName: yup.string().min(2, 'Full name must be at least 2 characters').required('Full name is required'),
-  email: yup.string().email('Invalid email').required('Email is required'),
-  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
-  password_confirmation: yup.string().oneOf([yup.ref('password')], 'Passwords must match').required('Confirm password is required'),
-  phone: yup.string().optional(),
-  gender: yup.string().oneOf(['MALE', 'FEMALE', 'OTHER'], 'Invalid gender').optional(),
-})
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Register = () => {
   const navigate = useNavigate()
   const { register: registerUser } = useAuth()
+  const { translateText: tr } = useLanguage()
   const [loading, setLoading] = useState(false)
   
   const { register, handleSubmit, formState: { errors } } = useForm({
-    resolver: yupResolver(schema)
+    resolver: yupResolver(yup.object({
+      fullName: yup.string().min(2, tr('Full name must be at least 2 characters')).required(tr('Full name is required')),
+      email: yup.string().email(tr('Invalid email')).required(tr('Email is required')),
+      password: yup.string().min(6, tr('Password must be at least 6 characters')).required(tr('Password is required')),
+      password_confirmation: yup.string().oneOf([yup.ref('password')], tr('Passwords must match')).required(tr('Confirm password is required')),
+      phone: yup.string().optional(),
+      gender: yup.string().oneOf(['MALE', 'FEMALE', 'OTHER'], tr('Invalid gender')).optional(),
+    }))
   })
 
   const onSubmit = async (data) => {
@@ -39,7 +39,7 @@ const Register = () => {
       }
       
       const response = await registerUser(registrationData, 'patient')
-      toast.success('Registration successful!')
+      toast.success(tr('Registration successful!'))
       
       // Navigate based on user role
       if (response.user) {
@@ -61,7 +61,7 @@ const Register = () => {
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Registration failed'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     } finally {
       setLoading(false)
     }

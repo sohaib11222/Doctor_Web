@@ -8,15 +8,12 @@ import { toast } from 'react-toastify'
 import { useQuery } from '@tanstack/react-query'
 import * as profileApi from '../../api/profile'
 import ProfileIncompleteModal from '../../components/common/ProfileIncompleteModal'
-
-const schema = yup.object({
-  email: yup.string().email('Invalid email').required('Email is required'),
-  password: yup.string().required('Password is required'),
-})
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Login = () => {
   const navigate = useNavigate()
   const { login, user } = useAuth()
+  const { translateText: tr } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
 
@@ -52,14 +49,17 @@ const Login = () => {
   }, [user, doctorProfile, profileLoading])
   
   const { register, handleSubmit, formState: { errors } } = useForm({
-    resolver: yupResolver(schema)
+    resolver: yupResolver(yup.object({
+      email: yup.string().email(tr('Invalid email')).required(tr('Email is required')),
+      password: yup.string().required(tr('Password is required')),
+    }))
   })
 
   const onSubmit = async (data) => {
     setLoading(true)
     try {
       const response = await login(data.email, data.password)
-      toast.success('Login successful!')
+      toast.success(tr('Login successful!'))
       
       // Navigate based on user role
       if (response.user) {
@@ -76,7 +76,7 @@ const Login = () => {
             navigate('/doctor/dashboard')
           } else if (status === 'REJECTED' || status === 'BLOCKED') {
             // Doctor is rejected or blocked
-            toast.error('Your account has been rejected or blocked. Please contact support.')
+            toast.error(tr('Your account has been rejected or blocked. Please contact support.'))
             navigate('/login')
           } else {
             // Unknown status, default to dashboard
@@ -88,7 +88,7 @@ const Login = () => {
           } else if (status === 'APPROVED') {
             navigate('/pharmacy/dashboard')
           } else if (status === 'REJECTED' || status === 'BLOCKED') {
-            toast.error('Your account has been rejected or blocked. Please contact support.')
+            toast.error(tr('Your account has been rejected or blocked. Please contact support.'))
             navigate('/login')
           } else {
             navigate('/pharmacy/dashboard')
@@ -98,7 +98,7 @@ const Login = () => {
         } else if (role === 'ADMIN') {
           // Admin panel is in separate app (react-conversion-admin)
           // For now, redirect to home or show message
-          toast.info('Admin panel is in separate application')
+          toast.info(tr('Admin panel is in separate application'))
           navigate('/')
         } else {
           navigate('/patient/dashboard') // Default fallback
@@ -108,7 +108,7 @@ const Login = () => {
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Login failed'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     } finally {
       setLoading(false)
     }

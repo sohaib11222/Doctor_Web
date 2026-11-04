@@ -3,11 +3,13 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import AuthLayout from '../../layouts/AuthLayout'
 import { useAuth } from '../../contexts/AuthContext'
 import { toast } from 'react-toastify'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PharmacyRegister = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { register } = useAuth()
+  const { translateText: tr } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -29,18 +31,18 @@ const PharmacyRegister = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!formData.fullName.trim() || !formData.email.trim() || !formData.password) {
-      toast.error('Please fill all required fields')
+      toast.error(tr('Please fill all required fields'))
       return
     }
 
     if (!formData.phone.trim()) {
-      toast.error('Phone number is required')
+      toast.error(tr('Phone number is required'))
       return
     }
 
     const normalizedPhone = formData.phone.trim()
     if (!/^\+\d{7,15}$/.test(normalizedPhone)) {
-      toast.error('Phone number must be in international format (E.164), e.g. +1234567890')
+      toast.error(tr('Phone number must be in international format (E.164), e.g. +1234567890'))
       return
     }
 
@@ -60,7 +62,7 @@ const PharmacyRegister = () => {
       const user = response?.user
       const status = user?.status?.toUpperCase()
 
-      toast.success('Registration successful!')
+      toast.success(tr('Registration successful!'))
 
       if (status === 'PENDING') {
         localStorage.removeItem('pharmacy_documents_submitted')
@@ -69,7 +71,7 @@ const PharmacyRegister = () => {
         navigate('/pharmacy/dashboard')
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Registration failed')
+      toast.error(tr(error.response?.data?.message || error.message || 'Registration failed'))
     } finally {
       setLoading(false)
     }

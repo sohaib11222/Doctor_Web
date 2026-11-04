@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import '../styles/auth-modern.css'
+import LanguageToggle from '../components/common/LanguageToggle'
 
 const AuthLayoutContext = createContext(false)
 
@@ -23,6 +24,9 @@ const AuthLayout = ({ children }) => {
   return (
     <AuthLayoutContext.Provider value={true}>
       <div className="account-page md-auth-shell">
+        <div className="md-auth-language-control">
+          <LanguageToggle />
+        </div>
         <aside className="md-auth-visual" aria-label="My Doctor care team">
           <div className="md-auth-visual-overlay" />
           <div className="md-auth-visual-content">

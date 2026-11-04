@@ -7,39 +7,35 @@ import { toast } from 'react-toastify'
 import api from '../../api/axios'
 import { API_ROUTES } from '../../utils/apiConfig'
 import AuthLayout from '../../layouts/AuthLayout'
-
-// Step 1: Email validation schema
-const emailSchema = yup.object({
-  email: yup.string().email('Invalid email').required('Email is required'),
-})
-
-// Step 2: Code validation schema
-const codeSchema = yup.object({
-  code: yup
-    .string()
-    .required('Verification code is required')
-    .length(6, 'Code must be 6 digits')
-    .matches(/^\d+$/, 'Code must contain only numbers'),
-})
-
-// Step 3: Password validation schema
-const passwordSchema = yup.object({
-  newPassword: yup
-    .string()
-    .min(6, 'Password must be at least 6 characters')
-    .required('New password is required'),
-  confirmPassword: yup
-    .string()
-    .oneOf([yup.ref('newPassword')], 'Passwords must match')
-    .required('Please confirm your password'),
-})
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const ForgotPassword = () => {
   const navigate = useNavigate()
+  const { translateText: tr } = useLanguage()
   const [step, setStep] = useState(1) // 1: Email, 2: Verify Code, 3: Reset Password
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
+  const emailSchema = yup.object({
+    email: yup.string().email(tr('Invalid email')).required(tr('Email is required')),
+  })
+  const codeSchema = yup.object({
+    code: yup
+      .string()
+      .required(tr('Verification code is required'))
+      .length(6, tr('Code must be 6 digits'))
+      .matches(/^\d+$/, tr('Code must contain only numbers')),
+  })
+  const passwordSchema = yup.object({
+    newPassword: yup
+      .string()
+      .min(6, tr('Password must be at least 6 characters'))
+      .required(tr('New password is required')),
+    confirmPassword: yup
+      .string()
+      .oneOf([yup.ref('newPassword')], tr('Passwords must match'))
+      .required(tr('Please confirm your password')),
+  })
 
   // Step 1: Email form
   const emailForm = useForm({
@@ -65,10 +61,10 @@ const ForgotPassword = () => {
       })
       setEmail(data.email)
       setStep(2)
-      toast.success('Verification code sent to your email!')
+      toast.success(tr('Verification code sent to your email!'))
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to send verification code'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
       // If email is not registered, stay on step 1
       if (errorMessage.toLowerCase().includes('not registered') || errorMessage.toLowerCase().includes('email is not')) {
         // Stay on step 1, don't proceed
@@ -89,9 +85,9 @@ const ForgotPassword = () => {
       })
       setCode(data.code)
       setStep(3)
-      toast.success('Code verified successfully!')
+      toast.success(tr('Code verified successfully!'))
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Invalid or expired verification code')
+      toast.error(tr(error.response?.data?.message || 'Invalid or expired verification code'))
     } finally {
       setLoading(false)
     }
@@ -106,10 +102,10 @@ const ForgotPassword = () => {
         code,
         newPassword: data.newPassword,
       })
-      toast.success('Password reset successfully!')
+      toast.success(tr('Password reset successfully!'))
       navigate('/login')
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to reset password')
+      toast.error(tr(error.response?.data?.message || 'Failed to reset password'))
     } finally {
       setLoading(false)
     }
@@ -122,9 +118,9 @@ const ForgotPassword = () => {
       await api.post(API_ROUTES.AUTH.FORGOT_PASSWORD, {
         email,
       })
-      toast.success('Verification code resent to your email!')
+      toast.success(tr('Verification code resent to your email!'))
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to resend code')
+      toast.error(tr(error.response?.data?.message || 'Failed to resend code'))
     } finally {
       setLoading(false)
     }

@@ -5,6 +5,7 @@ import { toast } from 'react-toastify'
 import AuthLayout from '../../layouts/AuthLayout'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../api/axios'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ACCEPT = '.jpg,.jpeg,.png,.webp,.pdf,.doc,.docx'
@@ -26,6 +27,7 @@ const uploadError = (error) => {
 const PharmacyVerificationUpload = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { translateText: tr } = useLanguage()
   const [files, setFiles] = useState({})
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -36,7 +38,7 @@ const PharmacyVerificationUpload = () => {
     const file = event.target.files?.[0]
     if (!file) return
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(`“${file.name}” is too large. Each document must be 10 MB or smaller.`)
+      toast.error(tr('Each document must be 10 MB or smaller.'))
       event.target.value = ''
       return
     }
@@ -45,7 +47,7 @@ const PharmacyVerificationUpload = () => {
 
   const submit = async (event) => {
     event.preventDefault()
-    if (!complete) return toast.error('Please add all required verification documents before continuing.')
+    if (!complete) return toast.error(tr('Please add all required verification documents before continuing.'))
     const formData = new FormData()
     DOCUMENTS.forEach((document) => {
       formData.append('files', files[document.key], files[document.key].name)
@@ -57,10 +59,10 @@ const PharmacyVerificationUpload = () => {
       const response = await api.post('/upload/pharmacy-docs', formData, { onUploadProgress: (event) => { if (event.total) setProgress(Math.min(100, Math.round((event.loaded / event.total) * 100))) } })
       if (response?.success === false) throw new Error(response.message || 'Upload failed')
       localStorage.setItem('pharmacy_documents_submitted', 'true')
-      toast.success('Documents uploaded successfully. Your account is now under review.')
+      toast.success(tr('Documents uploaded successfully. Your account is now under review.'))
       navigate('/pending-approval')
     } catch (error) {
-      toast.error(uploadError(error))
+      toast.error(tr(uploadError(error)))
     } finally {
       setLoading(false)
     }
