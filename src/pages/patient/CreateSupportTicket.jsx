@@ -6,6 +6,7 @@ import { createSupportTicket, uploadSupportAttachments, unwrapTicketData } from 
 import { useAppointments } from '../../queries/appointmentQueries'
 import { usePatientOrders } from '../../queries/orderQueries'
 import { usePaymentHistory } from '../../queries/patientQueries'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const categories = ['APPOINTMENT', 'RESCHEDULE', 'VIDEO_CALL', 'PAYMENT', 'PHARMACY_ORDER', 'PARAPHARMACY_ORDER', 'DELIVERY', 'REFUND', 'PRESCRIPTION', 'ACCOUNT_REGISTRATION', 'DOCTOR', 'TECHNICAL', 'OTHER']
 const priorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT']
@@ -25,6 +26,7 @@ const recordText = (record) => {
 }
 
 const CreateSupportTicket = () => {
+  const { translateText: tr } = useLanguage()
   const navigate = useNavigate()
   const client = useQueryClient()
   const fileInput = useRef(null)
@@ -43,15 +45,15 @@ const CreateSupportTicket = () => {
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value, ...(key === 'relatedType' ? { relatedRecordId: '' } : {}) }))
   const chooseFiles = (event) => {
     const selected = Array.from(event.target.files || [])
-    if (selected.length > 5) return toast.error('You can attach up to five files.')
-    if (selected.some((file) => file.size > 25 * 1024 * 1024)) return toast.error('Each attachment must be 25 MB or smaller.')
+    if (selected.length > 5) return toast.error(tr('You can attach up to five files.'))
+    if (selected.some((file) => file.size > 25 * 1024 * 1024)) return toast.error(tr('Each attachment must be 25 MB or smaller.'))
     setFiles(selected)
   }
 
   const submit = async (event) => {
     event.preventDefault()
-    if (form.subject.trim().length < 4 || form.description.trim().length < 10) return toast.error('Add a subject and at least 10 characters describing the issue.')
-    if (form.relatedType && !form.relatedRecordId) return toast.error('Choose one of your own records for this ticket.')
+    if (form.subject.trim().length < 4 || form.description.trim().length < 10) return toast.error(tr('Add a subject and at least 10 characters describing the issue.'))
+    if (form.relatedType && !form.relatedRecordId) return toast.error(tr('Choose one of your own records for this ticket.'))
     try {
       let attachments = []
       if (files.length) {
@@ -70,12 +72,12 @@ const CreateSupportTicket = () => {
         relatedRecord: form.relatedType ? { type: form.relatedType, recordId: form.relatedRecordId } : null,
         attachments,
       }))
-      if (!ticket?._id) throw new Error('Support created the ticket, but its details could not be opened. Please return to your ticket list.')
+      if (!ticket?._id) throw new Error(tr('Support created the ticket, but its details could not be opened. Please return to your ticket list.'))
       client.invalidateQueries({ queryKey: ['support-tickets'] })
-      toast.success(`Ticket ${ticket.ticketNumber || ''} was sent to support.`)
+      toast.success(tr('Ticket {number} was sent to support.').replace('{number}', ticket.ticketNumber || ''))
       navigate(`/support-tickets/${ticket._id}`)
     } catch (error) {
-      toast.error(errorText(error))
+      toast.error(tr(errorText(error)))
     }
   }
 

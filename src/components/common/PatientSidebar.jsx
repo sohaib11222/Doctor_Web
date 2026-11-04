@@ -7,10 +7,12 @@ import { useUnreadMessageCount } from '../../queries/chatQueries'
 import { useUnreadOrderCount } from '../../queries/orderQueries'
 import { getSupportTicketUnreadCount, unwrapTicketData } from '../../api/supportTickets'
 import { normalizeImageUrl } from '../../utils/imageUtils'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PatientSidebar = () => {
   const location = useLocation()
   const { user } = useAuth()
+  const { t, language, translateText: tr } = useLanguage()
 
   // Fetch user profile
   const { data: userProfileResponse, isLoading } = useQuery({
@@ -49,18 +51,26 @@ const PatientSidebar = () => {
       months += 12
     }
     
+    const unit = (value, name) => new Intl.NumberFormat(language, {
+      style: 'unit',
+      unit: name,
+      unitDisplay: 'long',
+    }).format(value)
+
     if (years > 0) {
-      return `${years} year${years > 1 ? 's' : ''}${months > 0 ? ` ${months} month${months > 1 ? 's' : ''}` : ''}`
-    } else if (months > 0) {
-      return `${months} month${months > 1 ? 's' : ''}`
-    } else {
-      const days = Math.floor((today - birthDate) / (1000 * 60 * 60 * 24))
-      return `${days} day${days > 1 ? 's' : ''}`
+      const values = [unit(years, 'year')]
+      if (months > 0) values.push(unit(months, 'month'))
+      return new Intl.ListFormat(language, { style: 'long', type: 'unit' }).format(values)
     }
+
+    if (months > 0) return unit(months, 'month')
+
+    const days = Math.floor((today - birthDate) / (1000 * 60 * 60 * 24))
+    return unit(days, 'day')
   }
   
   const age = calculateAge(dob)
-  const genderDisplay = gender ? (gender.charAt(0) + gender.slice(1).toLowerCase()) : ''
+  const genderDisplay = gender ? tr(gender.charAt(0) + gender.slice(1).toLowerCase()) : ''
   const patientId = user?._id ? `PT${user._id.slice(-6).toUpperCase()}` : 'PT000000'
 
   // Fetch unread notifications count
@@ -88,7 +98,7 @@ const PatientSidebar = () => {
           <Link to="/profile-settings" className="booking-doc-img">
             <img 
               src={profileImage} 
-              alt="Patient Profile" 
+              alt={tr('Patient Profile')}
               onError={(e) => {
                 e.target.src = '/assets/img/doctors-dashboard/profile-06.jpg'
               }}
@@ -99,7 +109,7 @@ const PatientSidebar = () => {
               <Link to="/profile-settings">{patientName}</Link>
             </h3>
             <div className="patient-details">
-              <h5 className="mb-0">Patient ID : {patientId}</h5>
+              <h5 className="mb-0">{tr('Patient ID')} : {patientId}</h5>
             </div>
             {(genderDisplay || age) && (
               <span>
@@ -117,31 +127,31 @@ const PatientSidebar = () => {
             <li className={isActive('/patient/dashboard') ? 'active' : ''}>
               <Link to="/patient/dashboard">
                 <i className="isax isax-category-2"></i>
-                <span>Dashboard</span>
+                <span>{t('patient.nav.dashboard', 'Dashboard')}</span>
               </Link>
             </li>
             <li className={isActive(['/patient-appointments', '/patient-appointments-grid', '/patient-upcoming-appointment', '/patient-completed-appointment', '/patient-cancelled-appointment', '/patient-appointment-details']) ? 'active' : ''}>
               <Link to="/patient-appointments">
                 <i className="isax isax-calendar-1"></i>
-                <span>My Appointments</span>
+                <span>{t('patient.nav.appointments', 'My Appointments')}</span>
               </Link>
             </li>
             <li className={isActive(['/patient/request-reschedule', '/patient/reschedule-requests']) ? 'active' : ''}>
               <Link to="/patient/reschedule-requests">
                 <i className="isax isax-calendar-2"></i>
-                <span>Reschedule Requests</span>
+                <span>{t('patient.nav.rescheduleRequests', 'Reschedule Requests')}</span>
               </Link>
             </li>
             <li className={isActive(['/map-view', '/clinic-navigation']) ? 'active' : ''}>
               <Link to="/map-view">
                 <i className="isax isax-location"></i>
-                <span>Nearby Clinics</span>
+                <span>{t('patient.nav.nearbyClinics', 'Nearby Clinics')}</span>
               </Link>
             </li>
             <li className={isActive('/favourites') ? 'active' : ''}>
               <Link to="/favourites">
                 <i className="isax isax-star-1"></i>
-                <span>Favourites</span>
+                <span>{t('patient.nav.favourites', 'Favourites')}</span>
               </Link>
             </li>
             {/* <li className={isActive('/dependent') ? 'active' : ''}>
@@ -153,25 +163,25 @@ const PatientSidebar = () => {
             <li className={isActive('/medical-records') ? 'active' : ''}>
               <Link to="/medical-records">
                 <i className="isax isax-note-21"></i>
-                <span>Medical Records</span>
+                <span>{t('patient.nav.medicalRecords', 'Medical Records')}</span>
               </Link>
             </li>
             <li className={isActive('/patient-accounts') ? 'active' : ''}>
               <Link to="/patient-accounts">
                 <i className="isax isax-wallet-2"></i>
-                <span>Wallet</span>
+                <span>{t('patient.nav.wallet', 'Wallet')}</span>
               </Link>
             </li>
             <li className={isActive('/patient-invoices') ? 'active' : ''}>
               <Link to="/patient-invoices">
                 <i className="isax isax-document-text"></i>
-                <span>Invoices</span>
+                <span>{t('patient.nav.invoices', 'Invoices')}</span>
               </Link>
             </li>
             <li className={isActive('/order-history') ? 'active' : ''}>
               <Link to="/order-history">
                 <i className="isax isax-shopping-bag"></i>
-                <span>Order History</span>
+                <span>{t('patient.nav.orderHistory', 'Order History')}</span>
                 {unreadOrdersCount > 0 && (
                   <small className="unread-msg">{unreadOrdersCount > 99 ? '99+' : unreadOrdersCount}</small>
                 )}
@@ -186,7 +196,7 @@ const PatientSidebar = () => {
             <li className={isActive('/chat') ? 'active' : ''}>
               <Link to="/chat">
                 <i className="isax isax-messages-1"></i>
-                <span>Message</span>
+                <span>{t('patient.nav.messages', 'Message')}</span>
                 {unreadMessagesCount > 0 && (
                   <small className="unread-msg">{unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}</small>
                 )}
@@ -195,14 +205,14 @@ const PatientSidebar = () => {
             <li className={isActive('/support-tickets') ? 'active' : ''}>
               <Link to="/support-tickets">
                 <i className="isax isax-headphone"></i>
-                <span>Support Tickets</span>
+                <span>{t('patient.nav.supportTickets', 'Support Tickets')}</span>
                 {supportUnreadCount > 0 && <small className="unread-msg">{supportUnreadCount > 99 ? '99+' : supportUnreadCount}</small>}
               </Link>
             </li>
             <li className={isActive('/patient-notifications') ? 'active' : ''}>
               <Link to="/patient-notifications">
                 <i className="isax isax-notification"></i>
-                <span>Notifications</span>
+                <span>{t('patient.nav.notifications', 'Notifications')}</span>
                 {unreadNotificationsCount > 0 && (
                   <small className="unread-msg">{unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}</small>
                 )}
@@ -217,13 +227,13 @@ const PatientSidebar = () => {
             <li className={isActive('/profile-settings') ? 'active' : ''}>
               <Link to="/profile-settings">
                 <i className="isax isax-setting-2"></i>
-                <span>Settings</span>
+                <span>{t('patient.nav.settings', 'Settings')}</span>
               </Link>
             </li>
             <li>
               <Link to="/login">
                 <i className="isax isax-logout"></i>
-                <span>Logout</span>
+                <span>{t('common.logout')}</span>
               </Link>
             </li>
           </ul>

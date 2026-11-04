@@ -5,8 +5,10 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useNotifications } from '../../queries/notificationQueries'
 import { useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '../../mutations/notificationMutations'
 import { toast } from 'react-toastify'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PatientNotifications = () => {
+  const { translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
   const { user } = useAuth()
   const [filter, setFilter] = useState('all') // 'all', 'unread', 'read'
 
@@ -85,18 +87,18 @@ const PatientNotifications = () => {
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`
     
-    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    return formatLocalizedDate(date, { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   // Handle mark as read
   const handleMarkAsRead = async (notificationId) => {
     if (!notificationId) {
-      toast.error('Invalid notification ID')
+      toast.error(tr('Invalid notification ID'))
       return
     }
     try {
       await markAsReadMutation.mutateAsync(notificationId)
-      toast.success('Notification marked as read')
+      toast.success(tr('Notification marked as read'))
     } catch (error) {
       console.error('Mark as read error:', error)
       // The axios interceptor returns error.response directly, so check both structures
@@ -105,7 +107,7 @@ const PatientNotifications = () => {
                           error?.data?.message ||
                           error?.message || 
                           'Failed to mark notification as read'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   }
 
@@ -113,11 +115,11 @@ const PatientNotifications = () => {
   const handleMarkAllAsRead = async () => {
     try {
       await markAllAsReadMutation.mutateAsync()
-      toast.success('All notifications marked as read')
+      toast.success(tr('All notifications marked as read'))
     } catch (error) {
       console.error('Mark all as read error:', error)
       const errorMessage = error?.response?.data?.message || error?.message || 'Failed to mark all notifications as read'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   }
 

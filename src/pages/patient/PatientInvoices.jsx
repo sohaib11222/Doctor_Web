@@ -2,8 +2,10 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import * as paymentApi from '../../api/payment'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PatientInvoices = () => {
+  const { formatDate: formatLocalizedDate } = useLanguage()
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState('')
@@ -47,7 +49,7 @@ const PatientInvoices = () => {
   const formatDate = (dateString) => {
     if (!dateString) return '—'
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-GB', { 
+    return formatLocalizedDate(date, { 
       day: '2-digit', 
       month: 'short', 
       year: 'numeric'

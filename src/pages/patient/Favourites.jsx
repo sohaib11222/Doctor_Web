@@ -5,8 +5,10 @@ import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 import * as favoriteApi from '../../api/favorite'
 import * as doctorApi from '../../api/doctor'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Favourites = () => {
+  const { translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
   const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -39,13 +41,13 @@ const Favourites = () => {
   const removeFavoriteMutation = useMutation({
     mutationFn: (favoriteId) => favoriteApi.removeFavorite(favoriteId),
     onSuccess: () => {
-      toast.success('Doctor removed from favorites')
+      toast.success(tr('Doctor removed from favorites'))
       queryClient.invalidateQueries(['favorites', user?._id])
       refetch()
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to remove favorite'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -161,7 +163,7 @@ const Favourites = () => {
   // Format date
   const formatDate = (date) => {
     if (!date) return '—'
-    return new Date(date).toLocaleDateString('en-US', { 
+    return formatLocalizedDate(date, { 
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 

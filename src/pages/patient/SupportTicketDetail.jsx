@@ -4,32 +4,97 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import api from '../../api/axios'
 import { getSupportTicket, reopenSupportTicket, replyToSupportTicket, unwrapTicketData, uploadSupportAttachments } from '../../api/supportTickets'
+import { useLanguage } from '../../contexts/LanguageContext'
 
-const label = (value) => String(value || '').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
 const badge = (status) => ({ OPEN: 'bg-primary', IN_PROGRESS: 'bg-info text-dark', WAITING_FOR_PATIENT: 'bg-warning text-dark', RESOLVED: 'bg-success', CLOSED: 'bg-secondary' }[status] || 'bg-secondary')
 const errorText = (error) => error?.response?.data?.errors?.[0]?.message || error?.response?.data?.message || error?.message || 'The request could not be completed.'
 
 const SupportTicketDetail = () => {
   const { ticketId } = useParams()
+  const { translateText: tr, formatDateTime } = useLanguage()
   const client = useQueryClient()
   const endRef = useRef(null)
   const fileInput = useRef(null)
   const [body, setBody] = useState('')
   const [files, setFiles] = useState([])
+  const label = (value) => tr(String(value || '').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()))
   const ticketQuery = useQuery({ queryKey: ['support-ticket', ticketId], queryFn: () => getSupportTicket(ticketId), refetchInterval: 7000, refetchOnWindowFocus: true })
   const ticket = useMemo(() => unwrapTicketData(ticketQuery.data), [ticketQuery.data])
   const messages = useMemo(() => Array.isArray(ticket?.messages) ? ticket.messages : [], [ticket?.messages])
-  const refresh = () => { client.invalidateQueries({ queryKey: ['support-ticket', ticketId] }); client.invalidateQueries({ queryKey: ['support-tickets'] }); client.invalidateQueries({ queryKey: ['support-ticket-unread'] }) }
-  const reply = useMutation({ mutationFn: (data) => replyToSupportTicket(ticketId, data), onSuccess: () => { setBody(''); setFiles([]); if (fileInput.current) fileInput.current.value = ''; refresh() } })
+  const refresh = () => {
+    client.invalidateQueries({ queryKey: ['support-ticket', ticketId] })
+    client.invalidateQueries({ queryKey: ['support-tickets'] })
+    client.invalidateQueries({ queryKey: ['support-ticket-unread'] })
+  }
+  const reply = useMutation({
+    mutationFn: (data) => replyToSupportTicket(ticketId, data),
+    onSuccess: () => {
+      setBody('')
+      setFiles([])
+      if (fileInput.current) fileInput.current.value = ''
+      refresh()
+    },
+  })
   const reopen = useMutation({ mutationFn: () => reopenSupportTicket(ticketId), onSuccess: refresh })
   useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), [messages.length])
   const replyDisabled = ['RESOLVED', 'CLOSED'].includes(ticket?.status)
-  const chooseFiles = (event) => { const chosen = Array.from(event.target.files || []); if (chosen.length > 5) return toast.error('You can attach up to five files.'); if (chosen.some((file) => file.size > 25 * 1024 * 1024)) return toast.error('Each attachment must be 25 MB or smaller.'); setFiles(chosen) }
-  const send = async (event) => { event.preventDefault(); if (!body.trim() && !files.length) return; try { let attachments = []; if (files.length) { const formData = new FormData(); files.forEach((file) => formData.append('supportTicket', file, file.name)); const uploaded = unwrapTicketData(await uploadSupportAttachments(formData)); attachments = (uploaded?.attachments || []).map((attachment) => attachment._id) } await reply.mutateAsync({ body: body.trim(), attachments }); toast.success('Reply sent to support.'); } catch (error) { toast.error(errorText(error)) } }
-  const download = async (attachment) => { try { const blob = await api.get(attachment.downloadUrl, { responseType: 'blob' }); const objectUrl = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = objectUrl; anchor.download = attachment.name || 'support-attachment'; anchor.click(); URL.revokeObjectURL(objectUrl); } catch (error) { toast.error(errorText(error)) } }
+  const chooseFiles = (event) => {
+    const chosen = Array.from(event.target.files || [])
+    if (chosen.length > 5) return toast.error(tr('You can attach up to five files.'))
+    if (chosen.some((file) => file.size > 25 * 1024 * 1024)) return toast.error(tr('Each attachment must be 25 MB or smaller.'))
+    setFiles(chosen)
+  }
+  const send = async (event) => {
+    event.preventDefault()
+    if (!body.trim() && !files.length) return
+    try {
+      let attachments = []
+      if (files.length) {
+        const formData = new FormData()
+        files.forEach((file) => formData.append('supportTicket', file, file.name))
+        const uploaded = unwrapTicketData(await uploadSupportAttachments(formData))
+        attachments = (uploaded?.attachments || []).map((attachment) => attachment._id)
+      }
+      await reply.mutateAsync({ body: body.trim(), attachments })
+      toast.success(tr('Reply sent to support.'))
+    } catch (error) {
+      toast.error(tr(errorText(error)))
+    }
+  }
+  const download = async (attachment) => {
+    try {
+      const blob = await api.get(attachment.downloadUrl, { responseType: 'blob' })
+      const objectUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = objectUrl
+      anchor.download = attachment.name || 'support-attachment'
+      anchor.click()
+      URL.revokeObjectURL(objectUrl)
+    } catch (error) {
+      toast.error(tr(errorText(error)))
+    }
+  }
+
   if (ticketQuery.isLoading) return <div className="content"><div className="container-fluid text-center py-5"><span className="spinner-border text-primary" /></div></div>
-  if (ticketQuery.isError || !ticket?._id) return <div className="content"><div className="container-fluid"><div className="alert alert-danger">{errorText(ticketQuery.error)}</div><Link className="btn btn-outline-primary" to="/support-tickets">Back to support tickets</Link></div></div>
-  return <div className="content"><div className="container-fluid"><div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4"><div className="d-flex gap-3"><Link to="/support-tickets" className="btn btn-outline-secondary align-self-start"><i className="fa-solid fa-arrow-left" /></Link><div><div className="d-flex gap-2 align-items-center flex-wrap"><h3 className="mb-0">{ticket.ticketNumber}</h3><span className={`badge ${badge(ticket.status)}`}>{label(ticket.status)}</span><span className="badge bg-light text-dark border">{label(ticket.priority)}</span></div><p className="mb-0 text-muted">{ticket.subject}</p></div></div>{ticket.status === 'RESOLVED' && <button className="btn btn-outline-primary" disabled={reopen.isPending} onClick={() => reopen.mutateAsync().then(() => toast.success('Ticket reopened.')).catch((error) => toast.error(errorText(error)))}><i className="fa-solid fa-rotate-left me-2" />Reopen ticket</button>}</div><div className="row g-4"><div className="col-xl-8"><div className="card mb-4"><div className="card-body"><div className="d-flex justify-content-between align-items-center mb-3"><h5 className="mb-0">Conversation</h5><small className="text-muted">Created {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : '—'}</small></div><div className="d-flex flex-column gap-3">{messages.map((message) => { const mine = message.senderRole === 'PATIENT'; return <div className={`d-flex ${mine ? 'justify-content-end' : 'justify-content-start'}`} key={message._id}><div className={`rounded-3 p-3 ${mine ? 'bg-primary text-white' : 'bg-light border'}`} style={{ maxWidth: '82%' }}><div className={`small fw-semibold mb-1 ${mine ? 'text-white-50' : 'text-muted'}`}>{mine ? 'You' : 'My Doctor support'} · {message.createdAt ? new Date(message.createdAt).toLocaleString() : '—'}</div>{message.body && <div style={{ whiteSpace: 'pre-wrap' }}>{message.body}</div>}{Array.isArray(message.attachments) && message.attachments.length > 0 && <div className="d-flex flex-wrap gap-2 mt-2">{message.attachments.map((attachment) => <button type="button" className={`btn btn-sm ${mine ? 'btn-outline-light' : 'btn-outline-secondary'}`} key={attachment._id} onClick={() => download(attachment)}><i className="fa-solid fa-paperclip me-1" />{attachment.name}</button>)}</div>}</div></div> })}<span ref={endRef} /></div></div></div><div className="card"><div className="card-body">{replyDisabled ? <div className="alert alert-secondary mb-0">{ticket.status === 'RESOLVED' ? 'This ticket is resolved. Reopen it if you still need help.' : 'This ticket is closed and can no longer receive replies.'}</div> : <form onSubmit={send}><label className="form-label fw-semibold">Reply to support</label><textarea className="form-control mb-3" rows="4" value={body} onChange={(event) => setBody(event.target.value)} maxLength="8000" placeholder="Write your reply…" /><input ref={fileInput} className="form-control mb-2" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx" onChange={chooseFiles} />{files.length > 0 && <div className="d-flex flex-wrap gap-2 mb-3">{files.map((file) => <span className="badge bg-light text-dark border" key={`${file.name}-${file.lastModified}`}>{file.name}</span>)}</div>}<div className="text-end"><button className="btn btn-primary" disabled={reply.isPending || (!body.trim() && !files.length)}>{reply.isPending ? 'Sending…' : 'Send reply'} <i className="fa-solid fa-paper-plane ms-2" /></button></div></form>}</div></div></div><aside className="col-xl-4"><div className="card mb-4"><div className="card-body"><h5>Ticket details</h5><dl className="row small mb-0"><dt className="col-5 text-muted">Category</dt><dd className="col-7">{label(ticket.category)}</dd><dt className="col-5 text-muted">Priority</dt><dd className="col-7">{label(ticket.priority)}</dd><dt className="col-5 text-muted">Opened</dt><dd className="col-7">{ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : '—'}</dd><dt className="col-5 text-muted">Related record</dt><dd className="col-7 text-break">{ticket.relatedRecord?.type ? `${label(ticket.relatedRecord.type)}${ticket.relatedRecord.recordId ? ` · ${ticket.relatedRecord.recordId}` : ''}` : '—'}</dd></dl></div></div><div className="card"><div className="card-body"><h5>Original request</h5><p className="mb-0 text-muted" style={{ whiteSpace: 'pre-wrap' }}>{ticket.description}</p></div></div></aside></div></div></div>
+  if (ticketQuery.isError || !ticket?._id) return <div className="content"><div className="container-fluid"><div className="alert alert-danger">{tr(errorText(ticketQuery.error))}</div><Link className="btn btn-outline-primary" to="/support-tickets">{tr('Back to support tickets')}</Link></div></div>
+
+  return (
+    <div className="content"><div className="container-fluid">
+      <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+        <div className="d-flex gap-3"><Link to="/support-tickets" className="btn btn-outline-secondary align-self-start"><i className="fa-solid fa-arrow-left" /></Link><div><div className="d-flex gap-2 align-items-center flex-wrap"><h3 className="mb-0">{ticket.ticketNumber}</h3><span className={`badge ${badge(ticket.status)}`}>{label(ticket.status)}</span><span className="badge bg-light text-dark border">{label(ticket.priority)}</span></div><p className="mb-0 text-muted">{ticket.subject}</p></div></div>
+        {ticket.status === 'RESOLVED' && <button className="btn btn-outline-primary" disabled={reopen.isPending} onClick={() => reopen.mutateAsync().then(() => toast.success(tr('Ticket reopened.'))).catch((error) => toast.error(tr(errorText(error))))}><i className="fa-solid fa-rotate-left me-2" />{tr('Reopen ticket')}</button>}
+      </div>
+      <div className="row g-4"><div className="col-xl-8">
+        <div className="card mb-4"><div className="card-body"><div className="d-flex justify-content-between align-items-center mb-3"><h5 className="mb-0">{tr('Conversation')}</h5><small className="text-muted">{tr('Created')} {ticket.createdAt ? formatDateTime(ticket.createdAt) : '—'}</small></div><div className="d-flex flex-column gap-3">
+          {messages.map((message) => {
+            const mine = message.senderRole === 'PATIENT'
+            return <div className={`d-flex ${mine ? 'justify-content-end' : 'justify-content-start'}`} key={message._id}><div className={`rounded-3 p-3 ${mine ? 'bg-primary text-white' : 'bg-light border'}`} style={{ maxWidth: '82%' }}><div className={`small fw-semibold mb-1 ${mine ? 'text-white-50' : 'text-muted'}`}>{mine ? tr('You') : tr('My Doctor support')} · {message.createdAt ? formatDateTime(message.createdAt) : '—'}</div>{message.body && <div style={{ whiteSpace: 'pre-wrap' }}>{message.body}</div>}{Array.isArray(message.attachments) && message.attachments.length > 0 && <div className="d-flex flex-wrap gap-2 mt-2">{message.attachments.map((attachment) => <button type="button" className={`btn btn-sm ${mine ? 'btn-outline-light' : 'btn-outline-secondary'}`} key={attachment._id} onClick={() => download(attachment)}><i className="fa-solid fa-paperclip me-1" />{attachment.name}</button>)}</div>}</div></div>
+          })}<span ref={endRef} />
+        </div></div></div>
+        <div className="card"><div className="card-body">{replyDisabled ? <div className="alert alert-secondary mb-0">{ticket.status === 'RESOLVED' ? tr('This ticket is resolved. Reopen it if you still need help.') : tr('This ticket is closed and can no longer receive replies.')}</div> : <form onSubmit={send}><label className="form-label fw-semibold">{tr('Reply to support')}</label><textarea className="form-control mb-3" rows="4" value={body} onChange={(event) => setBody(event.target.value)} maxLength="8000" placeholder={tr('Write your reply…')} /><input ref={fileInput} className="form-control mb-2" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx" onChange={chooseFiles} />{files.length > 0 && <div className="d-flex flex-wrap gap-2 mb-3">{files.map((file) => <span className="badge bg-light text-dark border" key={`${file.name}-${file.lastModified}`}>{file.name}</span>)}</div>}<div className="text-end"><button className="btn btn-primary" disabled={reply.isPending || (!body.trim() && !files.length)}>{reply.isPending ? tr('Sending…') : tr('Send reply')} <i className="fa-solid fa-paper-plane ms-2" /></button></div></form>}</div></div>
+      </div><aside className="col-xl-4"><div className="card mb-4"><div className="card-body"><h5>{tr('Ticket Details')}</h5><dl className="row small mb-0"><dt className="col-5 text-muted">{tr('Category')}</dt><dd className="col-7">{label(ticket.category)}</dd><dt className="col-5 text-muted">{tr('Priority')}</dt><dd className="col-7">{label(ticket.priority)}</dd><dt className="col-5 text-muted">{tr('Opened')}</dt><dd className="col-7">{ticket.createdAt ? formatDateTime(ticket.createdAt) : '—'}</dd><dt className="col-5 text-muted">{tr('Related record')}</dt><dd className="col-7 text-break">{ticket.relatedRecord?.type ? `${label(ticket.relatedRecord.type)}${ticket.relatedRecord.recordId ? ` · ${ticket.relatedRecord.recordId}` : ''}` : '—'}</dd></dl></div></div><div className="card"><div className="card-body"><h5>{tr('Original request')}</h5><p className="mb-0 text-muted" style={{ whiteSpace: 'pre-wrap' }}>{ticket.description}</p></div></div></aside></div>
+    </div></div>
+  )
 }
 
 export default SupportTicketDetail

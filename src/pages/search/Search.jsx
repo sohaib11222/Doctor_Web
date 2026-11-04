@@ -509,8 +509,8 @@ const Search = () => {
                   const doctorImage = getDoctorImage(doctor)
 
                   return (
-                    <div key={doctorId} className="col-xxl-3 col-lg-4 col-md-6">
-                      <div className="card">
+                    <div key={doctorId} className="col-xxl-4 col-xl-4 col-lg-4 col-md-6 d-flex">
+                      <div className="card doctor-premium-card w-100">
                         <div className="card-img card-img-hover">
                           <Link to={`/doctor-profile?id=${doctorId}`}>
                             <img

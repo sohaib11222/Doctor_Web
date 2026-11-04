@@ -9,8 +9,10 @@ import * as reviewsApi from '../../api/reviews'
 import * as rescheduleApi from '../../api/rescheduleRequest'
 import { useAppointmentChat } from '../../hooks/useAppointmentChat'
 import { formatAppointmentDateTime } from '../../utils/appointmentDateTime'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PatientAppointmentDetails = () => {
+  const { translateText: tr } = useLanguage()
   const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -51,13 +53,13 @@ const PatientAppointmentDetails = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['appointment', appointmentId])
       queryClient.invalidateQueries(['patientAppointments'])
-      toast.success('Appointment cancelled successfully')
+      toast.success(tr('Appointment cancelled successfully'))
       setShowCancelModal(false)
       setCancelReason('')
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to cancel appointment'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -82,11 +84,11 @@ const PatientAppointmentDetails = () => {
   // Handle review submission
   const handleReviewSubmit = async () => {
     if (!reviewText.trim()) {
-      toast.error('Please provide a review text')
+      toast.error(tr('Please provide a review text'))
       return
     }
     if (!appointment || !appointment.doctorId) {
-      toast.error('Doctor information not available')
+      toast.error(tr('Doctor information not available'))
       return
     }
 
@@ -100,13 +102,13 @@ const PatientAppointmentDetails = () => {
         reviewText: reviewText.trim(),
         reviewType: 'APPOINTMENT'
       })
-      toast.success('Review submitted successfully!')
+      toast.success(tr('Review submitted successfully!'))
       setShowReviewModal(false)
       setReviewText('')
       setReviewRating(5)
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to submit review'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   }
 
@@ -275,7 +277,7 @@ const PatientAppointmentDetails = () => {
   // Handle cancel appointment
   const handleCancel = () => {
     if (!cancelReason.trim()) {
-      toast.error('Please provide a cancellation reason')
+      toast.error(tr('Please provide a cancellation reason'))
       return
     }
     cancelAppointmentMutation.mutate({ id: appointmentId, reason: cancelReason })
@@ -287,7 +289,7 @@ const PatientAppointmentDetails = () => {
     try {
       await openAppointmentChat(selectedAppointment)
     } catch (chatError) {
-      toast.error(chatError?.response?.data?.message || chatError?.message || 'Unable to open chat for this appointment.')
+      toast.error(tr(chatError?.response?.data?.message || chatError?.message || 'Unable to open chat for this appointment.'))
     }
   }
 
@@ -420,7 +422,7 @@ const PatientAppointmentDetails = () => {
                           data-bs-toggle="modal"
                           onClick={(e) => {
                             e.preventDefault()
-                            toast.info(`Cancellation reason: ${appointment.cancellationReason}`)
+                            toast.info(`${tr('Cancellation Reason')}: ${appointment.cancellationReason}`)
                           }}
                         >
                           Reason

@@ -8,8 +8,10 @@ import * as medicalRecordsApi from '../../api/medicalRecords'
 import * as paymentApi from '../../api/payment'
 import { useNotifications } from '../../queries/notificationQueries'
 import { useMarkNotificationAsRead } from '../../mutations/notificationMutations'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PatientDashboard = () => {
+  const { language, translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
   const { user } = useAuth()
 
   // Fetch dashboard data
@@ -97,8 +99,7 @@ const PatientDashboard = () => {
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return '—'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-GB', { 
+    return formatLocalizedDate(dateString, {
       day: '2-digit', 
       month: 'short', 
       year: 'numeric'
@@ -108,8 +109,7 @@ const PatientDashboard = () => {
   // Format date and time
   const formatDateTime = (dateString, timeString) => {
     if (!dateString) return '—'
-    const date = new Date(dateString)
-    const dateStr = date.toLocaleDateString('en-GB', { 
+    const dateStr = formatLocalizedDate(dateString, {
       day: '2-digit', 
       month: 'short', 
       year: 'numeric'
@@ -120,7 +120,7 @@ const PatientDashboard = () => {
   // Format currency
   const formatCurrency = (amount, currency = 'EUR') => {
     if (!amount) return '€0.00'
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(language === 'it' ? 'it-IT' : 'en-US', {
       style: 'currency',
       currency: currency || 'EUR'
     }).format(amount)
@@ -409,15 +409,16 @@ const PatientDashboard = () => {
                               
                               // Format time ago
                               const formatTimeAgo = (dateString) => {
-                                if (!dateString) return 'Just now'
+                                if (!dateString) return tr('Just now')
                                 const date = new Date(dateString)
                                 const now = new Date()
                                 const diffInSeconds = Math.floor((now - date) / 1000)
-                                if (diffInSeconds < 60) return 'Just now'
-                                if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
-                                if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
-                                if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`
-                                return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+                                if (diffInSeconds < 60) return tr('Just now')
+                                const relative = new Intl.RelativeTimeFormat(language === 'it' ? 'it-IT' : 'en-US', { numeric: 'auto' })
+                                if (diffInSeconds < 3600) return relative.format(-Math.floor(diffInSeconds / 60), 'minute')
+                                if (diffInSeconds < 86400) return relative.format(-Math.floor(diffInSeconds / 3600), 'hour')
+                                if (diffInSeconds < 604800) return relative.format(-Math.floor(diffInSeconds / 86400), 'day')
+                                return formatLocalizedDate(date, { day: 'numeric', month: 'short' })
                               }
 
                               return (
@@ -483,8 +484,8 @@ const PatientDashboard = () => {
                             : 'Specialist'
                           const doctorId = (doctor && typeof doctor === 'object' && doctor !== null) ? doctor._id : appointment.doctorId
                           const appointmentDate = new Date(appointment.appointmentDate)
-                          const dayName = appointmentDate.toLocaleDateString('en-GB', { weekday: 'long' })
-                          const dateStr = appointmentDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                          const dayName = formatLocalizedDate(appointmentDate, { weekday: 'long' })
+                          const dateStr = formatLocalizedDate(appointmentDate, { day: 'numeric', month: 'short', year: 'numeric' })
                           
                           return (
                             <div key={appointment._id} className="col-md-6">

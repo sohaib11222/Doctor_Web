@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { useLocation, Link, useSearchParams } from 'react-router-dom'
 import { useClinicLocation, useRoute } from '../../queries/mappingQueries'
 import RouteMap from '../../components/maps/RouteMap'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const ClinicNavigation = () => {
+  const { translateText: tr } = useLanguage()
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const clinicId = searchParams.get('clinicId') || location.state?.clinicId
@@ -69,9 +71,9 @@ const ClinicNavigation = () => {
         <div className="container">
           <div className="text-center py-5">
             <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
+              <span className="visually-hidden">{tr('Loading...')}</span>
             </div>
-            <p className="mt-3">Loading clinic information...</p>
+            <p className="mt-3">{tr('Loading clinic information...')}</p>
           </div>
         </div>
       </div>
@@ -82,16 +84,13 @@ const ClinicNavigation = () => {
     <div className="content">
       <div className="container">
         <div className="row">
-          <div className="col-lg-4 col-xl-3 theiaStickySidebar">
-            {/* PatientSidebar will be rendered by DashboardLayout */}
-          </div>
-          <div className="col-lg-8 col-xl-9">
+          <div className="col-12">
             <div className="dashboard-header">
               <div className="header-back">
                 <Link to="/patient-appointments" className="back-arrow">
                   <i className="fa-solid fa-arrow-left"></i>
                 </Link>
-                <h3>Clinic Navigation</h3>
+                <h3>{tr('Clinic Navigation')}</h3>
               </div>
             </div>
 
@@ -107,9 +106,9 @@ const ClinicNavigation = () => {
                     <div className="d-flex align-items-start mb-3">
                       <i className="fe fe-map-pin me-2 mt-1" style={{ color: '#0d6efd' }}></i>
                       <div>
-                        <h6 className="mb-1">Address</h6>
+                        <h6 className="mb-1">{tr('Address')}</h6>
                         <p className="text-muted mb-0">
-                          {clinicInfo.address || 'Address not available'}
+                          {clinicInfo.address || tr('Address not available')}
                           {clinicInfo.city && `, ${clinicInfo.city}`}
                           {clinicInfo.state && `, ${clinicInfo.state}`}
                         </p>
@@ -119,7 +118,7 @@ const ClinicNavigation = () => {
                       <div className="d-flex align-items-start mb-3">
                         <i className="fe fe-phone me-2 mt-1" style={{ color: '#0d6efd' }}></i>
                         <div>
-                          <h6 className="mb-1">Phone</h6>
+                        <h6 className="mb-1">{tr('Phone')}</h6>
                           <p className="text-muted mb-0">
                             <a href={`tel:${clinicInfo.phone}`}>{clinicInfo.phone}</a>
                           </p>
@@ -130,11 +129,11 @@ const ClinicNavigation = () => {
                       <div className="d-flex align-items-start mb-3">
                         <i className="fe fe-navigation me-2 mt-1" style={{ color: '#0d6efd' }}></i>
                         <div>
-                          <h6 className="mb-1">Route Information</h6>
+                          <h6 className="mb-1">{tr('Route Information')}</h6>
                           <p className="text-muted mb-0">
-                            Distance: <strong>{routeInfo.distance} {routeInfo.distanceUnit}</strong>
+                            {tr('Distance')}: <strong>{routeInfo.distance} {routeInfo.distanceUnit}</strong>
                             <br />
-                            Estimated Time: <strong>{routeInfo.estimatedTime} {routeInfo.estimatedTimeUnit}</strong>
+                            {tr('Estimated Time:')} <strong>{routeInfo.estimatedTime} {routeInfo.estimatedTimeUnit}</strong>
                           </p>
                         </div>
                       </div>
@@ -164,21 +163,21 @@ const ClinicNavigation = () => {
                     onClick={handleGetDirections}
                   >
                     <i className="fe fe-navigation me-2"></i>
-                    Get Directions
+                    {tr('Get Directions')}
                   </button>
                   <a
                     href={`tel:${clinicInfo.phone}`}
                     className="btn btn-outline-primary"
                   >
                     <i className="fe fe-phone me-2"></i>
-                    Call Clinic
+                    {tr('Call Clinic')}
                   </a>
                   <Link
                     to="/patient-appointments"
                     className="btn btn-outline-secondary"
                   >
                     <i className="fe fe-arrow-left me-2"></i>
-                    Back to Appointments
+                    {tr('Back to Appointments')}
                   </Link>
                 </div>
 
@@ -189,10 +188,9 @@ const ClinicNavigation = () => {
                       <i className="fe fe-info"></i>
                     </div>
                     <div className="flex-grow-1 ms-3">
-                      <h6 className="alert-heading">Getting There</h6>
+                      <h6 className="alert-heading">{tr('Getting There')}</h6>
                       <p className="mb-0 small">
-                        Click "Get Directions" to open Google Maps with turn-by-turn navigation. 
-                        Make sure to arrive 10-15 minutes before your appointment time.
+                        {tr('Click "Get Directions" to open Google Maps with turn-by-turn navigation. Make sure to arrive 10-15 minutes before your appointment time.')}
                       </p>
                     </div>
                   </div>

@@ -58,41 +58,27 @@ const AboutUs = () => {
 
  
 
-  const testimonials = [
+  const platformHighlights = [
     {
       id: 1,
-      name: 'John Doe',
-      location: 'New York',
+      title: 'For patients',
+      label: 'Care, on your terms',
       image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&auto=format',
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
+      text: 'Search the available doctors, review their profile and consultation options, choose a suitable appointment time, and keep appointment, message, and order information in one place.'
     },
     {
       id: 2,
-      name: 'Amanda Warren',
-      location: 'Florida',
+      title: 'For doctors',
+      label: 'A clearer daily workflow',
       image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop&auto=format',
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
+      text: 'Doctors can manage professional profiles, availability, appointments, patient conversations, and online consultations from their My Doctor workspace.'
     },
     {
       id: 3,
-      name: 'Betty Carlson',
-      location: 'Georgia',
+      title: 'For health businesses',
+      label: 'Connected fulfilment',
       image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&auto=format',
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
-    },
-    {
-      id: 4,
-      name: 'Veronica',
-      location: 'California',
-      image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&auto=format',
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
-    },
-    {
-      id: 5,
-      name: 'Richard',
-      location: 'Michigan',
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&auto=format',
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
+      text: 'Pharmacies and parapharmacies can maintain product information, fulfil orders, review prescription requirements, and communicate through the same connected platform.'
     }
   ]
 
@@ -100,58 +86,58 @@ const AboutUs = () => {
     {
       id: 1,
       icon: '/assets/img/icons/choose-01.svg',
-      title: 'Qualified Staff of Doctors',
-      description: 'Lorem ipsum sit amet consectetur incididunt ut labore et exercitation ullamco laboris nisi dolore magna enim veniam aliqua.'
+      title: 'Verified professional journeys',
+      description: 'My Doctor supports account, profile, and document review flows so professional information can be reviewed before a doctor becomes available to patients.'
     },
     {
       id: 2,
       icon: '/assets/img/icons/choose-02.svg',
-      title: 'Qualified Staff of Doctors',
-      description: 'Lorem ipsum sit amet consectetur incididunt ut labore et exercitation ullamco laboris nisi dolore magna enim veniam aliqua.'
+      title: 'Appointments that stay connected',
+      description: 'Booking details, payment status, appointment timing, consultation access, and follow-up communication are designed to remain connected in one workflow.'
     },
     {
       id: 3,
       icon: '/assets/img/icons/choose-03.svg',
-      title: 'Qualified Staff of Doctors',
-      description: 'Lorem ipsum sit amet consectetur incididunt ut labore et exercitation ullamco laboris nisi dolore magna enim veniam aliqua.'
+      title: 'Convenient care coordination',
+      description: 'Patients can discover doctors, manage their appointments, and communicate with their care team without having to switch between separate systems.'
     },
     {
       id: 4,
       icon: '/assets/img/icons/choose-04.svg',
-      title: 'Qualified Staff of Doctors',
-      description: 'Lorem ipsum sit amet consectetur incididunt ut labore et exercitation ullamco laboris nisi dolore magna enim veniam aliqua.'
+      title: 'Health products with context',
+      description: 'The platform also connects patients with pharmacy and parapharmacy product workflows, including prescriptions, checkout, order updates, and delivery information.'
     }
   ]
 
   const faqs = [
     {
       id: 1,
-      question: 'Can i make an Appointment Online with White Plains Hospital Kendi?',
-      answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,',
+      question: 'How do I book an appointment?',
+      answer: 'Choose a doctor, select an available consultation type and time, review the appointment details, and complete checkout when payment is required.',
       isOpen: true
     },
     {
       id: 2,
-      question: 'Can i make an Appointment Online with White Plains Hospital Kendi?',
-      answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,',
+      question: 'Can I speak with my doctor through My Doctor?',
+      answer: 'When a consultation supports it, My Doctor provides appointment-linked messaging and video-call workflows so both participants can join from their dashboards.',
       isOpen: false
     },
     {
       id: 3,
-      question: 'Can i make an Appointment Online with White Plains Hospital Kendi?',
-      answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,',
+      question: 'How do pharmacy and parapharmacy orders work?',
+      answer: 'Patients can review product information and complete checkout. Where a prescription is required, the request is reviewed before the purchase can continue.',
       isOpen: false
     },
     {
       id: 4,
-      question: 'Can i make an Appointment Online with White Plains Hospital Kendi?',
-      answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,',
+      question: 'Where can I get help with an account or appointment?',
+      answer: 'Use the Contact Us page for general questions or the Support Tickets area in your patient dashboard for account-specific assistance and a recorded conversation.',
       isOpen: false
     },
     {
       id: 5,
-      question: 'Can i make an Appointment Online with White Plains Hospital Kendi?',
-      answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,',
+      question: 'Is Emergency Room H24 an emergency medical service?',
+      answer: 'Emergency Room H24 helps patients find doctors who are available online. It does not replace local emergency services; contact the appropriate emergency service for urgent medical care.',
       isOpen: false
     }
   ]
@@ -204,7 +190,7 @@ const AboutUs = () => {
                   <div className="col-md-6">
                     <div className="about-inner-img">
                       <div className="about-box">
-                        <h4>Over 25+ Years Experience</h4>
+                        <h4>Connected care, in one place</h4>
                       </div>
                       <div className="about-img">
                         <img 
@@ -225,26 +211,21 @@ const AboutUs = () => {
             </div>
             <div className="col-lg-6 col-md-12">
               <div className="section-inner-header about-inner-header">
-                <h6>About Our Company</h6>
-                <h2>We Are Always Ensure Best Medical Treatment For Your Health</h2>
+                <h6>About My Doctor</h6>
+                <h2>Making healthcare coordination more accessible and connected</h2>
               </div>
               <div className="about-content">
                 <div className="about-content-details">
-                  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-                    incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-                    exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
-                    irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-                    pariatur.</p>
-                  <p>Sed ut perspiciatis unde omnis iste natus sit voluptatem accusantium doloremque eaque
-                    ipsa quae architecto beatae vitae dicta sunt explicabo.</p>
+                  <p>My Doctor is a digital healthcare platform that brings patients, doctors, pharmacies, parapharmacies, and platform support together around the practical steps of care.</p>
+                  <p>Patients can find doctors, make appointments, complete the relevant checkout, manage appointment information, and communicate with their care team. Professionals and health businesses have dedicated tools to manage their profiles, availability, consultations, products, orders, and support.</p>
                 </div>
                 <div className="about-contact">
                   <div className="about-contact-icon">
                     <span><img src="/assets/img/icons/phone-icon.svg" alt="phone-image" /></span>
                   </div>
                   <div className="about-contact-text">
-                    <p>Need Emergency?</p>
-                    <h4>+1 315 369 5943</h4>
+                    <p>Need help using My Doctor?</p>
+                    <h4><Link to="/contact-us">Contact our support team</Link></h4>
                   </div>
                 </div>
               </div>
@@ -300,10 +281,9 @@ const AboutUs = () => {
             <div className="row align-items-end">
               <div className="col-lg-7 col-md-12">
                 <div className="section-inner-header way-inner-header mb-0">
-                  <h2>Be on Your Way to Feeling Better with the Mydoctor+</h2>
-                  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-                    incididunt ut labore et dolore magna aliqua.</p>
-                  <Link to="/contact-us" className="btn btn-primary">Contact With Us</Link>
+                  <h2>Find the next step in your care with My Doctor</h2>
+                  <p>Explore verified doctor profiles, book an appropriate consultation, and keep the information you need for appointments, products, and support close at hand.</p>
+                  <Link to="/contact-us" className="btn btn-primary">Contact Us</Link>
                 </div>
               </div>
               <div className="col-lg-5 col-md-12">
@@ -394,14 +374,14 @@ const AboutUs = () => {
           <div className="row">
             <div className="col-md-12">
               <div className="testimonial-slider slick">
-                {testimonials.map((testimonial) => (
-                  <div key={testimonial.id} className="testimonial-grid">
+                {platformHighlights.map((highlight) => (
+                  <div key={highlight.id} className="testimonial-grid">
                     <div className="testimonial-info">
                       <div className="testimonial-img">
                         <img 
-                          src={testimonial.image} 
+                          src={highlight.image} 
                           className="img-fluid" 
-                          alt={testimonial.name}
+                          alt={highlight.title}
                           onError={(e) => {
                             e.target.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&auto=format'
                           }}
@@ -409,12 +389,12 @@ const AboutUs = () => {
                       </div>
                       <div className="testimonial-content">
                         <div className="section-inner-header testimonial-header">
-                          <h6>Testimonials</h6>
-                          <h2>What Our Client Says</h2>
+                          <h6>How My Doctor works</h6>
+                          <h2>One platform for the people involved in care</h2>
                         </div>
                         <div className="testimonial-details">
-                          <p>{testimonial.text}</p>
-                          <h6><span>{testimonial.name}</span> {testimonial.location}</h6>
+                          <p>{highlight.text}</p>
+                          <h6><span>{highlight.title}</span> {highlight.label}</h6>
                         </div>
                       </div>
                     </div>
@@ -454,8 +434,8 @@ const AboutUs = () => {
                     <img src="/assets/img/icons/smiling-icon.svg" alt="icon" />
                   </div>
                   <div className="faq-patients-content">
-                    <h4><span className="count-digit">95</span>k+</h4>
-                    <p>Happy Patients</p>
+                    <h4>One</h4>
+                    <p>connected care platform</p>
                   </div>
                 </div>
               </div>

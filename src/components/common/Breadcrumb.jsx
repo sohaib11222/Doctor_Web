@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Breadcrumb = ({ title, li1, li2 }) => {
+  const { translateText: tr } = useLanguage()
+
   return (
     <div className="breadcrumb-bar">
       <div className="container">
@@ -15,14 +18,14 @@ const Breadcrumb = ({ title, li1, li2 }) => {
                 </li>
                 {title && (
                   <li className="breadcrumb-item" aria-current="page">
-                    {title}
+                    {tr(title)}
                   </li>
                 )}
                 {li1 && (
-                  <li className="breadcrumb-item active">{li1}</li>
+                  <li className="breadcrumb-item active">{tr(li1)}</li>
                 )}
               </ol>
-              {li2 && <h2 className="breadcrumb-title">{li2}</h2>}
+              {li2 && <h2 className="breadcrumb-title">{tr(li2)}</h2>}
             </nav>
           </div>
         </div>

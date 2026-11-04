@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useOrder } from '../../queries'
 import { usePayForOrder, useCancelOrder } from '../../mutations'
 import BASE_URL from '../../utils/apiConfig'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const hasShippingQuote = (order) => order?.finalShipping !== null
   && order?.finalShipping !== undefined
@@ -10,6 +11,7 @@ const hasShippingQuote = (order) => order?.finalShipping !== null
   && [2, 3, 4, 5].includes(Number(order?.promisedDeliveryDays))
 
 const OrderDetails = () => {
+  const { formatDate: formatLocalizedDate } = useLanguage()
   const { orderId } = useParams()
   const navigate = useNavigate()
   const { data: orderResponse, isLoading, error, refetch } = useOrder(orderId)
@@ -22,8 +24,7 @@ const OrderDetails = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return '—'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-GB', {
+    return formatLocalizedDate(dateString, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

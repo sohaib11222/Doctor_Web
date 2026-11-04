@@ -25,25 +25,19 @@ const DashboardLayout = ({ children, breadcrumb }) => {
                         location.pathname === '/invoices' ||
                         location.pathname === '/doctor-request' ||
                         location.pathname === '/chat-doctor'
+  const patientPaths = [
+    '/patient-appointments', '/patient-appointments-grid', '/patient-upcoming-appointment',
+    '/patient-completed-appointment', '/patient-cancelled-appointment', '/patient-appointment-details',
+    '/patient-profile', '/patient-invoices', '/patient-accounts', '/patient-notifications',
+    '/profile-settings', '/change-password', '/favourites', '/chat', '/dependent',
+    '/medical-records', '/medical-details', '/patient/prescription',
+    '/patient/request-reschedule', '/patient/reschedule-requests', '/map-view', '/clinic-navigation',
+    '/order-history', '/order-details', '/documents-download', '/add-dependent', '/edit-dependent', '/patient-billing',
+    '/patient-reports', '/two-factor-authentication', '/video-call', '/video-call-room', '/voice-call',
+  ]
   const isPatientRoute = location.pathname.startsWith('/patient') ||
-                        location.pathname === '/patient-appointments' ||
-                        location.pathname === '/patient-appointments-grid' ||
-                        location.pathname === '/patient-upcoming-appointment' ||
-                        location.pathname === '/patient-completed-appointment' ||
-                        location.pathname === '/patient-cancelled-appointment' ||
-                        location.pathname === '/patient-appointment-details' ||
-                        location.pathname === '/patient-profile' ||
-                        location.pathname === '/patient-invoices' ||
-                        location.pathname === '/patient-accounts' ||
-                        location.pathname === '/patient-notifications' ||
-                        location.pathname === '/profile-settings' ||
-                        location.pathname === '/change-password' ||
-                        location.pathname === '/favourites' ||
-                        location.pathname === '/chat' ||
-                        location.pathname === '/dependent' ||
-                        location.pathname === '/medical-records' ||
-                        location.pathname === '/medical-details' ||
-                        location.pathname.startsWith('/support-tickets')
+    location.pathname.startsWith('/support-tickets') ||
+    patientPaths.some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`))
   const isPharmacyRoute = location.pathname.startsWith('/pharmacy/')
   const isChatRoute = location.pathname === '/chat' || location.pathname === '/chat-doctor' || location.pathname === '/doctor/admin-chat'
 

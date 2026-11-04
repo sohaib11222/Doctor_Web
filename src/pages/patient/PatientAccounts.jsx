@@ -3,8 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as balanceApi from '../../api/balance'
 import * as paymentApi from '../../api/payment'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PatientAccounts = () => {
+  const { translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
   const queryClient = useQueryClient()
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [withdrawFormData, setWithdrawFormData] = useState({
@@ -56,11 +58,11 @@ const PatientAccounts = () => {
       queryClient.invalidateQueries(['withdrawalRequests'])
       setShowWithdrawModal(false)
       setWithdrawFormData({ amount: '', paymentMethod: 'BANK', paymentDetails: '' })
-      toast.success('Withdrawal request submitted successfully!')
+      toast.success(tr('Withdrawal request submitted successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to submit withdrawal request'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -70,17 +72,17 @@ const PatientAccounts = () => {
     const amount = parseFloat(withdrawFormData.amount)
     
     if (!amount || amount <= 0) {
-      toast.error('Please enter a valid amount')
+      toast.error(tr('Please enter a valid amount'))
       return
     }
     
     if (amount > balance) {
-      toast.error('Insufficient balance')
+      toast.error(tr('Insufficient balance'))
       return
     }
 
     if (!withdrawFormData.paymentDetails.trim()) {
-      toast.error('Please provide payment details')
+      toast.error(tr('Please provide payment details'))
       return
     }
 
@@ -95,7 +97,7 @@ const PatientAccounts = () => {
   const formatDate = (dateString) => {
     if (!dateString) return '—'
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-GB', { 
+    return formatLocalizedDate(date, { 
       day: '2-digit', 
       month: 'short', 
       year: 'numeric'

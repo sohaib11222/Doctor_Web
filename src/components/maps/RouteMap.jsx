@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRoute } from '../../queries/mappingQueries'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 /**
  * Component to display route from user location to clinic on Google Maps
@@ -8,6 +9,7 @@ import { useRoute } from '../../queries/mappingQueries'
  * @param {Object} clinicInfo - Clinic information for display
  */
 const RouteMap = ({ from, to, clinicInfo = {} }) => {
+  const { translateText: tr } = useLanguage()
   const [mapLoaded, setMapLoaded] = useState(false)
   const [userLocation, setUserLocation] = useState(from)
   const mapRef = useRef(null)
@@ -75,7 +77,7 @@ const RouteMap = ({ from, to, clinicInfo = {} }) => {
         const clinicMarker = new window.google.maps.Marker({
           position: to,
           map: map,
-          title: clinicInfo.name || 'Clinic',
+          title: clinicInfo.name || tr('Clinic'),
           icon: {
             url: '/assets/img/icons/map-marker.png',
             scaledSize: new window.google.maps.Size(40, 40)
@@ -86,16 +88,16 @@ const RouteMap = ({ from, to, clinicInfo = {} }) => {
         const clinicInfoWindow = new window.google.maps.InfoWindow({
           content: `
             <div style="padding: 10px;">
-              <h6 style="margin: 0 0 5px 0; font-weight: 600;">${clinicInfo.name || 'Clinic'}</h6>
+              <h6 style="margin: 0 0 5px 0; font-weight: 600;">${clinicInfo.name || tr('Clinic')}</h6>
               ${clinicInfo.address ? `<p style="margin: 0; font-size: 14px; color: #666;">${clinicInfo.address}</p>` : ''}
               ${clinicInfo.phone ? `<p style="margin: 5px 0 0 0; font-size: 14px; color: #666;">${clinicInfo.phone}</p>` : ''}
               ${routeData?.data ? `
                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
                   <p style="margin: 0; font-size: 13px; color: #0d6efd;">
-                    <i class="fas fa-route"></i> Distance: ${routeData.data.distance} ${routeData.data.distanceUnit}
+                    <i class="fas fa-route"></i> ${tr('Distance')}: ${routeData.data.distance} ${routeData.data.distanceUnit}
                   </p>
                   <p style="margin: 5px 0 0 0; font-size: 13px; color: #0d6efd;">
-                    <i class="fas fa-clock"></i> Est. Time: ${routeData.data.estimatedTime} ${routeData.data.estimatedTimeUnit}
+                    <i class="fas fa-clock"></i> ${tr('Est. Time:')} ${routeData.data.estimatedTime} ${routeData.data.estimatedTimeUnit}
                   </p>
                 </div>
               ` : ''}
@@ -114,7 +116,7 @@ const RouteMap = ({ from, to, clinicInfo = {} }) => {
         new window.google.maps.Marker({
           position: userLocation,
           map: map,
-          title: 'Your Location',
+          title: tr('Your Location'),
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
             scale: 10,
@@ -165,7 +167,7 @@ const RouteMap = ({ from, to, clinicInfo = {} }) => {
     }
 
     loadGoogleMaps()
-  }, [userLocation, to, clinicInfo, routeData])
+  }, [userLocation, to, clinicInfo, routeData, tr])
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -197,9 +199,9 @@ const RouteMap = ({ from, to, clinicInfo = {} }) => {
         >
           <div className="text-center">
             <div className="spinner-border text-primary mb-2" role="status">
-              <span className="visually-hidden">Loading...</span>
+              <span className="visually-hidden">{tr('Loading...')}</span>
             </div>
-            <p className="text-muted mb-0">Loading route...</p>
+            <p className="text-muted mb-0">{tr('Loading route...')}</p>
           </div>
         </div>
       )}
@@ -218,11 +220,11 @@ const RouteMap = ({ from, to, clinicInfo = {} }) => {
         >
           <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: '5px' }}>
             <i className="fas fa-route me-2" style={{ color: '#0d6efd' }}></i>
-            Route Information
+            {tr('Route Information')}
           </div>
           <div style={{ fontSize: '13px', color: '#666' }}>
-            <div>Distance: <strong>{routeData.data.distance} {routeData.data.distanceUnit}</strong></div>
-            <div>Est. Time: <strong>{routeData.data.estimatedTime} {routeData.data.estimatedTimeUnit}</strong></div>
+            <div>{tr('Distance')}: <strong>{routeData.data.distance} {routeData.data.distanceUnit}</strong></div>
+            <div>{tr('Est. Time:')} <strong>{routeData.data.estimatedTime} {routeData.data.estimatedTimeUnit}</strong></div>
           </div>
         </div>
       )}

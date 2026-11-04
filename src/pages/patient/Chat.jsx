@@ -9,8 +9,10 @@ import * as appointmentApi from '../../api/appointments'
 import { useUploadChatFile } from '../../mutations/uploadMutations'
 import { normalizeImageUrl } from '../../utils/imageUtils'
 import { formatCurrency } from '../../utils/currency'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Chat = () => {
+  const { translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
   const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -143,8 +145,8 @@ const Chat = () => {
   const groupedMessages = useMemo(() => {
     const groups = []
     messages.forEach((message, index) => {
-      const messageDate = message.createdAt ? new Date(message.createdAt).toLocaleDateString() : null
-      const prevDate = index > 0 ? (messages[index - 1].createdAt ? new Date(messages[index - 1].createdAt).toLocaleDateString() : null) : null
+      const messageDate = message.createdAt ? formatLocalizedDate(message.createdAt) : null
+      const prevDate = index > 0 ? (messages[index - 1].createdAt ? formatLocalizedDate(messages[index - 1].createdAt) : null) : null
       if (messageDate && messageDate !== prevDate) {
         groups.push({ type: 'date', formattedDate: messageDate })
       }
@@ -191,7 +193,7 @@ const Chat = () => {
   // Handle selecting a conversation
   const handleSelectConversation = async (conversation) => {
     if (!user) {
-      toast.error('Please login to start a conversation')
+      toast.error(tr('Please login to start a conversation'))
       return
     }
 
@@ -234,7 +236,7 @@ const Chat = () => {
       refetchConversations()
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to start conversation'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
       console.error('Error starting conversation:', error)
     }
   }
@@ -294,12 +296,12 @@ const Chat = () => {
         const validationErrors = error.response?.data?.errors || error.response?.data?.error
         if (validationErrors) {
           console.error('Validation errors:', validationErrors)
-          toast.error(`Validation error: ${typeof validationErrors === 'string' ? validationErrors : JSON.stringify(validationErrors)}`)
+          toast.error(`${tr('Validation error')}: ${typeof validationErrors === 'string' ? tr(validationErrors) : JSON.stringify(validationErrors)}`)
         } else {
-          toast.error(errorMessage)
+          toast.error(tr(errorMessage))
         }
       } else {
-        toast.error(errorMessage)
+        toast.error(tr(errorMessage))
       }
     }
   })
@@ -314,7 +316,7 @@ const Chat = () => {
     const maxSize = 50 * 1024 * 1024
     const oversizedFiles = files.filter(file => file.size > maxSize)
     if (oversizedFiles.length > 0) {
-      toast.error(`Some files are too large. Maximum size is 50MB.`)
+      toast.error(tr('Some files are too large. Maximum size is 50MB.'))
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -346,7 +348,7 @@ const Chat = () => {
           }
         } catch (uploadError) {
           console.error('Error uploading file:', uploadError)
-          toast.error(`Failed to upload ${file.name}`)
+          toast.error(`${tr('Failed to upload')} ${file.name}`)
         }
       }
 
@@ -368,7 +370,7 @@ const Chat = () => {
     e.preventDefault()
     if ((!newMessage.trim() && selectedFiles.length === 0) || !selectedConversation || isCompleted) {
       if (isCompleted) {
-        toast.error('This chat has been completed. No further messages can be sent.')
+        toast.error(tr('This chat has been completed. No further messages can be sent.'))
       }
       return
     }
@@ -394,14 +396,14 @@ const Chat = () => {
     if (diffMins < 60) return `${diffMins}m ago`
     if (diffHours < 24) return `${diffHours}h ago`
     if (diffDays === 1) return 'Yesterday'
-    return date.toLocaleDateString()
+    return formatLocalizedDate(date)
   }
 
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    return formatLocalizedDate(date, { weekday: 'short', month: 'short', day: 'numeric' })
   }
 
   const filteredConversations = mergedConversations.filter(conv => {

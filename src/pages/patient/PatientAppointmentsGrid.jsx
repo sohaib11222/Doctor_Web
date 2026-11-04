@@ -4,8 +4,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as appointmentApi from '../../api/appointments'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PatientAppointmentsGrid = () => {
+  const { translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
   const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -108,11 +110,11 @@ const PatientAppointmentsGrid = () => {
     mutationFn: ({ id, reason }) => appointmentApi.cancelAppointment(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries(['patientAppointments'])
-      toast.success('Appointment cancelled successfully')
+      toast.success(tr('Appointment cancelled successfully'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to cancel appointment'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -164,7 +166,7 @@ const PatientAppointmentsGrid = () => {
   const formatDate = (date) => {
     if (!date) return 'N/A'
     const d = new Date(date)
-    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    return formatLocalizedDate(d, { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   // Format time

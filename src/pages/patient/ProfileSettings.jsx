@@ -5,8 +5,10 @@ import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 import * as profileApi from '../../api/profile'
 import api from '../../api/axios'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const ProfileSettings = () => {
+  const { translateText: tr } = useLanguage()
   const navigate = useNavigate()
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -86,11 +88,11 @@ const ProfileSettings = () => {
     mutationFn: (data) => profileApi.updateUserProfile(data),
     onSuccess: (response) => {
       queryClient.invalidateQueries(['userProfile', user?._id])
-      toast.success('Profile updated successfully!')
+      toast.success(tr('Profile updated successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update profile'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -109,11 +111,11 @@ const ProfileSettings = () => {
       const imageUrl = relativeUrl.startsWith('http') ? relativeUrl : `${baseURL}${relativeUrl}`
       setFormData(prev => ({ ...prev, profileImage: imageUrl }))
       setProfileImagePreview(relativeUrl)
-      toast.success('Image uploaded successfully!')
+      toast.success(tr('Image uploaded successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to upload image'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -122,7 +124,7 @@ const ProfileSettings = () => {
     const file = e.target.files[0]
     if (file) {
       if (file.size > 4 * 1024 * 1024) {
-        toast.error('Image size should be below 4 MB')
+        toast.error(tr('Image size should be below 4 MB'))
         return
       }
       setProfileImageFile(file)

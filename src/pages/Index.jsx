@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../contexts/AuthContext'
+import { useLanguage } from '../contexts/LanguageContext'
 import * as doctorApi from '../api/doctor'
 import * as specializationApi from '../api/specialization'
 import * as reviewsApi from '../api/reviews'
@@ -12,6 +13,7 @@ import * as insuranceApi from '../api/insurance'
 const Index = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { translateText: tr } = useLanguage()
   const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [location, setLocation] = useState('')
@@ -250,7 +252,7 @@ const Index = () => {
   const addFavoriteMutation = useMutation({
     mutationFn: ({ doctorId, patientId }) => favoriteApi.addFavorite(doctorId, patientId),
     onSuccess: () => {
-      toast.success('Doctor added to favorites')
+      toast.success(tr('Doctor added to favorites'))
       queryClient.invalidateQueries(['favorites', user?._id])
     },
     onError: (error) => {
@@ -265,12 +267,12 @@ const Index = () => {
         const validationErrors = error.response?.data?.errors || error.response?.data?.error
         if (validationErrors) {
           console.error('Validation errors:', validationErrors)
-          toast.error(`Validation error: ${typeof validationErrors === 'string' ? validationErrors : JSON.stringify(validationErrors)}`)
+          toast.error(`${tr('Validation error')}: ${tr(typeof validationErrors === 'string' ? validationErrors : JSON.stringify(validationErrors))}`)
         } else {
-          toast.error(errorMessage)
+          toast.error(tr(errorMessage))
         }
       } else {
-        toast.error(errorMessage)
+        toast.error(tr(errorMessage))
       }
     }
   })
@@ -279,12 +281,12 @@ const Index = () => {
   const removeFavoriteMutation = useMutation({
     mutationFn: (favoriteId) => favoriteApi.removeFavorite(favoriteId),
     onSuccess: () => {
-      toast.success('Doctor removed from favorites')
+      toast.success(tr('Doctor removed from favorites'))
       queryClient.invalidateQueries(['favorites', user?._id])
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to remove favorite'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -293,7 +295,7 @@ const Index = () => {
     e.preventDefault()
     
     if (!user || user.role !== 'PATIENT') {
-      toast.error('Please login as a patient to add favorites')
+      toast.error(tr('Please login as a patient to add favorites'))
       return
     }
 
@@ -307,7 +309,7 @@ const Index = () => {
       if (favoriteId) {
         removeFavoriteMutation.mutate(favoriteId)
       } else {
-        toast.error('Favorite ID not found')
+        toast.error(tr('Favorite ID not found'))
       }
     } else {
       // Add to favorites - include patientId for validator
@@ -1739,16 +1741,17 @@ const Index = () => {
             <span className="badge badge-primary">Featured Doctors</span>
             <h2>Our Highlighted Doctors</h2>
           </div>
-          <div className="doctors-slider owl-carousel aos" data-aos="fade-up">
+          <div className="row g-4 doctor-premium-grid aos" data-aos="fade-up">
             {doctorsLoading ? (
-              <div className="text-center py-5">
+              <div className="col-12 text-center py-5">
                 <div className="spinner-border text-primary" role="status">
                   <span className="sr-only">Loading...</span>
                 </div>
               </div>
             ) : formatDoctors.length > 0 ? (
               formatDoctors.map((doctor) => (
-              <div key={doctor.id} className="card">
+              <div key={doctor.id} className="col-xl-4 col-lg-4 col-md-6 d-flex">
+              <div className="card doctor-premium-card w-100">
                 <div className="card-img card-img-hover">
                     <Link to={`/doctor-profile?id=${doctor.doctorId}`}>
                       <img 
@@ -1808,14 +1811,14 @@ const Index = () => {
                   </div>
                 </div>
               </div>
+              </div>
               ))
             ) : (
-              <div className="text-center py-5">
+              <div className="col-12 text-center py-5">
                 <p>No doctors available at the moment.</p>
               </div>
             )}
           </div>
-          <div className="doctor-nav nav-bottom owl-nav"></div>
         </div>
       </section>
       {/* /Doctor Section */}

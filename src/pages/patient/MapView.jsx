@@ -2,8 +2,10 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useNearbyClinics } from '../../queries/mappingQueries'
 import { toast } from 'react-toastify'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const MapView = () => {
+  const { translateText: tr } = useLanguage()
   const navigate = useNavigate()
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
@@ -36,7 +38,7 @@ const MapView = () => {
         (error) => {
           console.error('Error getting location:', error)
           setLocationPermission(false)
-          toast.error('Location permission denied. Using default location.')
+          toast.error(tr('Location permission denied. Using default location.'))
           // Set default location
           const defaultLocation = { lat: 40.7128, lng: -74.0060 } // New York
           setUserLocation(defaultLocation)
@@ -47,11 +49,11 @@ const MapView = () => {
         }
       )
     } else {
-      toast.error('Geolocation is not supported by your browser.')
+      toast.error(tr('Geolocation is not supported by your browser.'))
       const defaultLocation = { lat: 40.7128, lng: -74.0060 }
       setUserLocation(defaultLocation)
     }
-  }, [])
+  }, [tr])
 
   // Fetch nearby clinics
   const {
@@ -154,7 +156,7 @@ const MapView = () => {
       
       const userMarker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
         .addTo(map)
-        .bindPopup('Your Location')
+        .bindPopup(tr('Your Location'))
       markersRef.current.push(userMarker)
     }
 
@@ -194,10 +196,10 @@ const MapView = () => {
         .addTo(map)
         .bindPopup(`
           <div style="min-width: 200px;">
-            <h6 style="margin: 0 0 5px 0; font-weight: 600;">${clinic.clinicName || clinic.name || 'Clinic'}</h6>
+            <h6 style="margin: 0 0 5px 0; font-weight: 600;">${clinic.clinicName || clinic.name || tr('Clinic')}</h6>
             <p style="margin: 0; font-size: 13px; color: #666;">${clinic.doctorName || ''}</p>
             <p style="margin: 5px 0; font-size: 13px; color: #666;">${clinic.address || ''}, ${clinic.city || ''}</p>
-            ${clinic.distance ? `<p style="margin: 5px 0; font-size: 12px; color: #0d6efd; font-weight: 600;">${clinic.distance.toFixed(1)} km away</p>` : ''}
+            ${clinic.distance ? `<p style="margin: 5px 0; font-size: 12px; color: #0d6efd; font-weight: 600;">${clinic.distance.toFixed(1)} ${tr('km away')}</p>` : ''}
           </div>
         `)
 
@@ -292,7 +294,7 @@ const MapView = () => {
       // No clinics found, center on user location
       map.setView([userLocation.lat, userLocation.lng], 12)
     }
-  }, [nearbyClinics, userLocation, isLoadingClinics, mapLoaded])
+  }, [nearbyClinics, userLocation, isLoadingClinics, mapLoaded, tr])
 
   // Handle marker press
   const handleMarkerPress = (clinic) => {
@@ -315,7 +317,7 @@ const MapView = () => {
     if (clinic.doctorId) {
       navigate(`/doctor-profile?id=${clinic.doctorId}`)
     } else {
-      toast.error('Doctor information not available')
+      toast.error(tr('Doctor information not available'))
     }
   }
 
@@ -325,7 +327,7 @@ const MapView = () => {
     if (clinic.doctorId) {
       navigate(`/booking?doctorId=${clinic.doctorId}`)
     } else {
-      toast.error('Doctor information not available')
+      toast.error(tr('Doctor information not available'))
     }
   }
 
@@ -344,10 +346,10 @@ const MapView = () => {
             mapInstanceRef.current.setView([coords.lat, coords.lng], 12)
           }
           
-          toast.success('Location updated. Nearby clinics refreshed.')
+          toast.success(tr('Location updated. Nearby clinics refreshed.'))
         },
         (error) => {
-          toast.error('Could not update location.')
+          toast.error(tr('Could not update location.'))
         }
       )
     }
@@ -384,7 +386,7 @@ const MapView = () => {
                   className="btn btn-light shadow-sm"
                   onClick={handleRefreshLocation}
                   style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  title="Refresh Location"
+                  title={tr('Refresh Location')}
                 >
                   <i className="fe fe-refresh-cw"></i>
                 </button>
@@ -396,7 +398,7 @@ const MapView = () => {
                     }
                   }}
                   style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  title="Center on My Location"
+                  title={tr('Center on My Location')}
                 >
                   <i className="fe fe-navigation"></i>
                 </button>
@@ -415,7 +417,7 @@ const MapView = () => {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
               }}>
                 <label className="form-label mb-2" style={{ fontSize: '12px', fontWeight: '600' }}>
-                  Search Radius: {radius} km
+                  {tr('Search Radius:')} {radius} km
                 </label>
                 <div className="d-flex gap-2">
                   {[5, 10, 15, 20, 25].map((r) => (
@@ -447,9 +449,9 @@ const MapView = () => {
                 }}>
                   <div className="text-center">
                     <div className="spinner-border text-primary mb-2" role="status">
-                      <span className="visually-hidden">Loading...</span>
+                      <span className="visually-hidden">{tr('Loading...')}</span>
                     </div>
-                    <p className="text-muted mb-0">Finding nearby clinics...</p>
+                    <p className="text-muted mb-0">{tr('Finding nearby clinics...')}</p>
                   </div>
                 </div>
               )}
@@ -471,9 +473,9 @@ const MapView = () => {
                   gap: '12px'
                 }}>
                   <i className="fe fe-alert-circle text-danger"></i>
-                  <span className="flex-grow-1 text-danger">Failed to load clinics</span>
+                  <span className="flex-grow-1 text-danger">{tr('Failed to load clinics')}</span>
                   <button className="btn btn-sm btn-primary" onClick={() => refetchClinics()}>
-                    Retry
+                    {tr('Retry')}
                   </button>
                 </div>
               )}
@@ -485,12 +487,12 @@ const MapView = () => {
             <div className="p-4">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h5 className="mb-0">
-                  <span className="text-primary">{nearbyClinics.length}</span> Nearby Clinics
+                  <span className="text-primary">{nearbyClinics.length}</span> {tr('Nearby Clinics')}
                 </h5>
                 {!locationPermission && (
                   <span className="badge bg-warning text-dark">
                     <i className="fe fe-alert-circle me-1"></i>
-                    Location disabled
+                    {tr('Location disabled')}
                   </span>
                 )}
               </div>
@@ -498,15 +500,15 @@ const MapView = () => {
               {isLoadingClinics ? (
                 <div className="text-center py-5">
                   <div className="spinner-border text-primary mb-2" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                    <span className="visually-hidden">{tr('Loading...')}</span>
                   </div>
-                  <p className="text-muted mb-0">Loading clinics...</p>
+                  <p className="text-muted mb-0">{tr('Loading clinics...')}</p>
                 </div>
               ) : nearbyClinics.length === 0 ? (
                 <div className="text-center py-5">
                   <i className="fe fe-map-pin" style={{ fontSize: '48px', color: '#6c757d' }}></i>
-                  <p className="mt-3 mb-1 fw-semibold">No clinics found nearby</p>
-                  <p className="text-muted small">Try increasing the search radius</p>
+                  <p className="mt-3 mb-1 fw-semibold">{tr('No clinics found nearby')}</p>
+                  <p className="text-muted small">{tr('Try increasing the search radius')}</p>
                 </div>
               ) : (
                 <div className="list-group">
@@ -531,7 +533,7 @@ const MapView = () => {
                             <div className="d-flex align-items-center">
                               <i className="fe fe-navigation me-1" style={{ fontSize: '12px', color: '#0d6efd' }}></i>
                               <span className="text-primary small fw-semibold">
-                                {clinic.distance.toFixed(1)} km away
+                                {clinic.distance.toFixed(1)} {tr('km away')}
                               </span>
                             </div>
                           )}
@@ -569,18 +571,18 @@ const MapView = () => {
               </div>
               <div className="modal-body">
                 <div className="mb-3">
-                  <label className="form-label small text-muted text-uppercase">Doctor</label>
+                  <label className="form-label small text-muted text-uppercase">{tr('Doctor')}</label>
                   <p className="mb-0">{selectedClinic.doctorName}</p>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label small text-muted text-uppercase">Address</label>
+                  <label className="form-label small text-muted text-uppercase">{tr('Address')}</label>
                   <p className="mb-0">
                     {selectedClinic.address}, {selectedClinic.city}
                   </p>
                 </div>
                 {selectedClinic.phone && (
                   <div className="mb-3">
-                    <label className="form-label small text-muted text-uppercase">Phone</label>
+                    <label className="form-label small text-muted text-uppercase">{tr('Phone')}</label>
                     <p className="mb-0">
                       <a href={`tel:${selectedClinic.phone}`}>{selectedClinic.phone}</a>
                     </p>
@@ -588,8 +590,8 @@ const MapView = () => {
                 )}
                 {selectedClinic.distance && (
                   <div className="mb-3">
-                    <label className="form-label small text-muted text-uppercase">Distance</label>
-                    <p className="mb-0">{selectedClinic.distance.toFixed(1)} km away</p>
+                    <label className="form-label small text-muted text-uppercase">{tr('Distance')}</label>
+                    <p className="mb-0">{selectedClinic.distance.toFixed(1)} {tr('km away')}</p>
                   </div>
                 )}
               </div>
@@ -600,7 +602,7 @@ const MapView = () => {
                   onClick={() => handleViewDoctor(selectedClinic)}
                 >
                   <i className="fe fe-user me-2"></i>
-                  View Doctor
+                  {tr('View Doctor')}
                 </button>
                 <button
                   type="button"
@@ -608,7 +610,7 @@ const MapView = () => {
                   onClick={() => handleBookAppointment(selectedClinic)}
                 >
                   <i className="fe fe-calendar me-2"></i>
-                  Book Appointment
+                  {tr('Book Appointment')}
                 </button>
               </div>
             </div>

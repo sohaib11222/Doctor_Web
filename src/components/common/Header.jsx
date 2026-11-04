@@ -347,7 +347,7 @@ const Header = () => {
                 <li className={isActive('/') || location.pathname === '/index' ? 'active' : ''}>
                   <Link to="/">Home</Link>
                 </li>
-                <li className={location.pathname === '/search' && new URLSearchParams(location.search).get('isAvailableOnline') === 'true' ? 'active' : ''}>
+                <li className={`${location.pathname === '/search' && new URLSearchParams(location.search).get('isAvailableOnline') === 'true' ? 'active ' : ''}nav-emergency`}>
                   <Link to="/search?isAvailableOnline=true" onClick={() => setIsMenuOpen(false)}>
                     <i className="fa-solid fa-kit-medical me-1" aria-hidden="true"></i> Emergency Room H24
                   </Link>

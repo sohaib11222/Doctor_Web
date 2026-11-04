@@ -5,8 +5,10 @@ import { toast } from 'react-toastify'
 import * as medicalRecordsApi from '../../api/medicalRecords'
 import * as prescriptionsApi from '../../api/prescriptions'
 import api from '../../api/axios'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const MedicalRecords = () => {
+  const { translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState('medical')
   const [searchQuery, setSearchQuery] = useState('')
@@ -121,11 +123,11 @@ const MedicalRecords = () => {
         relatedDoctorId: ''
       })
       setFilePreview(null)
-      toast.success('Medical record created successfully!')
+      toast.success(tr('Medical record created successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to create medical record'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -135,11 +137,11 @@ const MedicalRecords = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['medicalRecords'])
       setDeleteRecordId(null)
-      toast.success('Medical record deleted successfully!')
+      toast.success(tr('Medical record deleted successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to delete medical record'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -155,7 +157,7 @@ const MedicalRecords = () => {
       await prescriptionsApi.downloadPrescriptionPdf(prescription._id)
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to download prescription'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   }
 
@@ -165,7 +167,7 @@ const MedicalRecords = () => {
     if (file) {
       // Validate file size (10 MB)
       if (file.size > 10 * 1024 * 1024) {
-        toast.error('File size must be less than 10 MB')
+        toast.error(tr('File size must be less than 10 MB'))
         return
       }
       setFormData(prev => ({ ...prev, file }))
@@ -187,11 +189,11 @@ const MedicalRecords = () => {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!formData.title.trim()) {
-      toast.error('Title is required')
+      toast.error(tr('Title is required'))
       return
     }
     if (!formData.file) {
-      toast.error('File is required')
+      toast.error(tr('File is required'))
       return
     }
     createRecordMutation.mutate(formData)
@@ -208,7 +210,7 @@ const MedicalRecords = () => {
   const formatDate = (dateString) => {
     if (!dateString) return '—'
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-GB', { 
+    return formatLocalizedDate(date, { 
       day: '2-digit', 
       month: 'short', 
       year: 'numeric',

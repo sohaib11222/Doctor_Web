@@ -4,8 +4,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 import * as rescheduleApi from '../../api/rescheduleRequest'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const RequestReschedule = () => {
+  const { translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
   const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -44,7 +46,7 @@ const RequestReschedule = () => {
   const createRequestMutation = useMutation({
     mutationFn: (data) => rescheduleApi.createRescheduleRequest(data),
     onSuccess: () => {
-      toast.success('Reschedule request submitted successfully')
+      toast.success(tr('Reschedule request submitted successfully'))
       queryClient.invalidateQueries(['eligibleRescheduleAppointments'])
       queryClient.invalidateQueries(['rescheduleRequests'])
       queryClient.invalidateQueries(['patientAppointments'])
@@ -57,18 +59,18 @@ const RequestReschedule = () => {
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to submit reschedule request'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!selectedAppointment) {
-      toast.error('Please select an appointment')
+      toast.error(tr('Please select an appointment'))
       return
     }
     if (reason.trim().length < 10) {
-      toast.error('Reason must be at least 10 characters')
+      toast.error(tr('Reason must be at least 10 characters'))
       return
     }
 
@@ -147,7 +149,7 @@ const RequestReschedule = () => {
                         <div>
                           <h6 className="mb-1">Dr. {apt.doctorId?.fullName || 'Unknown Doctor'}</h6>
                           <small className="text-muted">
-                            {new Date(apt.appointmentDate).toLocaleDateString()} at {apt.appointmentTime}
+                            {formatLocalizedDate(apt.appointmentDate)} {tr('at')} {apt.appointmentTime}
                           </small>
                           {apt.appointmentNumber && (
                             <small className="text-muted d-block">Appointment #: {apt.appointmentNumber}</small>

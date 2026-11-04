@@ -4,8 +4,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import * as rescheduleApi from '../../api/rescheduleRequest'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const RescheduleRequests = () => {
+  const { translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
   const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -31,7 +33,7 @@ const RescheduleRequests = () => {
     mutationFn: ({ requestId, paymentMethod }) => 
       rescheduleApi.payRescheduleFee(requestId, paymentMethod),
     onSuccess: () => {
-      toast.success('Reschedule fee paid successfully! Your appointment is now confirmed.')
+      toast.success(tr('Reschedule fee paid successfully! Your appointment is now confirmed.'))
       queryClient.invalidateQueries(['rescheduleRequests'])
       queryClient.invalidateQueries(['patientAppointments'])
       setShowPaymentModal(false)
@@ -39,7 +41,7 @@ const RescheduleRequests = () => {
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Payment failed'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -134,7 +136,7 @@ const RescheduleRequests = () => {
                             <td>
                               {request.appointmentId ? (
                                 <>
-                                  {new Date(request.appointmentId.appointmentDate).toLocaleDateString()}
+                                  {formatLocalizedDate(request.appointmentId.appointmentDate)}
                                   <br />
                                   <small className="text-muted">{request.appointmentId.appointmentTime}</small>
                                   {request.appointmentId.appointmentNumber && (
@@ -234,7 +236,7 @@ const RescheduleRequests = () => {
                     </p>
                     <p className="text-muted small">
                       New appointment date: {selectedRequest.newAppointmentId ? 
-                        new Date(selectedRequest.newAppointmentId.appointmentDate).toLocaleDateString() : '—'}
+                        formatLocalizedDate(selectedRequest.newAppointmentId.appointmentDate) : '—'}
                     </p>
                     <div className="alert alert-info mt-3">
                       <small>Click "Confirm Payment" to proceed with the payment.</small>

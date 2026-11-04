@@ -5,8 +5,10 @@ import { toast } from 'react-toastify'
 import * as appointmentApi from '../../api/appointments'
 import { useAuth } from '../../contexts/AuthContext'
 import { formatAppointmentDateTime } from '../../utils/appointmentDateTime'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PatientAppointments = () => {
+  const { translateText: tr } = useLanguage()
   const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -109,11 +111,11 @@ const PatientAppointments = () => {
     mutationFn: ({ id, reason }) => appointmentApi.cancelAppointment(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries(['patientAppointments'])
-      toast.success('Appointment cancelled successfully')
+      toast.success(tr('Appointment cancelled successfully'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to cancel appointment'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 

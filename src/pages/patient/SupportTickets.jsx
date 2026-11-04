@@ -2,20 +2,49 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { listSupportTickets, unwrapTicketData } from '../../api/supportTickets'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const statuses = ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_PATIENT', 'RESOLVED', 'CLOSED']
-const label = (value) => String(value || '').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
 const badge = (status) => ({ OPEN: 'bg-primary', IN_PROGRESS: 'bg-info text-dark', WAITING_FOR_PATIENT: 'bg-warning text-dark', RESOLVED: 'bg-success', CLOSED: 'bg-secondary' }[status] || 'bg-secondary')
 
 const SupportTickets = () => {
+  const { translateText: tr, formatDateTime } = useLanguage()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
-  const query = useQuery({ queryKey: ['support-tickets', search, status], queryFn: () => listSupportTickets({ page: 1, limit: 100, search, status }), refetchInterval: 10000, refetchOnWindowFocus: true, retry: 1 })
+  const label = (value) => tr(String(value || '').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()))
+  const query = useQuery({
+    queryKey: ['support-tickets', search, status],
+    queryFn: () => listSupportTickets({ page: 1, limit: 100, search, status }),
+    refetchInterval: 10000,
+    refetchOnWindowFocus: true,
+    retry: 1,
+  })
   const tickets = useMemo(() => {
     const list = unwrapTicketData(query.data)?.tickets
     return Array.isArray(list) ? list : []
   }, [query.data])
-  return <div className="content"><div className="container-fluid"><div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4"><div><h3 className="mb-1"><i className="fa-solid fa-headset text-primary me-2" />Support tickets</h3><p className="text-muted mb-0">Ask the My Doctor support team for help and follow the full conversation here.</p></div><Link to="/support-tickets/new" className="btn btn-primary"><i className="fa-solid fa-plus me-2" />New support ticket</Link></div><div className="card mb-4"><div className="card-body"><div className="row g-3"><div className="col-md-8"><input className="form-control" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search ticket number or subject" /></div><div className="col-md-4"><select className="form-select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option>{statuses.map((value) => <option value={value} key={value}>{label(value)}</option>)}</select></div></div></div></div>{query.isLoading ? <div className="text-center py-5"><span className="spinner-border text-primary" /></div> : query.isError ? <div className="alert alert-danger d-flex justify-content-between align-items-center flex-wrap gap-2"><span>{query.error?.response?.data?.message || query.error?.message || 'Unable to load support tickets.'}</span><button type="button" className="btn btn-sm btn-outline-danger" onClick={() => query.refetch()}>Try again</button></div> : !tickets.length ? <div className="card"><div className="card-body text-center py-5"><i className="fa-regular fa-life-ring fa-3x text-muted mb-3" /><h4>No support tickets yet</h4><p className="text-muted">Create a ticket whenever you need help with an appointment, order, account, or payment.</p><Link to="/support-tickets/new" className="btn btn-outline-primary">Contact support</Link></div></div> : <div className="card"><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Ticket</th><th>Category</th><th>Status</th><th>Priority</th><th>Last update</th><th /></tr></thead><tbody>{tickets.filter((ticket) => ticket && ticket._id).map((ticket) => <tr key={ticket._id}><td><strong>{ticket.ticketNumber || 'Support ticket'}</strong><div className="small text-muted text-truncate" style={{ maxWidth: 340 }}>{ticket.subject || '—'}</div></td><td>{label(ticket.category)}</td><td><span className={`badge ${badge(ticket.status)}`}>{label(ticket.status)}</span>{ticket.unreadForPatient && <span className="badge bg-danger ms-2">New reply</span>}</td><td>{label(ticket.priority)}</td><td>{ticket.lastMessageAt || ticket.updatedAt ? new Date(ticket.lastMessageAt || ticket.updatedAt).toLocaleString() : '—'}</td><td className="text-end"><Link to={`/support-tickets/${ticket._id}`} className="btn btn-sm btn-outline-primary">Open</Link></td></tr>)}</tbody></table></div></div>}</div></div>
+
+  return (
+    <div className="content">
+      <div className="container-fluid">
+        <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+          <div>
+            <h3 className="mb-1"><i className="fa-solid fa-headset text-primary me-2" />{tr('Support tickets')}</h3>
+            <p className="text-muted mb-0">{tr('Ask the My Doctor support team for help and follow the full conversation here.')}</p>
+          </div>
+          <Link to="/support-tickets/new" className="btn btn-primary"><i className="fa-solid fa-plus me-2" />{tr('New support ticket')}</Link>
+        </div>
+        <div className="card mb-4"><div className="card-body"><div className="row g-3">
+          <div className="col-md-8"><input className="form-control" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={tr('Search ticket number or subject')} /></div>
+          <div className="col-md-4"><select className="form-select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">{tr('All statuses')}</option>{statuses.map((value) => <option value={value} key={value}>{label(value)}</option>)}</select></div>
+        </div></div></div>
+        {query.isLoading ? <div className="text-center py-5"><span className="spinner-border text-primary" /></div>
+          : query.isError ? <div className="alert alert-danger d-flex justify-content-between align-items-center flex-wrap gap-2"><span>{tr(query.error?.response?.data?.message || query.error?.message || 'Unable to load support tickets.')}</span><button type="button" className="btn btn-sm btn-outline-danger" onClick={() => query.refetch()}>{tr('Try again')}</button></div>
+            : !tickets.length ? <div className="card"><div className="card-body text-center py-5"><i className="fa-regular fa-life-ring fa-3x text-muted mb-3" /><h4>{tr('No support tickets yet')}</h4><p className="text-muted">{tr('Create a ticket whenever you need help with an appointment, order, account, or payment.')}</p><Link to="/support-tickets/new" className="btn btn-outline-primary">{tr('Contact support')}</Link></div></div>
+              : <div className="card"><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>{tr('Ticket')}</th><th>{tr('Category')}</th><th>{tr('Status')}</th><th>{tr('Priority')}</th><th>{tr('Last update')}</th><th /></tr></thead><tbody>{tickets.filter((ticket) => ticket && ticket._id).map((ticket) => <tr key={ticket._id}><td><strong>{ticket.ticketNumber || tr('Support ticket')}</strong><div className="small text-muted text-truncate" style={{ maxWidth: 340 }}>{ticket.subject || '—'}</div></td><td>{label(ticket.category)}</td><td><span className={`badge ${badge(ticket.status)}`}>{label(ticket.status)}</span>{ticket.unreadForPatient && <span className="badge bg-danger ms-2">{tr('New reply')}</span>}</td><td>{label(ticket.priority)}</td><td>{ticket.lastMessageAt || ticket.updatedAt ? formatDateTime(ticket.lastMessageAt || ticket.updatedAt) : '—'}</td><td className="text-end"><Link to={`/support-tickets/${ticket._id}`} className="btn btn-sm btn-outline-primary">{tr('Open')}</Link></td></tr>)}</tbody></table></div></div>}
+      </div>
+    </div>
+  )
 }
 
 export default SupportTickets

@@ -7,6 +7,8 @@ const dateAtUtcMidnight = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
+const getLocale = () => (typeof window !== 'undefined' && window.localStorage.getItem('mydoctor-language') === 'it' ? 'it-IT' : 'en-US')
+
 /**
  * Appointment dates are calendar dates stored at UTC midnight. Formatting in
  * UTC prevents a browser west of UTC from rendering the previous day.
@@ -14,7 +16,7 @@ const dateAtUtcMidnight = (value) => {
 export const formatAppointmentDate = (value, options = {}) => {
   const date = dateAtUtcMidnight(value)
   if (!date) return '—'
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(getLocale(), {
     timeZone: 'UTC',
     year: 'numeric',
     month: 'short',
@@ -30,7 +32,7 @@ export const formatAppointmentTime = (value) => {
   const hours = Number(match[1])
   const minutes = Number(match[2])
   if (hours > 23 || minutes > 59) return value
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(getLocale(), {
     timeZone: 'UTC',
     hour: 'numeric',
     minute: '2-digit',

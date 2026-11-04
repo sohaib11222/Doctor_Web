@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNearbyClinics } from '../../queries/mappingQueries'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 /**
  * Component to display nearby clinics on Google Maps
@@ -9,6 +10,7 @@ import { useNearbyClinics } from '../../queries/mappingQueries'
  * @param {Function} onClinicClick - Callback when clinic marker is clicked
  */
 const NearbyClinicsMap = ({ lat, lng, radius = 10, onClinicClick }) => {
+  const { translateText: tr } = useLanguage()
   const [mapLoaded, setMapLoaded] = useState(false)
   const [map, setMap] = useState(null)
   const [markers, setMarkers] = useState([])
@@ -60,7 +62,7 @@ const NearbyClinicsMap = ({ lat, lng, radius = 10, onClinicClick }) => {
         new window.google.maps.Marker({
           position: { lat, lng },
           map: mapInstance,
-          title: 'Your Location',
+          title: tr('Your Location'),
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
             scale: 10,
@@ -113,12 +115,12 @@ const NearbyClinicsMap = ({ lat, lng, radius = 10, onClinicClick }) => {
             <p style="margin: 5px 0; font-size: 13px; color: #666;">${clinic.address || ''}, ${clinic.city || ''}</p>
             ${clinic.phone ? `<p style="margin: 5px 0; font-size: 13px; color: #666;"><i class="fas fa-phone"></i> ${clinic.phone}</p>` : ''}
             <p style="margin: 5px 0; font-size: 12px; color: #0d6efd; font-weight: 600;">
-              <i class="fas fa-route"></i> ${clinic.distance?.toFixed(2) || 'N/A'} km away
+              <i class="fas fa-route"></i> ${clinic.distance?.toFixed(2) || 'N/A'} ${tr('km away')}
             </p>
             <a href="https://www.google.com/maps/dir/?api=1&destination=${clinic.coordinates.lat},${clinic.coordinates.lng}" 
                target="_blank" 
                style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #0d6efd; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">
-              Get Directions
+              ${tr('Get Directions')}
             </a>
           </div>
         `
@@ -157,7 +159,7 @@ const NearbyClinicsMap = ({ lat, lng, radius = 10, onClinicClick }) => {
         map.setZoom(13)
       }
     }
-  }, [map, clinics, isLoading, onClinicClick, lat, lng])
+  }, [map, clinics, isLoading, onClinicClick, lat, lng, tr])
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -189,9 +191,9 @@ const NearbyClinicsMap = ({ lat, lng, radius = 10, onClinicClick }) => {
         >
           <div className="text-center">
             <div className="spinner-border text-primary mb-2" role="status">
-              <span className="visually-hidden">Loading...</span>
+              <span className="visually-hidden">{tr('Loading...')}</span>
             </div>
-            <p className="text-muted mb-0">Loading map...</p>
+            <p className="text-muted mb-0">{tr('Loading map...')}</p>
           </div>
         </div>
       )}
