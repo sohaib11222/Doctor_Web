@@ -5,6 +5,19 @@ import { useUpdateOrderStatus, useUpdateShippingFee } from '../../mutations'
 import { toast } from 'react-toastify'
 import BASE_URL from '../../utils/apiConfig'
 
+const DELIVERY_DAY_OPTIONS = [2, 3, 4, 5]
+const deliveryPreview = (value) => {
+  const days = Number(value)
+  if (!DELIVERY_DAY_OPTIONS.includes(days)) return null
+  const today = new Date()
+  return new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + days, 12))
+}
+
+const hasShippingQuote = (order) => order?.finalShipping !== null
+  && order?.finalShipping !== undefined
+  && Boolean(order?.pharmacyAcceptedAt)
+  && DELIVERY_DAY_OPTIONS.includes(Number(order?.promisedDeliveryDays))
+
 const PharmacyOrderDetails = () => {
   const { orderId } = useParams()
   const navigate = useNavigate()
@@ -89,12 +102,13 @@ const PharmacyOrderDetails = () => {
       toast.error('Please enter a valid shipping fee (non-negative number)')
       return
     }
-    if (deliveryDays !== '' && (!Number.isInteger(Number(deliveryDays)) || Number(deliveryDays) < 1 || Number(deliveryDays) > 60)) {
-      toast.error('Delivery commitment must be between 1 and 60 days')
+    const days = Number(deliveryDays)
+    if (!DELIVERY_DAY_OPTIONS.includes(days)) {
+      toast.error('Select a delivery commitment of 2, 3, 4, or 5 days')
       return
     }
     updateShippingFeeMutation.mutate(
-      { orderId: order._id, shippingFee: fee, ...(deliveryDays !== '' ? { deliveryDays: Number(deliveryDays) } : {}) },
+      { orderId: order._id, shippingFee: fee, deliveryDays: days },
       {
         onSuccess: () => {
           setShowShippingModal(false)
@@ -107,7 +121,7 @@ const PharmacyOrderDetails = () => {
 
   const handleOpenShippingModal = () => {
     if (!order) return
-    setShippingFee(order.shipping?.toString() || order.initialShipping?.toString() || '0')
+    setShippingFee(String(order.finalShipping ?? order.shipping ?? order.initialShipping ?? 0))
     setDeliveryDays(order.promisedDeliveryDays?.toString() || '')
     setShowShippingModal(true)
   }
@@ -310,21 +324,21 @@ const PharmacyOrderDetails = () => {
                 <div className="d-flex justify-content-between mb-2">
                   <div>
                     <span>Shipping</span>
-                    {order.finalShipping !== null && order.finalShipping !== order.initialShipping && (
+                    {hasShippingQuote(order) && order.finalShipping !== order.initialShipping && (
                       <small className="text-muted d-block">
                         Updated from {formatCurrency(order.initialShipping || 0)}
                       </small>
                     )}
-                    {order.shippingUpdatedAt && (
+                    {hasShippingQuote(order) && order.shippingUpdatedAt && (
                       <small className="text-muted d-block">
                         Updated on {formatDate(order.shippingUpdatedAt)}
                       </small>
                     )}
                   </div>
-                  <span>{formatCurrency(order.shipping)}</span>
+                  <span>{hasShippingQuote(order) ? formatCurrency(order.shipping) : 'To be confirmed'}</span>
                 </div>
-                {order.promisedDeliveryDays && <div className="d-flex justify-content-between mb-2"><span>Delivery commitment</span><span>{order.promisedDeliveryDays} day{order.promisedDeliveryDays === 1 ? '' : 's'}</span></div>}
-                {order.expectedDeliveryDate && <div className="small text-muted mb-2">Expected delivery: {formatDate(order.expectedDeliveryDate)}</div>}
+                {hasShippingQuote(order) && order.promisedDeliveryDays && <div className="d-flex justify-content-between mb-2"><span>Delivery commitment</span><span>{order.promisedDeliveryDays} day{order.promisedDeliveryDays === 1 ? '' : 's'}</span></div>}
+                {hasShippingQuote(order) && order.expectedDeliveryDate && <div className="small text-muted mb-2">Expected delivery: {formatDate(order.expectedDeliveryDate)}</div>}
                 <hr />
                 <div className="d-flex justify-content-between">
                   <strong>Total</strong>
@@ -381,26 +395,14 @@ const PharmacyOrderDetails = () => {
             <div className="card">
               <div className="card-body">
                 <div className="d-flex gap-2 flex-wrap">
-                  {/* Allow updating shipping fee if order is not paid yet and shipping fee not set */}
-                  {order.paymentStatus === 'PENDING' && (order.finalShipping === null || order.finalShipping === undefined) && (
+                  {order.paymentStatus === 'PENDING' && (
                     <button
                       className="btn btn-primary"
                       onClick={handleOpenShippingModal}
                       disabled={updateShippingFeeMutation.isLoading}
                     >
                       <i className="fe fe-truck me-2"></i>
-                      Set Shipping Fee
-                    </button>
-                  )}
-                  {/* Allow updating shipping fee if order is not paid yet but shipping fee is already set */}
-                  {order.paymentStatus === 'PENDING' && order.finalShipping !== null && order.finalShipping !== undefined && (
-                    <button
-                      className="btn btn-primary"
-                      onClick={handleOpenShippingModal}
-                      disabled={updateShippingFeeMutation.isLoading}
-                    >
-                      <i className="fe fe-truck me-2"></i>
-                      Update Shipping Fee
+                      {hasShippingQuote(order) ? 'Update Shipping & Delivery' : 'Set Shipping & Delivery'}
                     </button>
                   )}
                   {/* Only allow updating status if order is paid */}
@@ -461,7 +463,7 @@ const PharmacyOrderDetails = () => {
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Set Shipping Fee</h5>
+                <h5 className="modal-title">Set shipping & delivery commitment</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -472,7 +474,7 @@ const PharmacyOrderDetails = () => {
                 ></button>
               </div>
               <div className="modal-body">
-                <p>Set the final shipping fee for order #{order.orderNumber}:</p>
+                <p>Set the order-specific shipping fee and delivery commitment for order #{order.orderNumber}.</p>
                 <div className="mb-3">
                   <label className="form-label">Current Shipping Fee</label>
                   <div className="form-control-plaintext">
@@ -501,8 +503,13 @@ const PharmacyOrderDetails = () => {
                   </small>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="deliveryDays" className="form-label">Delivery commitment (days)</label>
-                  <input type="number" className="form-control" id="deliveryDays" min="1" max="60" step="1" value={deliveryDays} onChange={(e) => setDeliveryDays(e.target.value)} placeholder="e.g. 3" />
+                  <label htmlFor="deliveryDays" className="form-label">Expected delivery time <span className="text-danger">*</span></label>
+                  <select className="form-select" id="deliveryDays" value={deliveryDays} onChange={(e) => setDeliveryDays(e.target.value)} required>
+                    <option value="">Select a delivery commitment</option>
+                    {DELIVERY_DAY_OPTIONS.map((days) => <option key={days} value={days}>{days} days</option>)}
+                  </select>
+                  {deliveryPreview(deliveryDays) && <small className="text-muted d-block mt-2">Expected delivery date: {deliveryPreview(deliveryDays).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</small>}
+                  <small className="text-muted d-block mt-1">Choose the commitment you can keep for this order.</small>
                 </div>
                 {shippingFee && !isNaN(parseFloat(shippingFee)) && (
                   <div className="alert alert-info">
@@ -526,9 +533,9 @@ const PharmacyOrderDetails = () => {
                   type="button"
                   className="btn btn-primary"
                   onClick={handleUpdateShippingFee}
-                  disabled={updateShippingFeeMutation.isLoading || !shippingFee || isNaN(parseFloat(shippingFee))}
+                  disabled={updateShippingFeeMutation.isLoading || shippingFee === '' || isNaN(parseFloat(shippingFee)) || !DELIVERY_DAY_OPTIONS.includes(Number(deliveryDays))}
                 >
-                  {updateShippingFeeMutation.isLoading ? 'Updating...' : 'Update Shipping Fee'}
+                  {updateShippingFeeMutation.isLoading ? 'Saving...' : 'Send shipping details'}
                 </button>
               </div>
             </div>

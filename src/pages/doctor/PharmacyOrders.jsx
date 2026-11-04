@@ -5,6 +5,22 @@ import { useUpdateOrderStatus, useUpdateShippingFee } from '../../mutations'
 import { toast } from 'react-toastify'
 import { getImageUrl } from '../../utils/imageUtils'
 
+const DELIVERY_DAY_OPTIONS = [2, 3, 4, 5]
+const deliveryPreview = (value) => {
+  const days = Number(value)
+  if (!DELIVERY_DAY_OPTIONS.includes(days)) return null
+  const today = new Date()
+  return new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + days, 12))
+}
+
+// A shipping quote is usable only when the seller has explicitly committed to
+// both pieces of information for this order.  Checking `finalShipping` alone
+// would mislabel legacy orders that contain a stale fee but no commitment.
+const hasShippingQuote = (order) => order?.finalShipping !== null
+  && order?.finalShipping !== undefined
+  && Boolean(order?.pharmacyAcceptedAt)
+  && DELIVERY_DAY_OPTIONS.includes(Number(order?.promisedDeliveryDays))
+
 const PharmacyOrders = () => {
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState('')
@@ -62,6 +78,7 @@ const PharmacyOrders = () => {
   const updateShippingFeeMutation = useUpdateShippingFee()
   const [showShippingModal, setShowShippingModal] = useState(false)
   const [shippingFee, setShippingFee] = useState('')
+  const [deliveryDays, setDeliveryDays] = useState('')
   const [selectedOrderForShipping, setSelectedOrderForShipping] = useState(null)
 
   const getStatusBadge = (status) => {
@@ -116,7 +133,8 @@ const PharmacyOrders = () => {
 
   const handleOpenShippingModal = (order) => {
     setSelectedOrderForShipping(order)
-    setShippingFee(order.shipping?.toString() || order.initialShipping?.toString() || '0')
+    setShippingFee(String(order.finalShipping ?? order.shipping ?? order.initialShipping ?? 0))
+    setDeliveryDays(order.promisedDeliveryDays ? String(order.promisedDeliveryDays) : '')
     setShowShippingModal(true)
   }
 
@@ -127,12 +145,18 @@ const PharmacyOrders = () => {
       toast.error('Please enter a valid shipping fee (non-negative number)')
       return
     }
+    const days = Number(deliveryDays)
+    if (!DELIVERY_DAY_OPTIONS.includes(days)) {
+      toast.error('Select a delivery commitment of 2, 3, 4, or 5 days')
+      return
+    }
     updateShippingFeeMutation.mutate(
-      { orderId: selectedOrderForShipping._id, shippingFee: fee },
+      { orderId: selectedOrderForShipping._id, shippingFee: fee, deliveryDays: days },
       {
         onSuccess: () => {
           setShowShippingModal(false)
           setShippingFee('')
+          setDeliveryDays('')
           setSelectedOrderForShipping(null)
           refetch()
         }
@@ -323,9 +347,9 @@ const PharmacyOrders = () => {
                           {order.paymentStatus === 'PENDING' && (
                             <div className="alert alert-warning mb-3">
                               <i className="fe fe-info me-2"></i>
-                              {order.finalShipping !== null 
-                                ? 'Shipping fee set. Waiting for patient payment.'
-                                : 'Please set shipping fee for this order.'}
+                              {hasShippingQuote(order)
+                                ? 'Shipping and delivery details are set. Waiting for patient payment.'
+                                : 'Set the shipping fee and delivery commitment for this order.'}
                             </div>
                           )}
 
@@ -346,9 +370,9 @@ const PharmacyOrders = () => {
                                 disabled={updateShippingFeeMutation.isLoading}
                               >
                                 <i className="fe fe-truck me-1"></i>
-                                {order.finalShipping !== null && order.finalShipping !== undefined 
-                                  ? 'Update Shipping' 
-                                  : 'Set Shipping Fee'}
+                                {hasShippingQuote(order)
+                                  ? 'Update Shipping & Delivery'
+                                  : 'Set Shipping & Delivery'}
                               </button>
                             )}
                             {/* Only allow updating status if order is paid */}
@@ -448,7 +472,7 @@ const PharmacyOrders = () => {
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Set Shipping Fee</h5>
+                <h5 className="modal-title">Set shipping & delivery commitment</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -460,7 +484,7 @@ const PharmacyOrders = () => {
                 ></button>
               </div>
               <div className="modal-body">
-                <p>Set the final shipping fee for order #{selectedOrderForShipping.orderNumber}:</p>
+                <p>Set the order-specific shipping fee and delivery commitment for order #{selectedOrderForShipping.orderNumber}.</p>
                 <div className="mb-3">
                   <label className="form-label">Current Shipping Fee</label>
                   <div className="form-control-plaintext">
@@ -488,6 +512,15 @@ const PharmacyOrders = () => {
                     Subtotal: {formatCurrency(selectedOrderForShipping.subtotal)} + Shipping = New Total
                   </small>
                 </div>
+                <div className="mb-3">
+                  <label htmlFor="deliveryDays" className="form-label">Expected delivery time <span className="text-danger">*</span></label>
+                  <select id="deliveryDays" className="form-select" value={deliveryDays} onChange={(e) => setDeliveryDays(e.target.value)} required>
+                    <option value="">Select a delivery commitment</option>
+                    {DELIVERY_DAY_OPTIONS.map((days) => <option key={days} value={days}>{days} days</option>)}
+                  </select>
+                  {deliveryPreview(deliveryDays) && <small className="text-muted d-block mt-2">Expected delivery date: {deliveryPreview(deliveryDays).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</small>}
+                  <small className="text-muted d-block mt-1">Choose the commitment you can keep for this order.</small>
+                </div>
                 {shippingFee && !isNaN(parseFloat(shippingFee)) && (
                   <div className="alert alert-info">
                     <strong>New Total:</strong> {formatCurrency((Number(selectedOrderForShipping.subtotal) || 0) + parseFloat(shippingFee))}
@@ -501,6 +534,7 @@ const PharmacyOrders = () => {
                   onClick={() => {
                     setShowShippingModal(false)
                     setShippingFee('')
+                    setDeliveryDays('')
                     setSelectedOrderForShipping(null)
                   }}
                 >
@@ -510,9 +544,9 @@ const PharmacyOrders = () => {
                   type="button"
                   className="btn btn-primary"
                   onClick={handleUpdateShippingFee}
-                  disabled={updateShippingFeeMutation.isLoading || !shippingFee || isNaN(parseFloat(shippingFee))}
+                  disabled={updateShippingFeeMutation.isLoading || shippingFee === '' || isNaN(parseFloat(shippingFee)) || !DELIVERY_DAY_OPTIONS.includes(Number(deliveryDays))}
                 >
-                  {updateShippingFeeMutation.isLoading ? 'Updating...' : 'Update Shipping Fee'}
+                  {updateShippingFeeMutation.isLoading ? 'Saving...' : 'Send shipping details'}
                 </button>
               </div>
             </div>

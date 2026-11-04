@@ -22,10 +22,8 @@ const Cart = () => {
   }
 
   const subtotal = getCartTotal()
-  const shipping = Array.from(new Map(cartItems.map((item) => [String(item.sellerId || item._id), Number(item.shippingSettings?.fee || 0)])).values())
-    .reduce((sum, fee) => sum + fee, 0)
   const tax = 0
-  const total = subtotal + shipping + tax
+  const total = subtotal + tax
 
   return (
     <>
@@ -156,9 +154,12 @@ const Cart = () => {
                       <li>
                         <span>Shipping</span>
                         <span className="total-cost">
-                          €{shipping.toFixed(2)}
+                           Set by seller after request
                         </span>
                       </li>
+                       <li className="small text-muted">
+                         Your pharmacy or parapharmacy will send the shipping fee and delivery commitment before payment.
+                       </li>
                       {tax > 0 && (
                         <li>
                           <span>Tax</span>

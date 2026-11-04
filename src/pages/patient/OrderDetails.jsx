@@ -4,6 +4,11 @@ import { useOrder } from '../../queries'
 import { usePayForOrder, useCancelOrder } from '../../mutations'
 import BASE_URL from '../../utils/apiConfig'
 
+const hasShippingQuote = (order) => order?.finalShipping !== null
+  && order?.finalShipping !== undefined
+  && Boolean(order?.pharmacyAcceptedAt)
+  && [2, 3, 4, 5].includes(Number(order?.promisedDeliveryDays))
+
 const OrderDetails = () => {
   const { orderId } = useParams()
   const navigate = useNavigate()
@@ -60,8 +65,6 @@ const OrderDetails = () => {
     return `${baseUrl}${imagePath}`
   }
 
-  // Payment is now processed during checkout, so handlePay is not needed
-
   if (isLoading) {
     return (
       <div className="content">
@@ -108,8 +111,10 @@ const OrderDetails = () => {
   const pharmacyName = pharmacy?.name || 'Pharmacy'
   const shippingAddress = order.shippingAddress
   
-  // Show payment button if order is pending and shipping fee is set
-  const showPaymentButton = order.paymentStatus === 'PENDING' && order.finalShipping !== null && order.finalShipping !== undefined
+  // Payment opens only after this seller has quoted both shipping and a
+  // concrete delivery commitment for the specific order.
+  const shippingSet = hasShippingQuote(order)
+  const showPaymentButton = order.paymentStatus === 'PENDING' && shippingSet
 
   const handlePay = () => {
     if (!order) return
@@ -167,13 +172,13 @@ const OrderDetails = () => {
             </div>
 
             {/* Payment Status Alerts */}
-            {order.paymentStatus === 'PENDING' && order.finalShipping === null && (
+            {order.paymentStatus === 'PENDING' && !shippingSet && (
               <div className="alert alert-info mb-4">
                 <i className="fe fe-info me-2"></i>
-                Waiting for pharmacy owner to set shipping fee. You will be able to pay once the shipping fee is set.
+                Waiting for the seller to set this order's shipping fee and delivery commitment. You will be able to pay once both are set.
               </div>
             )}
-            {order.paymentStatus === 'PENDING' && order.finalShipping !== null && (
+            {order.paymentStatus === 'PENDING' && shippingSet && (
               <div className="alert alert-warning mb-4">
                 <i className="fe fe-alert-circle me-2"></i>
                 Shipping fee has been set. Please complete payment to confirm your order.
@@ -258,9 +263,9 @@ const OrderDetails = () => {
                 </div>
                 <div className="d-flex justify-content-between mb-2">
                   <span>Shipping</span>
-                  <span>{formatCurrency(order.shipping)}</span>
+                  <span>{shippingSet ? formatCurrency(order.shipping) : 'To be confirmed'}</span>
                 </div>
-                {order.promisedDeliveryDays && (
+                {shippingSet && order.promisedDeliveryDays && (
                   <div className="d-flex justify-content-between mb-2"><span>Delivery commitment</span><span>{order.promisedDeliveryDays} day{order.promisedDeliveryDays === 1 ? '' : 's'}</span></div>
                 )}
                 {order.expectedDeliveryDate && <div className="small text-muted mb-2">Expected delivery: {formatDate(order.expectedDeliveryDate)}</div>}

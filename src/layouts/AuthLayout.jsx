@@ -26,9 +26,14 @@ const AuthLayout = ({ children }) => {
         <aside className="md-auth-visual" aria-label="My Doctor care team">
           <div className="md-auth-visual-overlay" />
           <div className="md-auth-visual-content">
-            <span className="md-auth-kicker"><i className={`fa-solid ${context.icon}`} /> {context.eyebrow}</span>
-            <h1>{context.title}</h1>
-            <p>{context.description}</p>
+            <Link to="/" className="md-auth-visual-brand" aria-label="My Doctor home">
+              <img src="/assets/img/doctor_final.png" alt="My Doctor" />
+            </Link>
+            <div className="md-auth-hero">
+              <span className="md-auth-kicker"><i className={`fa-solid ${context.icon}`} /> {context.eyebrow}</span>
+              <h1>{context.title}</h1>
+              <p>{context.description}</p>
+            </div>
             <div className="md-auth-trust-row">
               <span><i className="fa-solid fa-shield-heart" /> Secure by design</span>
               <span><i className="fa-solid fa-video" /> Care from anywhere</span>

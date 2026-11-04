@@ -1,27 +1,35 @@
 .md-auth-shell {
-  --md-primary: #0b7a8f;
-  --md-primary-dark: #075568;
+  --md-primary: #087f91;
+  --md-primary-dark: #075a6b;
+  --md-accent: #14a88c;
   --md-ink: #18313d;
   --md-muted: #637580;
-  background: linear-gradient(135deg, #f5fafb, #eef5f8);
+  --md-line: #d9e5e9;
+  background: linear-gradient(145deg, #f4fafb, #eef5f8 52%, #f7fbfc);
   display: grid;
-  grid-template-columns: minmax(390px, 41%) minmax(0, 1fr);
+  grid-template-columns: minmax(360px, 39%) minmax(0, 1fr);
   min-height: 100vh;
+  overflow-x: clip;
 }
+
+.md-auth-shell,
+.md-auth-shell *,
+.md-auth-main,
+.md-auth-content { box-sizing: border-box; }
 
 .md-auth-visual {
   align-self: start;
-  background: url('/assets/img/auth-healthcare-hero.png') center / cover no-repeat;
+  background: #0a5f70 url('/assets/img/auth-healthcare-hero.png') center / cover no-repeat;
   color: #fff;
-  height: 100vh;
+  display: flex;
+  min-height: 100vh;
   overflow: hidden;
-  position: relative;
   position: sticky;
   top: 0;
 }
 
 .md-auth-visual::after {
-  background: radial-gradient(circle at 85% 15%, rgba(61, 202, 190, .5), transparent 32%);
+  background: radial-gradient(circle at 88% 10%, rgba(58, 203, 191, .44), transparent 31%);
   content: '';
   inset: 0;
   pointer-events: none;
@@ -29,162 +37,254 @@
 }
 
 .md-auth-visual-overlay {
-  background: linear-gradient(170deg, rgba(5, 43, 57, .9) 0%, rgba(7, 84, 102, .67) 44%, rgba(5, 41, 53, .28) 100%);
+  background: linear-gradient(165deg, rgba(4, 43, 57, .91) 0%, rgba(7, 91, 108, .69) 50%, rgba(5, 39, 52, .36) 100%);
   inset: 0;
   position: absolute;
 }
 
 .md-auth-visual-content {
-  bottom: clamp(2rem, 7vh, 4.5rem);
-  left: clamp(2rem, 6vw, 5.25rem);
-  max-width: min(31rem, calc(100% - 4rem));
-  position: absolute;
-  right: 2rem;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: clamp(2rem, 5.4vw, 4.6rem);
+  position: relative;
   z-index: 1;
 }
 
+.md-auth-visual-brand { display: inline-flex; align-self: flex-start; }
+.md-auth-visual-brand img { display: block; height: auto; max-height: 42px; max-width: 176px; object-fit: contain; }
+
+.md-auth-hero { margin: auto 0; max-width: 31rem; padding: clamp(2.25rem, 8vh, 4.6rem) 0; }
 .md-auth-kicker {
   align-items: center;
   background: rgba(255, 255, 255, .14);
   border: 1px solid rgba(255, 255, 255, .28);
-  border-radius: 99px;
+  border-radius: 999px;
   display: inline-flex;
-  font-size: .78rem;
-  font-weight: 700;
+  font-size: .76rem;
+  font-weight: 750;
   gap: .5rem;
-  letter-spacing: .08em;
-  padding: .55rem .85rem;
+  letter-spacing: .075em;
+  padding: .56rem .88rem;
   text-transform: uppercase;
 }
 
 .md-auth-visual h1 {
   color: #fff;
   font-size: clamp(2.25rem, 4vw, 4.25rem);
-  font-weight: 750;
-  letter-spacing: -.045em;
+  font-weight: 780;
+  letter-spacing: -.052em;
   line-height: 1.02;
-  margin: 1.15rem 0 .85rem;
+  margin: 1.1rem 0 .9rem;
 }
 
-.md-auth-visual p { color: rgba(255, 255, 255, .86); font-size: 1.06rem; line-height: 1.7; margin: 0; }
-.md-auth-trust-row { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.75rem; }
-.md-auth-trust-row span { background: rgba(5, 29, 38, .28); border-radius: .6rem; font-size: .85rem; padding: .65rem .8rem; }
-.md-auth-trust-row i { color: #7ce9d9; margin-right: .3rem; }
+.md-auth-visual p { color: rgba(255, 255, 255, .9); font-size: 1.06rem; line-height: 1.68; margin: 0; }
+.md-auth-trust-row { display: flex; flex-wrap: wrap; gap: .65rem; }
+.md-auth-trust-row span { background: rgba(3, 31, 41, .31); border: 1px solid rgba(255, 255, 255, .1); border-radius: .65rem; font-size: .84rem; padding: .62rem .78rem; }
+.md-auth-trust-row i { color: #70ead8; margin-right: .3rem; }
 
-.md-auth-main { align-items: center; display: flex; flex-direction: column; justify-content: center; min-width: 0; min-height: 100vh; padding: clamp(5.8rem, 8vh, 7rem) clamp(1.5rem, 5vw, 5.5rem) clamp(2.5rem, 6vh, 4.5rem); position: relative; }
-.md-auth-brand { left: clamp(1.5rem, 4vw, 4rem); position: absolute; top: 2rem; }
-.md-auth-brand img { display: block; height: auto; max-height: 50px; max-width: 195px; object-fit: contain; }
-.md-auth-content { max-width: 780px; width: 100%; }
+.md-auth-main {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  min-height: 100vh;
+  padding: 5.75rem clamp(1.5rem, 3.7vw, 2.65rem) 2.25rem;
+  position: relative;
+}
 
-.md-auth-shell .content { padding: 0; }
-.md-auth-shell .content > .container, .md-auth-shell .content > .container-fluid { max-width: 780px; padding: 0; width: 100%; }
-.md-auth-shell .content .row { justify-content: center; margin: 0; }
-.md-auth-shell .content [class*='offset-'], .md-auth-shell .content [class*='col-'] { max-width: 100%; padding: 0; width: 100%; }
-.md-auth-shell .account-content { margin: 0; width: 100%; }
-.md-auth-shell .account-box, .md-auth-shell .login-right, .md-auth-shell .account-wrapper { width: 100%; }
-.md-auth-shell .login-left { display: none; }
-.md-auth-shell .account-wrapper,
+.md-auth-brand { left: clamp(1.5rem, 3.7vw, 2.65rem); position: absolute; top: 1.65rem; z-index: 1; }
+.md-auth-brand img { display: block; height: auto; max-height: 48px; max-width: 190px; object-fit: contain; }
+.md-auth-content { min-width: 0; width: min(100%, 940px); }
+
+/* Normalize only the outer legacy scaffolding.  Targeting every nested .row/
+   .col was the source of the document-card overlap shown in the reported UI. */
+.md-auth-shell .content { background: transparent; padding: 0; }
+.md-auth-shell .content > .container,
+.md-auth-shell .content > .container-fluid { margin: 0 auto; max-width: none; padding: 0; width: 100%; }
+.md-auth-shell .content > .container > .row,
+.md-auth-shell .content > .container-fluid > .row,
+.md-auth-shell .account-content > .row { justify-content: center; margin-left: 0; margin-right: 0; }
+.md-auth-shell .content > .container > .row > [class*='col-'],
+.md-auth-shell .content > .container-fluid > .row > [class*='col-'],
+.md-auth-shell .account-content > .row > [class*='col-'] { flex: 0 0 100%; margin-left: 0; max-width: 100%; padding-left: 0; padding-right: 0; width: 100%; }
+.md-auth-shell .account-content,
+.md-auth-shell .account-box,
+.md-auth-shell .login-right,
+.md-auth-shell .account-wrapper { margin-left: auto; margin-right: auto; max-width: 100%; min-width: 0; width: 100%; }
+.md-auth-shell .login-left,
+.md-auth-shell .login-shapes { display: none !important; }
+
+.md-auth-shell .account-box,
+.md-auth-shell .account-info,
 .md-auth-shell .login-right,
 .md-auth-shell .inner-right-login,
 .md-auth-shell .login-right-wrap,
 .md-auth-shell .widget-content {
-  border: 1px solid rgba(185, 204, 212, .76);
-  border-radius: 1.5rem;
-  background: rgba(255, 255, 255, .96);
+  background: rgba(255, 255, 255, .97);
+  border: 1px solid rgba(185, 204, 212, .78);
+  border-radius: 1.6rem;
   box-shadow: 0 24px 60px rgba(17, 62, 75, .12);
+  max-width: 100%;
 }
+
 .md-auth-shell .account-wrapper,
-.md-auth-shell .inner-right-login,
+.md-auth-shell .account-info,
 .md-auth-shell .login-right-wrap,
-.md-auth-shell .widget-content { padding: clamp(1.6rem, 3.25vw, 2.75rem); }
-.md-auth-shell .login-right > .login-header:first-child { padding: clamp(1.6rem, 3.25vw, 2.75rem) clamp(1.6rem, 3.25vw, 2.75rem) 0; }
-.md-auth-shell .login-right > form { padding: 0 clamp(1.6rem, 3.25vw, 2.75rem) clamp(1.6rem, 3.25vw, 2.75rem); }
-.md-auth-shell .login-right:has(> .inner-right-login) { border: 0; background: transparent; box-shadow: none; }
-.md-auth-shell .account-info:has(> .widget-content) { border: 0; background: transparent; box-shadow: none; }
-.md-auth-shell .account-wrapper::before, .md-auth-shell .login-right:not(:has(> .inner-right-login))::before {
+.md-auth-shell .inner-right-login,
+.md-auth-shell .widget-content { padding: clamp(1.65rem, 3vw, 2.4rem); }
+.md-auth-shell .login-right > .login-header:first-child { padding: clamp(1.65rem, 3vw, 2.4rem) clamp(1.65rem, 3vw, 2.4rem) 0; }
+.md-auth-shell .login-right > form { padding: 0 clamp(1.65rem, 3vw, 2.4rem) clamp(1.65rem, 3vw, 2.4rem); }
+.md-auth-shell .login-right:has(> .inner-right-login),
+.md-auth-shell .account-info:has(> .widget-content) { background: transparent; border: 0; box-shadow: none; }
+.md-auth-shell .account-info > .widget-content { background: transparent; border: 0; box-shadow: none; padding: 0; }
+
+.md-auth-shell .account-wrapper::before,
+.md-auth-shell .login-right:not(:has(> .inner-right-login))::before {
   background: var(--md-primary);
-  border-radius: 99px;
+  border-radius: 999px;
   content: '';
   display: block;
   height: 4px;
-  margin-bottom: 1.4rem;
-  width: 3.4rem;
+  margin-bottom: 1.35rem;
+  width: 3.45rem;
 }
-.md-auth-shell .account-title, .md-auth-shell .login-header h3 { color: var(--md-ink); font-size: clamp(1.85rem, 4vw, 2.35rem); font-weight: 750; letter-spacing: -.04em; line-height: 1.08; margin: 0 0 .65rem; }
-.md-auth-shell .login-title h3 { color: var(--md-ink); font-size: clamp(1.85rem, 4vw, 2.35rem); font-weight: 750; letter-spacing: -.04em; line-height: 1.08; margin: 0 0 .65rem; }
-.md-auth-shell .account-subtitle, .md-auth-shell .login-header p { color: var(--md-muted); line-height: 1.6; margin-bottom: 1.85rem; }
-.md-auth-shell .login-title p { color: var(--md-muted); line-height: 1.6; margin-bottom: 1.85rem; }
-.md-auth-shell label, .md-auth-shell .form-label { color: #314b57; font-size: .88rem; font-weight: 700; margin-bottom: .5rem; }
-.md-auth-shell .form-group, .md-auth-shell .mb-3 { margin-bottom: 1.1rem !important; }
-.md-auth-shell .form-control, .md-auth-shell .form-select, .md-auth-shell select {
-  background: #fff;
-  border: 1px solid #d7e2e7;
-  border-radius: .75rem;
-  box-shadow: none;
-  color: var(--md-ink);
-  min-height: 3.15rem;
-  padding: .72rem .9rem;
-  transition: border-color .2s ease, box-shadow .2s ease;
-}
-.md-auth-shell .form-control:focus, .md-auth-shell .form-select:focus, .md-auth-shell select:focus { border-color: var(--md-primary); box-shadow: 0 0 0 .22rem rgba(11, 122, 143, .13); }
-.md-auth-shell .account-btn, .md-auth-shell .btn-primary, .md-auth-shell .btn-primary-gradient { background: linear-gradient(135deg, #0b7a8f, #12a78f); border: 0; border-radius: .75rem; box-shadow: 0 10px 22px rgba(11, 122, 143, .2); font-weight: 700; min-height: 3.2rem; padding: .72rem 1rem; }
-.md-auth-shell .btn-primary:hover, .md-auth-shell .btn-primary-gradient:hover { background: linear-gradient(135deg, var(--md-primary-dark), #0b8e7b); box-shadow: 0 13px 26px rgba(11, 122, 143, .27); transform: translateY(-1px); }
-.md-auth-shell .btn-outline-primary { border-color: #b8d7dc; border-radius: .75rem; color: #0b7a8f; font-weight: 700; }
-.md-auth-shell .btn-outline-primary:hover { background: #e9f6f5; border-color: #0b7a8f; color: #075c6b; }
-.md-auth-shell .account-footer, .md-auth-shell .account-signup { color: var(--md-muted); margin-top: 1.55rem; text-align: center; }
-.md-auth-shell .account-footer p, .md-auth-shell .account-signup p { margin: 0; }
-.md-auth-shell .account-footer a, .md-auth-shell .account-signup a, .md-auth-shell .btn-link { color: #08768a; font-weight: 750; }
-.md-auth-shell .login-or { margin: 1.35rem 0; }
+
+.md-auth-main h1,
+.md-auth-shell .account-title,
+.md-auth-shell .login-header h3,
+.md-auth-shell .login-title h3 { color: var(--md-ink); font-size: clamp(1.8rem, 3vw, 2.3rem); font-weight: 780; letter-spacing: -.045em; line-height: 1.1; margin: 0 0 .65rem; }
+.md-auth-shell .account-subtitle,
+.md-auth-shell .login-header p,
+.md-auth-shell .login-title p { color: var(--md-muted); line-height: 1.6; margin: 0 0 1.65rem; }
+.md-auth-shell .form-group,
+.md-auth-shell .mb-3 { margin-bottom: 1rem !important; }
+.md-auth-shell label,
+.md-auth-shell .form-label { color: #314b57; font-size: .88rem; font-weight: 720; margin-bottom: .5rem; }
+.md-auth-shell .form-control,
+.md-auth-shell .form-select,
+.md-auth-shell select { background: #fff; border: 1px solid var(--md-line); border-radius: .75rem; box-shadow: none; color: var(--md-ink); max-width: 100%; min-height: 3.05rem; padding: .7rem .9rem; transition: border-color .18s ease, box-shadow .18s ease; }
+.md-auth-shell .form-control:focus,
+.md-auth-shell .form-select:focus,
+.md-auth-shell select:focus { border-color: var(--md-primary); box-shadow: 0 0 0 .22rem rgba(8, 127, 145, .13); }
+.md-auth-shell .btn-primary,
+.md-auth-shell .btn-primary-gradient,
+.md-auth-shell .account-btn { align-items: center; background: linear-gradient(120deg, #087f91, #14a88c); border: 0; border-radius: .75rem; box-shadow: 0 10px 22px rgba(8, 127, 145, .2); display: inline-flex; font-weight: 750; justify-content: center; min-height: 3.1rem; padding: .7rem 1rem; }
+.md-auth-shell .btn-primary:hover,
+.md-auth-shell .btn-primary-gradient:hover { background: linear-gradient(120deg, var(--md-primary-dark), #0d8d79); box-shadow: 0 13px 26px rgba(8, 127, 145, .27); transform: translateY(-1px); }
+.md-auth-shell .btn-outline-primary { border-color: #aad2d9; border-radius: .7rem; color: var(--md-primary-dark); font-weight: 720; }
+.md-auth-shell .btn-outline-primary:hover { background: #eaf7f7; border-color: var(--md-primary); color: var(--md-primary-dark); }
+.md-auth-shell .account-footer,
+.md-auth-shell .account-signup { color: var(--md-muted); margin-top: 1.4rem; text-align: center; }
+.md-auth-shell .account-footer p,
+.md-auth-shell .account-signup p { margin: 0; }
+.md-auth-shell .account-footer a,
+.md-auth-shell .account-signup a,
+.md-auth-shell .btn-link { color: #08788c; font-weight: 750; }
+.md-auth-shell .login-or { margin: 1.3rem 0; }
 .md-auth-shell .or-line { background: #e1eaee; }
-.md-auth-shell .span-or { background: #f4f8fa; color: #8a9aa3; font-size: .76rem; padding: 0 .8rem; text-transform: uppercase; }
+.md-auth-shell .span-or { background: #f5f9fa; color: #8a9aa3; font-size: .76rem; padding: 0 .8rem; text-transform: uppercase; }
 .md-auth-shell .invalid-feedback { font-size: .78rem; }
+
+/* Multi-step registration and verification. */
 .md-auth-shell .step-number { background: #e5eef0; color: #5f737d; }
 .md-auth-shell .step-indicator.active .step-number { background: var(--md-primary); }
 .md-auth-shell .step-indicator.active .step-label { color: var(--md-primary); }
 .md-auth-shell .step-line.active { background: var(--md-primary); }
-.md-auth-shell .step-list ul, .md-auth-shell #progressbar, .md-auth-shell #progressbar1 { display: flex; align-items: center; justify-content: center; gap: .6rem; margin: 0 0 1.6rem; padding: 0; list-style: none; }
-.md-auth-shell .step-list li a { display: grid; width: 2rem; height: 2rem; place-items: center; border: 1px solid #cfe0e5; border-radius: 50%; background: #fff; color: #6b7d86; font-size: .78rem; font-weight: 800; }
-.md-auth-shell .step-list li a.active, .md-auth-shell .step-list li a.active-done { border-color: var(--md-primary); background: var(--md-primary); color: #fff; }
-.md-auth-shell .widget-setcount .step-box { border: 1px solid #dce8eb; border-radius: .8rem; background: #f8fbfc; }
-.md-auth-shell .auth-pharmacy-flow { width: min(100%, 980px); margin: 0 auto; }
-.md-auth-shell .auth-pharmacy-flow__steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; margin: 0 0 1rem; }
-.md-auth-shell .auth-pharmacy-flow__steps > span { display: flex; min-width: 0; min-height: 3rem; align-items: center; justify-content: center; gap: .45rem; padding: .45rem .6rem; border: 1px solid #dce7eb; border-radius: .8rem; background: rgba(255,255,255,.75); color: #70808a; font-size: .75rem; text-align: center; }
-.md-auth-shell .auth-pharmacy-flow__steps i { display: grid; width: 1.4rem; height: 1.4rem; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #eaf1f3; font-size: .65rem; }
+.md-auth-shell .step-list ul,
+.md-auth-shell #progressbar,
+.md-auth-shell #progressbar1 { align-items: center; display: flex; gap: .6rem; justify-content: center; list-style: none; margin: 0 0 1.45rem; padding: 0; }
+.md-auth-shell .step-list li a { background: #fff; border: 1px solid #cfe0e5; border-radius: 50%; color: #6b7d86; display: grid; font-size: .78rem; font-weight: 800; height: 2rem; place-items: center; width: 2rem; }
+.md-auth-shell .step-list li a.active,
+.md-auth-shell .step-list li a.active-done { background: var(--md-primary); border-color: var(--md-primary); color: #fff; }
+.md-auth-shell .widget-setcount .step-box { background: #f8fbfc; border: 1px solid #dce8eb; border-radius: .8rem; }
+
+.md-auth-shell .auth-pharmacy-flow { margin: 0 auto; max-width: 1040px; width: min(100%, 1040px); }
+.md-auth-shell .auth-pharmacy-flow__steps { display: grid; gap: .65rem; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 0 1.1rem; }
+.md-auth-shell .auth-pharmacy-flow__steps > span { align-items: center; background: rgba(255,255,255,.76); border: 1px solid #dce7eb; border-radius: .85rem; color: #70808a; display: flex; font-size: .76rem; gap: .45rem; justify-content: center; min-height: 3rem; min-width: 0; padding: .45rem .6rem; text-align: center; }
+.md-auth-shell .auth-pharmacy-flow__steps i { align-items: center; background: #eaf1f3; border-radius: 50%; display: inline-flex; flex: 0 0 auto; font-size: .66rem; height: 1.42rem; justify-content: center; width: 1.42rem; }
 .md-auth-shell .auth-pharmacy-flow__steps b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.md-auth-shell .auth-pharmacy-flow__steps .is-complete { border-color: #a8d9d1; background: #f0fbf8; color: #08756f; }
-.md-auth-shell .auth-pharmacy-flow__steps .is-complete i, .md-auth-shell .auth-pharmacy-flow__steps .is-active i { background: var(--md-primary); color: #fff; }
-.md-auth-shell .auth-pharmacy-flow__steps .is-active { border-color: #75b4c0; background: #eaf7f8; color: var(--md-primary-dark); box-shadow: 0 6px 16px rgba(11,122,143,.1); }
-.md-auth-shell .auth-pharmacy-flow__panel { padding: clamp(1.5rem, 3vw, 2.45rem); border: 1px solid rgba(185,204,212,.76); border-radius: 1.5rem; background: rgba(255,255,255,.97); box-shadow: 0 24px 60px rgba(17,62,75,.12); }
-.md-auth-shell .auth-pharmacy-flow__header { display: flex; align-items: flex-start; gap: 1rem; padding-bottom: 1.2rem; border-bottom: 1px solid #e5eef1; }
-.md-auth-shell .auth-pharmacy-flow__header .logo-icon { display: grid; width: 3.25rem; height: 3.25rem; flex: 0 0 auto; place-items: center; border-radius: 1rem; background: #e7f5f6; color: var(--md-primary); font-size: 1.3rem; }
-.md-auth-shell .auth-pharmacy-flow__header h3 { margin: 0 0 .3rem; color: var(--md-ink); font-size: clamp(1.55rem, 3vw, 2.05rem); font-weight: 750; letter-spacing: -.035em; }
-.md-auth-shell .auth-pharmacy-flow__header p { margin: 0; color: var(--md-muted); line-height: 1.55; }
-.md-auth-shell .auth-document-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; }
-.md-auth-shell .auth-document-card { display: flex; min-width: 0; align-items: center; gap: .75rem; padding: .85rem; border: 1px solid #dce8eb; border-radius: 1rem; background: #fbfdfd; }
-.md-auth-shell .auth-document-card.is-selected { border-color: #77c8bd; background: #effbf7; }
-.md-auth-shell .auth-document-card__icon { display: grid; width: 2.35rem; height: 2.35rem; flex: 0 0 auto; place-items: center; border-radius: .7rem; background: #e2f3f2; color: var(--md-primary); }
-.md-auth-shell .auth-document-card__title { display: block; margin: 0; cursor: pointer; font-weight: 750; }
-.md-auth-shell .auth-document-card__help { overflow: hidden; color: var(--md-muted); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
-.md-auth-shell .auth-document-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-top: 1rem; border-top: 1px solid #e5eef1; }
+.md-auth-shell .auth-pharmacy-flow__steps .is-complete { background: #f0fbf8; border-color: #a8d9d1; color: #08756f; }
+.md-auth-shell .auth-pharmacy-flow__steps .is-complete i,
+.md-auth-shell .auth-pharmacy-flow__steps .is-active i { background: var(--md-primary); color: #fff; }
+.md-auth-shell .auth-pharmacy-flow__steps .is-active { background: #eaf7f8; border-color: #75b4c0; box-shadow: 0 6px 16px rgba(8,127,145,.1); color: var(--md-primary-dark); }
+.md-auth-shell .auth-pharmacy-flow__panel { background: rgba(255,255,255,.98); border: 1px solid rgba(185,204,212,.78); border-radius: 1.6rem; box-shadow: 0 24px 60px rgba(17,62,75,.12); min-width: 0; padding: clamp(1.5rem, 3vw, 2.4rem); }
+.md-auth-shell .auth-pharmacy-flow__header { align-items: flex-start; border-bottom: 1px solid #e5eef1; display: flex; gap: 1rem; min-width: 0; padding-bottom: 1.2rem; }
+.md-auth-shell .auth-pharmacy-flow__header .logo-icon { align-items: center; background: #e7f5f6; border-radius: 1rem; color: var(--md-primary); display: flex; flex: 0 0 auto; font-size: 1.3rem; height: 3.25rem; justify-content: center; margin: 0; width: 3.25rem; }
+.md-auth-shell .auth-pharmacy-flow__header h3 { color: var(--md-ink); font-size: clamp(1.52rem, 3vw, 2.05rem); font-weight: 780; letter-spacing: -.04em; margin: 0 0 .3rem; }
+.md-auth-shell .auth-pharmacy-flow__header p { color: var(--md-muted); line-height: 1.55; margin: 0; max-width: 700px; }
+.md-auth-shell .auth-document-grid { display: grid; gap: .85rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.md-auth-shell .auth-document-card { align-items: center; background: #fbfdfd; border: 1px solid #dce8eb; border-radius: 1rem; display: flex; gap: .75rem; min-width: 0; padding: .85rem; transition: border-color .16s ease, background .16s ease; }
+.md-auth-shell .auth-document-card:hover { background: #f5fcfb; border-color: #8bc7bb; }
+.md-auth-shell .auth-document-card.is-selected { background: #effbf7; border-color: #77c8bd; }
+.md-auth-shell .auth-document-card__icon { align-items: center; background: #e2f3f2; border-radius: .7rem; color: var(--md-primary); display: flex; flex: 0 0 auto; height: 2.35rem; justify-content: center; width: 2.35rem; }
+.md-auth-shell .auth-document-card.is-selected .auth-document-card__icon { background: var(--md-primary); color: #fff; }
+.md-auth-shell .auth-document-card__title { color: #314b57; cursor: pointer; display: block; font-weight: 750; margin: 0; overflow-wrap: anywhere; }
+.md-auth-shell .auth-document-card__help { color: var(--md-muted); font-size: .76rem; margin-top: .15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-auth-shell .auth-document-card > .btn { flex: 0 0 auto; margin-bottom: 0; min-width: 4.25rem; white-space: nowrap; }
+.md-auth-shell .auth-document-footer { align-items: center; border-top: 1px solid #e5eef1; display: flex; gap: 1rem; justify-content: space-between; padding-top: 1rem; }
+.md-auth-shell .auth-document-footer .btn { flex: 0 0 auto; }
+.md-auth-shell .min-width-0 { min-width: 0 !important; }
+
+@media (min-width: 992px) and (max-height: 900px) {
+  .md-auth-main { padding-bottom: 1.3rem; padding-top: 5rem; }
+  .md-auth-shell .account-wrapper,
+  .md-auth-shell .account-info,
+  .md-auth-shell .login-right-wrap,
+  .md-auth-shell .inner-right-login,
+  .md-auth-shell .widget-content { padding: 1.4rem 1.75rem; }
+  .md-auth-shell .login-right > .login-header:first-child { padding: 1.4rem 1.75rem 0; }
+  .md-auth-shell .login-right > form { padding: 0 1.75rem 1.4rem; }
+  .md-auth-shell .form-group,
+  .md-auth-shell .mb-3 { margin-bottom: .7rem !important; }
+  .md-auth-shell .form-control,
+  .md-auth-shell .form-select { min-height: 2.8rem; }
+  .md-auth-shell .btn-primary,
+  .md-auth-shell .btn-primary-gradient,
+  .md-auth-shell .account-btn { min-height: 2.9rem; }
+}
 
 @media (max-width: 991px) {
   .md-auth-shell { display: block; }
-  .md-auth-visual { position: relative; height: 230px; min-height: 230px; }
-  .md-auth-visual-content { bottom: 2rem; left: 2rem; max-width: 38rem; }
-  .md-auth-visual h1 { font-size: 2.15rem; margin: .75rem 0 .45rem; }
-  .md-auth-visual p, .md-auth-trust-row { display: none; }
-  .md-auth-main { align-items: stretch; min-height: calc(100vh - 230px); padding-top: 5.5rem; }
-  .md-auth-brand { left: 1.5rem; top: 1.2rem; }
+  .md-auth-visual { min-height: 225px; position: relative; }
+  .md-auth-visual-content { min-height: 225px; padding: 1.5rem 2rem; }
+  .md-auth-visual-brand { display: none; }
+  .md-auth-hero { margin: auto 0 0; max-width: 40rem; padding: 0; }
+  .md-auth-visual h1 { font-size: 2.1rem; margin: .7rem 0 .4rem; }
+  .md-auth-visual p,
+  .md-auth-trust-row { display: none; }
+  .md-auth-main { align-items: stretch; min-height: calc(100vh - 225px); padding: 5.2rem 1.25rem 1.8rem; }
+  .md-auth-brand { left: 1.25rem; top: 1.2rem; }
+  .md-auth-content { margin: 0 auto; max-width: 720px; }
+}
+
+@media (max-width: 767px) {
+  .md-auth-shell .auth-pharmacy-flow__steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .md-auth-shell .auth-document-grid { grid-template-columns: 1fr; }
+  .md-auth-shell .auth-document-footer { align-items: stretch; flex-direction: column; }
 }
 
 @media (max-width: 575px) {
-  .md-auth-visual { height: 180px; min-height: 180px; }
-  .md-auth-visual-content { bottom: 1.25rem; left: 1.5rem; max-width: calc(100% - 3rem); }
-  .md-auth-kicker { font-size: .68rem; padding: .45rem .65rem; }
-  .md-auth-visual h1 { font-size: 1.8rem; }
-  .md-auth-main { padding: 5rem .25rem 1.25rem; }
-  .md-auth-shell .account-wrapper, .md-auth-shell .login-right { padding: 1.5rem 1.1rem; }
-  .md-auth-shell .auth-pharmacy-flow__steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .md-auth-shell .auth-document-grid { grid-template-columns: 1fr; }
-  .md-auth-shell .auth-document-footer { flex-direction: column; align-items: stretch; }
+  .md-auth-visual { min-height: 178px; }
+  .md-auth-visual-content { min-height: 178px; padding: 1.2rem 1.35rem; }
+  .md-auth-kicker { font-size: .66rem; padding: .42rem .6rem; }
+  .md-auth-visual h1 { font-size: 1.75rem; }
+  .md-auth-main { padding: 4.8rem .8rem 1.25rem; }
+  .md-auth-brand { left: 1.15rem; }
+  .md-auth-shell .account-wrapper,
+  .md-auth-shell .account-info,
+  .md-auth-shell .login-right-wrap,
+  .md-auth-shell .inner-right-login,
+  .md-auth-shell .widget-content { border-radius: 1.2rem; padding: 1.45rem 1.1rem; }
+  .md-auth-shell .login-right > .login-header:first-child { padding: 1.45rem 1.1rem 0; }
+  .md-auth-shell .login-right > form { padding: 0 1.1rem 1.45rem; }
+  .md-auth-shell .auth-pharmacy-flow__steps { gap: .5rem; }
+  .md-auth-shell .auth-pharmacy-flow__steps > span { font-size: .7rem; justify-content: flex-start; min-height: 2.75rem; }
+  .md-auth-shell .auth-pharmacy-flow__panel { border-radius: 1.2rem; padding: 1.25rem 1rem; }
+  .md-auth-shell .auth-pharmacy-flow__header { gap: .7rem; }
+  .md-auth-shell .auth-pharmacy-flow__header .logo-icon { border-radius: .8rem; height: 2.65rem; width: 2.65rem; }
+  .md-auth-shell .auth-pharmacy-flow__header h3 { font-size: 1.45rem; }
+  .md-auth-shell .auth-document-card { padding: .75rem; }
+  .md-auth-shell .auth-document-footer .btn { width: 100%; }
 }

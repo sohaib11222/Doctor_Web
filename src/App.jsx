@@ -10,6 +10,7 @@ import AuthLayout from './layouts/AuthLayout'
 import DashboardLayout from './layouts/DashboardLayout'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import GoogleTranslate from './components/common/GoogleTranslate'
+import PrescriptionApprovalNotifier from './components/pharmacy/PrescriptionApprovalNotifier'
 
 // Public Pages - Home
 import Index from './pages/Index'
@@ -752,6 +753,7 @@ function App() {
             <Route path="/error-500" element={<Error500 />} />
             <Route path="*" element={<Error404 />} />
           </Routes>
+          <PrescriptionApprovalNotifier />
           <GoogleTranslate />
           <ToastContainer position="top-right" autoClose={3000} />
         </BrowserRouter>

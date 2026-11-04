@@ -7,12 +7,13 @@ import { useQuery } from '@tanstack/react-query'
 import * as notificationApi from '../api/notification'
 
 // Get notifications for current user (from token)
-export const useNotifications = (params = {}) => {
+export const useNotifications = (params = {}, options = {}) => {
   return useQuery({
+    ...options,
     queryKey: ['notifications', params],
     queryFn: () => notificationApi.getNotifications(params),
-    refetchInterval: 10000,
-    refetchOnWindowFocus: true,
+    refetchInterval: options.refetchInterval ?? 10000,
+    refetchOnWindowFocus: options.refetchOnWindowFocus ?? true,
   })
 }
 

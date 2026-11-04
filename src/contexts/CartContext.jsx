@@ -64,7 +64,6 @@ export const CartProvider = ({ children }) => {
             unitLabel: selectedVariant.unitLabel ?? null,
           } : null,
           sellerId: product.sellerId?._id || product.sellerId || null,
-          shippingSettings: product.shippingSettings || null,
           price: selectedVariant?.discountPrice ?? selectedVariant?.price ?? product.discountPrice ?? product.price,
           originalPrice: selectedVariant?.price ?? product.price,
         }]

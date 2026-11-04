@@ -26,7 +26,6 @@ const ProductDescription = () => {
   const [quantity, setQuantity] = useState(1)
   const [selectedVariantId, setSelectedVariantId] = useState(requestedVariantId || '')
   const [uploading, setUploading] = useState(false)
-  const [showApproved, setShowApproved] = useState(false)
 
   const productQuery = useQuery({ queryKey: ['product', productId], queryFn: () => productApi.getProductById(productId), enabled: Boolean(productId) })
   const product = unwrap(productQuery.data)
@@ -41,7 +40,6 @@ const ProductDescription = () => {
     refetchInterval: product?.requiresPrescription && patient ? 10000 : false,
   })
   const eligibility = unwrap(eligibilityQuery.data) || { requiresPrescription: Boolean(product?.requiresPrescription), canPurchase: !product?.requiresPrescription, status: product?.requiresPrescription ? 'NOT_SUBMITTED' : 'NOT_REQUIRED' }
-  useEffect(() => { if (eligibility.status === 'APPROVED') setShowApproved(true) }, [eligibility.status])
   const purchasePrice = selectedVariant?.discountPrice ?? selectedVariant?.price ?? product?.discountPrice ?? product?.price ?? 0
   const originalPrice = selectedVariant?.discountPrice ? selectedVariant.price : product?.discountPrice ? product.price : null
   const stock = selectedVariant?.stock ?? product?.stock ?? 0
@@ -55,9 +53,14 @@ const ProductDescription = () => {
   })
   const uploadPrescription = async (event) => {
     const file = event.target.files?.[0]; if (!file) return
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
+    const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'webp']
+    const extension = String(file.name || '').split('.').pop()?.toLowerCase()
+    if (file.size > 15 * 1024 * 1024) { toast.error('Prescription files must be 15 MB or smaller.'); event.target.value = ''; return }
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(extension)) { toast.error('Upload a PDF, JPG, PNG, or WebP prescription file.'); event.target.value = ''; return }
     try {
       setUploading(true)
-      const data = new FormData(); data.append('file', file)
+      const data = new FormData(); data.append('file', file, file.name)
       const response = await api.post('/upload/prescription', data, { headers: { 'Content-Type': 'multipart/form-data' } })
       const upload = unwrap(response)
       await submitPrescription.mutateAsync({ productId, variantId: selectedVariant?._id || null, prescriptionUrl: upload?.url, originalName: file.name, mimeType: file.type })
@@ -84,11 +87,10 @@ const ProductDescription = () => {
       <div className="card"><div className="card-body"><h4>Product information</h4><div className="row mt-3">{detail('Category', [product.category, product.subCategory].filter(Boolean).join(' · '))}{detail('Active ingredients', generalDetails?.activeIngredients || generalDetails?.ingredients)}{detail('How to use', generalDetails?.dosageInstructions || generalDetails?.usageInstructions)}{detail('Warnings', generalDetails?.warnings)}{detail('Storage', generalDetails?.storageInstructions)}{detail('Allergens', generalDetails?.allergens)}{detail('Authorization holder', generalDetails?.authorizationHolder)}{detail('Registration number', generalDetails?.registrationNumber)}</div>{generalDetails?.indications && <div className="mt-2"><div className="small text-muted">Indications</div><p style={{ whiteSpace: 'pre-line' }}>{generalDetails.indications}</p></div>}{generalDetails?.leafletUrl && <a className="btn btn-sm btn-outline-primary" target="_blank" rel="noreferrer" href={generalDetails.leafletUrl}>View product leaflet</a>}</div></div>
       </div>
       <div className="col-lg-4"><div className="card search-filter"><div className="card-body"><div className="d-flex align-items-end gap-2"><h2 className="mb-0">€{Number(purchasePrice).toFixed(2)}</h2>{originalPrice && <del className="text-muted">€{Number(originalPrice).toFixed(2)}</del>}</div>{variants.length > 1 && <div className="mt-3"><label className="form-label fw-semibold">Choose an option</label><select className="form-select" value={selectedVariant?._id || ''} onChange={(event) => setSelectedVariantId(event.target.value)}>{variants.map((variant) => <option key={variant._id} value={variant._id}>{variantLabel(variant)} — €{Number(variant.discountPrice ?? variant.price).toFixed(2)}</option>)}</select></div>}<div className="mt-3 d-flex justify-content-between"><span className={`badge ${stock ? 'bg-success' : 'bg-danger'}`}>{stock ? `${stock} in stock` : 'Out of stock'}</span>{selectedVariant?.packageDescription && <small className="text-muted text-end">{selectedVariant.packageDescription}</small>}</div>
-        {product.shippingSettings && <div className="alert alert-light border mt-3 mb-0"><div><i className="fa-solid fa-truck me-2 text-primary" />Delivery: <strong>€{Number(product.shippingSettings.fee || 0).toFixed(2)}</strong></div>{product.shippingSettings.deliveryDays && <small className="text-muted">Estimated delivery in {product.shippingSettings.deliveryDays} day{product.shippingSettings.deliveryDays === 1 ? '' : 's'}.</small>}</div>}
+        <div className="alert alert-light border mt-3 mb-0"><div><i className="fa-solid fa-truck me-2 text-primary" />Order-specific shipping</div><small className="text-muted">The seller confirms the shipping fee and delivery commitment after receiving your order request, before payment.</small></div>
         {product.requiresPrescription && <div className={`alert mt-3 mb-0 ${eligibility.status === 'APPROVED' ? 'alert-success' : eligibility.status === 'REJECTED' ? 'alert-danger' : 'alert-warning'}`}><strong><i className="fa-solid fa-file-prescription me-2" />Prescription required</strong><div className="small mt-1">{patient ? statusMessage : 'Sign in with a patient account to submit a prescription.'}</div>{patient && eligibility.status !== 'APPROVED' && <><input ref={fileRef} className="d-none" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" onChange={uploadPrescription} /><button type="button" className="btn btn-sm btn-primary mt-2" disabled={uploading || submitPrescription.isPending || eligibility.status === 'PENDING'} onClick={() => fileRef.current?.click()}>{uploading ? 'Uploading…' : eligibility.status === 'PENDING' ? 'Awaiting review' : eligibility.status === 'REJECTED' ? 'Upload a new prescription' : 'Upload prescription'}</button></>}</div>}
         <div className="input-group mt-4" style={{ maxWidth: 170 }}><button className="btn btn-outline-secondary" type="button" disabled={quantity <= 1} onClick={() => setQuantity((value) => value - 1)}>−</button><input className="form-control text-center" value={quantity} readOnly /><button className="btn btn-outline-secondary" type="button" disabled={quantity >= stock} onClick={() => setQuantity((value) => value + 1)}>+</button></div><div className="d-grid gap-2 mt-3"><button className="btn btn-outline-primary" disabled={!stock || !canPurchase} onClick={() => add(false)}><i className="fa-solid fa-cart-plus me-2" />Add to cart</button><button className="btn btn-primary" disabled={!stock || !canPurchase} onClick={() => add(true)}><i className="fa-solid fa-bag-shopping me-2" />Buy now</button></div><ul className="list-group list-group-flush mt-3"><li className="list-group-item px-0">SKU <span className="float-end">{selectedVariant?.sku || product.sku || '—'}</span></li>{selectedVariant?.packageType && <li className="list-group-item px-0">Package <span className="float-end">{selectedVariant.packageType}</span></li>}</ul></div></div></div>
     </div></div></div>
-    {showApproved && <><div className="modal-backdrop fade show" /><div className="modal fade show d-block" role="dialog"><div className="modal-dialog modal-dialog-centered"><div className="modal-content"><div className="modal-body text-center p-4"><i className="fa-solid fa-circle-check text-success" style={{ fontSize: 48 }} /><h4 className="mt-3">Prescription approved</h4><p className="text-muted mb-0">You can now purchase {product.name}. Your approval is securely linked to this product option.</p></div><div className="modal-footer justify-content-center"><button className="btn btn-primary" onClick={() => setShowApproved(false)}>Continue shopping</button></div></div></div></div></>}
   </>
 }
 

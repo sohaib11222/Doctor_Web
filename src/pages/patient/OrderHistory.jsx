@@ -1,9 +1,13 @@
 import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { usePatientOrders } from '../../queries'
-// Orders are paid immediately, so cancellation is not available
 import { toast } from 'react-toastify'
 import { getImageUrl } from '../../utils/imageUtils'
+
+const hasShippingQuote = (order) => order?.finalShipping !== null
+  && order?.finalShipping !== undefined
+  && Boolean(order?.pharmacyAcceptedAt)
+  && [2, 3, 4, 5].includes(Number(order?.promisedDeliveryDays))
 
 const OrderHistory = () => {
   const navigate = useNavigate()
@@ -54,8 +58,6 @@ const OrderHistory = () => {
     return counts
   }, [allOrdersResponse])
 
-  // Orders are paid immediately, so cancellation is not available
-
   const getStatusBadge = (status) => {
     const badges = {
       'DELIVERED': 'badge-success',
@@ -86,8 +88,6 @@ const OrderHistory = () => {
       currency: 'EUR',
     }).format(amount)
   }
-
-  // Orders are paid immediately, so cancellation is not available
 
   if (isLoading && page === 1) {
     return (
@@ -268,9 +268,9 @@ const OrderHistory = () => {
                           {order.paymentStatus === 'PENDING' && (
                             <div className="alert alert-warning mb-3">
                               <i className="fe fe-info me-2"></i>
-                              {order.finalShipping !== null 
-                                ? 'Shipping fee set. Please complete payment.'
-                                : 'Waiting for shipping fee to be set.'}
+                              {hasShippingQuote(order)
+                                ? 'Shipping fee and delivery commitment are set. Please complete payment.'
+                                : 'Waiting for the seller to set shipping and delivery details.'}
                             </div>
                           )}
 
@@ -291,7 +291,7 @@ const OrderHistory = () => {
                               >
                                 <i className="fe fe-eye me-1"></i>
                                 View Details
-                                {order.paymentStatus === 'PENDING' && order.finalShipping !== null && (
+                                {order.paymentStatus === 'PENDING' && hasShippingQuote(order) && (
                                   <span className="badge bg-danger ms-2">Pay Now</span>
                                 )}
                               </Link>

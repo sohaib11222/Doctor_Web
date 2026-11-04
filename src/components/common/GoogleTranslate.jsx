@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 
 // Global flag to ensure script is only loaded once
 let scriptLoaded = false
@@ -7,8 +8,10 @@ let translateInitialized = false
 const DEFAULT_LANGUAGE = 'it'
 
 const GoogleTranslate = () => {
+  const { pathname } = useLocation()
   const translateElementRef = useRef(null)
   const [isLoading, setIsLoading] = useState(true)
+  const isAuthPage = /\/(?:login|register|forgot-password|doctor-|pharmacy-|parapharmacy-|pending-approval)/i.test(pathname)
 
   useEffect(() => {
     let checkInterval = null
@@ -307,6 +310,10 @@ const GoogleTranslate = () => {
           transform: scale(0.85) !important;
           transform-origin: top right !important;
         }
+         #google_translate_element.google-translate--auth {
+           top: 24px !important;
+           right: 32px !important;
+         }
         #google_translate_element .goog-te-gadget {
           font-family: 'Poppins', sans-serif !important;
           font-size: 11px !important;
@@ -359,6 +366,10 @@ const GoogleTranslate = () => {
             padding: 3px 5px !important;
             transform: scale(0.8) !important;
           }
+           #google_translate_element.google-translate--auth {
+             top: 14px !important;
+             right: 12px !important;
+           }
           #google_translate_element .goog-te-gadget {
             font-size: 10px !important;
           }
@@ -386,6 +397,7 @@ const GoogleTranslate = () => {
       `}</style>
       <div 
         id="google_translate_element"
+        className={isAuthPage ? 'google-translate--auth' : undefined}
         ref={translateElementRef}
         style={{
           display: 'inline-block',
