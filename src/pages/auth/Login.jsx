@@ -108,6 +108,11 @@ const Login = () => {
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Login failed'
+      if (error.response?.status === 403 && /verify your email/i.test(errorMessage)) {
+        toast.info('Verifica prima il tuo indirizzo email. Puoi richiedere un nuovo codice nella schermata successiva.')
+        navigate('/verify-email', { state: { email: data.email } })
+        return
+      }
       toast.error(tr(errorMessage))
     } finally {
       setLoading(false)

@@ -1,6 +1,21 @@
+import { useEffect, useRef } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLanguage } from '../../contexts/LanguageContext'
 import { toast } from 'react-toastify'
+
+const RedirectWithNotice = ({ to, type = 'error', message }) => {
+  const { translateText: tr } = useLanguage()
+  const displayedMessage = useRef(null)
+
+  useEffect(() => {
+    if (!message || displayedMessage.current === message) return
+    displayedMessage.current = message
+    toast[type](tr(message))
+  }, [message, tr, type])
+
+  return <Navigate to={to} replace />
+}
 
 /**
  * ProtectedRoute Component
@@ -40,8 +55,7 @@ const ProtectedRoute = ({
 
   // Check authentication
   if (requireAuth && !user) {
-    toast.error('Please login to access this page')
-    return <Navigate to="/login" replace />
+    return <RedirectWithNotice to="/login" message="Please login to access this page" />
   }
 
   // If no role required, just check authentication
@@ -56,8 +70,7 @@ const ProtectedRoute = ({
     : [role.toUpperCase()]
 
   if (!allowedRoles.includes(userRole)) {
-    toast.error('You do not have permission to access this page')
-    return <Navigate to="/" replace />
+    return <RedirectWithNotice to="/" message="You do not have permission to access this page" />
   }
 
   // For doctors, check status
@@ -67,14 +80,11 @@ const ProtectedRoute = ({
     // If requireApproved is true, doctor must be APPROVED
     if (requireApproved && userStatus !== 'APPROVED') {
       if (userStatus === 'PENDING' && !allowPending) {
-        toast.info('Your account is pending approval. Please wait for admin approval.')
-        return <Navigate to="/pending-approval" replace />
+        return <RedirectWithNotice to="/pending-approval" type="info" message="Your account is pending approval. Please wait for admin approval." />
       } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
-        toast.error('Your account has been rejected or blocked. Please contact support.')
-        return <Navigate to="/login" replace />
+        return <RedirectWithNotice to="/login" message="Your account has been rejected or blocked. Please contact support." />
       } else {
-        toast.info('Your account needs to be approved to access this page.')
-        return <Navigate to="/pending-approval" replace />
+        return <RedirectWithNotice to="/pending-approval" type="info" message="Your account needs to be approved to access this page." />
       }
     }
 
@@ -112,14 +122,11 @@ const ProtectedRoute = ({
         if (!documentsSubmitted) {
           return <Navigate to="/pharmacy-verification-upload" replace />
         }
-        toast.info('Your account is pending approval. Please wait for admin approval.')
-        return <Navigate to="/pending-approval" replace />
+        return <RedirectWithNotice to="/pending-approval" type="info" message="Your account is pending approval. Please wait for admin approval." />
       } else if (userStatus === 'REJECTED' || userStatus === 'BLOCKED') {
-        toast.error('Your account has been rejected or blocked. Please contact support.')
-        return <Navigate to="/login" replace />
+        return <RedirectWithNotice to="/login" message="Your account has been rejected or blocked. Please contact support." />
       } else {
-        toast.info('Your account needs to be approved to access this page.')
-        return <Navigate to="/pending-approval" replace />
+        return <RedirectWithNotice to="/pending-approval" type="info" message="Your account needs to be approved to access this page." />
       }
     }
 

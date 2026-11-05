@@ -33,6 +33,7 @@ import BlogDetails from './pages/BlogDetails'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ForgotPassword from './pages/auth/ForgotPassword'
+import VerifyEmail from './pages/auth/VerifyEmail'
 import DoctorSignup from './pages/auth/DoctorSignup'
 import DoctorRegister from './pages/auth/DoctorRegister'
 import DoctorRegisterStep1 from './pages/auth/DoctorRegisterStep1'
@@ -46,6 +47,7 @@ import PharmacyPhoneVerification from './pages/auth/PharmacyPhoneVerification'
 import PharmacyRegisterStep1 from './pages/auth/PharmacyRegisterStep1'
 import PharmacyRegisterStep2 from './pages/auth/PharmacyRegisterStep2'
 import PharmacyRegisterStep3 from './pages/auth/PharmacyRegisterStep3'
+import EmailVerifiedPasswordChangeForm from './components/auth/EmailVerifiedPasswordChangeForm'
 
 // Doctor Pages
 import DoctorDashboard from './pages/doctor/DoctorDashboard'
@@ -240,6 +242,7 @@ function App() {
                 <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
                 <Route path="/register" element={<AuthLayout><Register /></AuthLayout>} />
                 <Route path="/forgot-password" element={<AuthLayout><ForgotPassword /></AuthLayout>} />
+                <Route path="/verify-email" element={<AuthLayout><VerifyEmail /></AuthLayout>} />
                 <Route path="/doctor-signup" element={<AuthLayout><DoctorSignup /></AuthLayout>} />
                 <Route path="/doctor-register" element={<AuthLayout><DoctorRegister /></AuthLayout>} />
                 <Route path="/doctor-register-step1" element={<AuthLayout><DoctorRegisterStep1 /></AuthLayout>} />
@@ -465,6 +468,11 @@ function App() {
             <Route path="/pharmacy/payment" element={
               <ProtectedRoute role={["PHARMACY", "PARAPHARMACY"]} requireApproved={true}>
                 <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Payouts", li2: "Payouts" }}><PharmacyPayment /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/pharmacy/change-password" element={
+              <ProtectedRoute role={["PHARMACY", "PARAPHARMACY"]} allowPending={true}>
+                <DashboardLayout breadcrumb={{ title: "Pharmacy", li1: "Settings", li2: "Change Password" }}><EmailVerifiedPasswordChangeForm /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/pharmacy/subscription-plans" element={

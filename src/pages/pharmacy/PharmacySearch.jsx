@@ -4,8 +4,10 @@ import { useQuery } from '@tanstack/react-query'
 import Breadcrumb from '../../components/common/Breadcrumb'
 import * as pharmacyApi from '../../api/pharmacy'
 import { getImageUrl } from '../../utils/imageUtils'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PharmacySearch = () => {
+  const { translateText: tr } = useLanguage()
   const [searchParams, setSearchParams] = useSearchParams()
   
   // Get filters from URL params
@@ -84,7 +86,7 @@ const PharmacySearch = () => {
   }
 
   const formatAddress = (address) => {
-    if (!address) return 'Address not available'
+    if (!address) return tr('Address not available')
     const parts = [
       address.line1,
       address.line2,
@@ -93,11 +95,11 @@ const PharmacySearch = () => {
       address.country,
       address.zip
     ].filter(Boolean)
-    return parts.join(', ') || 'Address not available'
+    return parts.join(', ') || tr('Address not available')
   }
 
   const formatPhone = (phone) => {
-    return phone || 'Phone not available'
+    return phone || tr('Phone not available')
   }
 
   return (
@@ -109,33 +111,33 @@ const PharmacySearch = () => {
             <div className="col-md-12 col-lg-4 col-xl-3 theiaStickySidebar">
               <div className="card search-filter">
                 <div className="card-header">
-                  <h4 className="card-title mb-0">Search Filter</h4>
+                  <h4 className="card-title mb-0">{tr('Search Filter')}</h4>
                 </div>
                 <div className="card-body">
                   <form onSubmit={handleSearch}>
                     <div className="filter-widget mb-3">
-                      <label className="mb-2">Search</label>
+                      <label className="mb-2">{tr('Search')}</label>
                       <input
                         type="text"
                         className="form-control"
-                        placeholder={selectedKind === 'PARAPHARMACY' ? 'Search parapharmacies...' : 'Search pharmacies...'}
+                        placeholder={tr(selectedKind === 'PARAPHARMACY' ? 'Search parapharmacies...' : 'Search pharmacies...')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
                     </div>
                     <div className="filter-widget mb-3">
-                      <label className="mb-2">Location / City</label>
+                      <label className="mb-2">{tr('Location / City')}</label>
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="Enter city..."
+                        placeholder={tr('Enter city...')}
                         value={cityFilter}
                         onChange={(e) => setCityFilter(e.target.value)}
                       />
                     </div>
                     {cities.length > 0 && (
                       <div className="filter-widget mb-3">
-                        <h4>Popular Cities</h4>
+                        <h4>{tr('Popular Cities')}</h4>
                         {cities.slice(0, 5).map((cityName, idx) => (
                           <div key={idx}>
                             <label className="custom_check">
@@ -151,7 +153,7 @@ const PharmacySearch = () => {
                       </div>
                     )}
                     <div className="btn-search">
-                      <button type="submit" className="btn w-100">Search</button>
+                      <button type="submit" className="btn w-100">{tr('Search')}</button>
                     </div>
                     <div className="btn-search mt-2">
                       <button
@@ -164,7 +166,7 @@ const PharmacySearch = () => {
                           setSearchParams({ kind: 'PHARMACY' })
                         }}
                       >
-                        Clear Filters
+                        {tr('Clear Filters')}
                       </button>
                     </div>
                   </form>
@@ -180,32 +182,32 @@ const PharmacySearch = () => {
                     className={`btn ${selectedKind === 'PHARMACY' ? 'btn-primary' : 'btn-outline-primary'}`}
                     onClick={() => handleKindChange('PHARMACY')}
                   >
-                    Pharmacies
+                    {tr('Pharmacies')}
                   </button>
                   <button
                     type="button"
                     className={`btn ${selectedKind === 'PARAPHARMACY' ? 'btn-primary' : 'btn-outline-primary'}`}
                     onClick={() => handleKindChange('PARAPHARMACY')}
                   >
-                    Parapharmacies
+                    {tr('Parapharmacies')}
                   </button>
                 </div>
               </div>
               {pharmaciesLoading ? (
                 <div className="text-center py-5">
                   <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                    <span className="visually-hidden">{tr('Loading...')}</span>
                   </div>
                 </div>
               ) : pharmacies.length === 0 ? (
                 <div className="text-center py-5">
-                  <p className="text-muted">No results found. Try adjusting your search filters.</p>
+                  <p className="text-muted">{tr('No results found. Try adjusting your search filters.')}</p>
                 </div>
               ) : (
                 <>
                   <div className="mb-3">
                     <p className="text-muted">
-                      Showing {pharmacies.length} of {pagination.total} {selectedKind === 'PARAPHARMACY' ? 'parapharmacies' : 'pharmacies'}
+                      {tr('Showing')} {pharmacies.length} {tr('of')} {pagination.total} {tr(selectedKind === 'PARAPHARMACY' ? 'parapharmacies' : 'pharmacies')}
                     </p>
                   </div>
                   {pharmacies.map((pharmacy) => {
@@ -218,7 +220,7 @@ const PharmacySearch = () => {
                     const pharmacyPhone = formatPhone(pharmacy.phone)
                     const ownerName = pharmacy.ownerId && typeof pharmacy.ownerId === 'object' 
                       ? pharmacy.ownerId.fullName 
-                      : 'Unknown Owner'
+                      : tr('Unknown Owner')
                     // Extract ownerId - handle both populated object and direct ID
                     // If ownerId is populated (object), get _id, otherwise use the value directly
                     const ownerId = pharmacy.ownerId 
@@ -259,11 +261,11 @@ const PharmacySearch = () => {
                                   <Link to={pharmacyId ? `/pharmacy-details?id=${pharmacyId}` : '/pharmacy-search'}>{pharmacy.name}</Link>
                                 </h4>
                                 {pharmacy.isActive && (
-                                  <span className="badge badge-success mb-2">Active</span>
+                                  <span className="badge badge-success mb-2">{tr('Active')}</span>
                                 )}
                                 <div className="clinic-details">
                                   <p className="doc-location mb-2">
-                                    <i className="fas fa-user me-1"></i> Owner: {ownerName}
+                                    <i className="fas fa-user me-1"></i> {tr('Owner:')} {ownerName}
                                   </p>
                                   <p className="doc-location mb-2">
                                     <i className="fas fa-phone-volume me-1"></i> {pharmacyPhone}
@@ -286,11 +288,11 @@ const PharmacySearch = () => {
                                     to={`/product-all?sellerId=${ownerId}&sellerType=${pharmacyKind}`}
                                     className="view-pro-btn"
                                   >
-                                    Browse Products
+                                    {tr('Browse Products')}
                                   </Link>
                                 ) : (
                                   <span className="view-pro-btn disabled" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
-                                    Browse Products
+                                    {tr('Browse Products')}
                                   </span>
                                 )}
                                 {pharmacy.phone && (
@@ -298,7 +300,7 @@ const PharmacySearch = () => {
                                     className="apt-btn"
                                     href={`tel:${pharmacy.phone}`}
                                   >
-                                    Call Now
+                                    {tr('Call Now')}
                                   </a>
                                 )}
                               </div>
@@ -321,7 +323,7 @@ const PharmacySearch = () => {
                                 onClick={() => handlePageChange(page - 1)}
                                 disabled={page === 1}
                               >
-                                Previous
+                                {tr('Previous')}
                               </button>
                             </li>
                             {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((pageNum) => (
@@ -340,7 +342,7 @@ const PharmacySearch = () => {
                                 onClick={() => handlePageChange(page + 1)}
                                 disabled={page === pagination.pages}
                               >
-                                Next
+                                {tr('Next')}
                               </button>
                             </li>
                           </ul>

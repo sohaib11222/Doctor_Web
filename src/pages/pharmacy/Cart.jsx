@@ -34,10 +34,10 @@ const Cart = () => {
         <div className="container">
           {cartItems.length === 0 ? (
             <div className="text-center py-5">
-              <h4>Your cart is empty</h4>
-              <p className="text-muted mb-4">Add some products to your cart to continue shopping.</p>
+              <h4>{tr('Your cart is empty')}</h4>
+              <p className="text-muted mb-4">{tr('Add some products to your cart to continue shopping.')}</p>
               <Link to="/product-all" className="btn btn-primary">
-                Browse Products
+                {tr('Browse Products')}
               </Link>
             </div>
           ) : (
@@ -48,12 +48,12 @@ const Cart = () => {
                     <table className="table table-hover table-center mb-0">
                       <thead>
                         <tr>
-                          <th>Product</th>
-                          <th>SKU</th>
-                          <th>Price</th>
-                          <th className="text-center">Quantity</th>
-                          <th>Total</th>
-                          <th>Action</th>
+                          <th>{tr('Product')}</th>
+                          <th>{tr('SKU')}</th>
+                          <th>{tr('Price')}</th>
+                          <th className="text-center">{tr('Quantity')}</th>
+                          <th>{tr('Total')}</th>
+                          <th>{tr('Action')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -68,7 +68,7 @@ const Cart = () => {
                               <Link to={`/product-description?id=${item._id}${item.variantId ? `&variantId=${item.variantId}` : ''}`}>{item.name}</Link>
                               {item.variantName && <div className="small text-muted">{item.variantName}</div>}
                             </td>
-                            <td>{item.sku || 'N/A'}</td>
+                            <td>{item.sku || tr('N/A')}</td>
                             <td>${item.price.toFixed(2)}</td>
                             <td className="text-center">
                               <div className="input-group1 cart-qty-stepper">
@@ -128,7 +128,7 @@ const Cart = () => {
                   <div className="terms-accept">
                     <div className="custom-checkbox">
                       <input type="checkbox" id="terms_accept" defaultChecked />
-                      <label htmlFor="terms_accept">I have read and accept the Terms & Conditions</label>
+                      <label htmlFor="terms_accept">{tr('I have read and accept the Terms & Conditions')}</label>
                     </div>
                   </div>
                   <div className="mt-3">
@@ -136,13 +136,13 @@ const Cart = () => {
                       type="button"
                       className="btn btn-outline-danger"
                       onClick={() => {
-                        if (window.confirm('Are you sure you want to clear your cart?')) {
+                        if (window.confirm(tr('Are you sure you want to clear your cart?'))) {
                           clearCart()
                           toast.info(tr('Cart cleared'))
                         }
                       }}
                     >
-                      Clear Cart
+                      {tr('Clear Cart')}
                     </button>
                   </div>
                 </div>
@@ -150,33 +150,33 @@ const Cart = () => {
                   <div className="booking-total">
                     <ul className="booking-total-list">
                       <li>
-                        <span>Subtotal</span>
+                        <span>{tr('Subtotal')}</span>
                         <span className="total-cost">${subtotal.toFixed(2)}</span>
                       </li>
                       <li>
-                        <span>Shipping</span>
+                        <span>{tr('Shipping')}</span>
                         <span className="total-cost">
-                           Set by seller after request
+                           {tr('Set by seller after request')}
                         </span>
                       </li>
                        <li className="small text-muted">
-                         Your pharmacy or parapharmacy will send the shipping fee and delivery commitment before payment.
+                         {tr('Your pharmacy or parapharmacy will send the shipping fee and delivery commitment before payment.')}
                        </li>
                       {tax > 0 && (
                         <li>
-                          <span>Tax</span>
+                          <span>{tr('Tax')}</span>
                           <span className="total-cost">${tax.toFixed(2)}</span>
                         </li>
                       )}
                       <li>
-                        <span>Total</span>
+                        <span>{tr('Total')}</span>
                         <span className="total-cost">${total.toFixed(2)}</span>
                       </li>
                     </ul>
                   </div>
                   <div className="submit-section">
                     <Link to="/product-checkout" className="btn btn-primary submit-btn w-100">
-                      Proceed to Checkout
+                      {tr('Proceed to Checkout')}
                     </Link>
                   </div>
                 </div>

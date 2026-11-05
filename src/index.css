@@ -44,6 +44,22 @@ body {
   padding: 136px 0 64px !important;
 }
 
+/* Blog pages were missing the public header offset and appeared clipped at
+ * the top whenever the fixed navigation was enabled. */
+.blog-list-page,
+.blog-details-page {
+  position: relative;
+  min-width: 0;
+  overflow: visible;
+  padding-top: 136px !important;
+  padding-bottom: 64px !important;
+}
+
+@media (max-width: 991.98px) {
+  .blog-list-page,
+  .blog-details-page { padding-top: 106px !important; padding-bottom: 42px !important; }
+}
+
 .doctor-profile-page .container,
 .doctor-profile-page .doc-profile-card,
 .doctor-profile-page .doctors-detailed-info {
@@ -169,6 +185,23 @@ body {
   border: 1px solid rgba(223, 59, 59, 0.72);
   border-radius: 2px;
   transition: color .2s ease, background-color .2s ease, border-color .2s ease;
+}
+
+@media (min-width: 992px) {
+  .header .header-nav .main-nav > li.nav-emergency {
+    display: flex;
+    align-items: center;
+    align-self: stretch;
+    margin: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .header .header-nav .main-nav > li.nav-emergency > a {
+    margin: 0;
+    padding: 7px 9px !important;
+    transform: none;
+  }
 }
 
 .header .header-nav .main-nav > li.nav-emergency > a:hover,

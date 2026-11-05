@@ -12,7 +12,9 @@ export const login = async (email, password) => {
   return {
     user: response.data?.user || response.user,
     token: response.data?.token || response.token,
-    message: response.message || response.data?.message
+    message: response.message || response.data?.message,
+    requiresEmailVerification: Boolean(response.data?.requiresEmailVerification || response.requiresEmailVerification),
+    email: response.data?.email || response.email || email,
   }
 }
 
@@ -32,7 +34,9 @@ export const register = async (data, userType = 'patient') => {
   return {
     user: response.data?.user || response.user,
     token: response.data?.token || response.token,
-    message: response.message || response.data?.message
+    message: response.message || response.data?.message,
+    requiresEmailVerification: Boolean(response.data?.requiresEmailVerification || response.requiresEmailVerification),
+    email: response.data?.email || response.email || registrationData.email,
   }
 }
 
@@ -77,15 +81,13 @@ export const logout = async () => {
 }
 
 export const forgotPassword = async (email) => {
-  // Backend doesn't have forgot-password endpoint yet
-  // Return error for now
-  throw new Error('Forgot password feature not implemented in backend yet')
+  return api.post(API_ROUTES.AUTH.FORGOT_PASSWORD, { email })
 }
 
-export const resetPassword = async (token, password, password_confirmation) => {
-  // Backend doesn't have reset-password endpoint yet
-  // Return error for now
-  throw new Error('Reset password feature not implemented in backend yet')
+export const verifyResetCode = async (email, code) => api.post(API_ROUTES.AUTH.VERIFY_RESET_CODE, { email, code })
+
+export const resetPassword = async (email, code, newPassword) => {
+  return api.post(API_ROUTES.AUTH.RESET_PASSWORD, { email, code, newPassword })
 }
 
 /**
@@ -94,13 +96,18 @@ export const resetPassword = async (token, password, password_confirmation) => {
  * @param {string} newPassword - New password
  * @returns {Promise<Object>} Success message
  */
-export const changePassword = async (oldPassword, newPassword) => {
+export const changePassword = async (code, newPassword) => {
   const response = await api.post('/auth/change-password', {
-    oldPassword,
+    code,
     newPassword
   })
   return response.data
 }
+
+export const requestChangePasswordCode = async () => api.post(API_ROUTES.AUTH.REQUEST_CHANGE_PASSWORD_CODE)
+export const verifyChangePasswordCode = async (code) => api.post(API_ROUTES.AUTH.VERIFY_CHANGE_PASSWORD_CODE, { code })
+export const verifyEmail = async (email, code) => api.post(API_ROUTES.AUTH.VERIFY_EMAIL, { email, code })
+export const resendEmailVerification = async (email) => api.post(API_ROUTES.AUTH.RESEND_EMAIL_VERIFICATION, { email })
 
 /**
  * Refresh JWT token

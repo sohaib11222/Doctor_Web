@@ -1325,7 +1325,7 @@ const Index = () => {
                   </span>{' '}
                   <span className="text-gradient">{tr('Doctors')}</span> {tr('Today')}
                 </h1>
-                <div className="home-category-tabs" aria-label="Home quick categories">
+                <div className="home-category-tabs" aria-label={tr('Home quick categories')}>
                   <Link to="/telemedicine" className="home-category-tab">
                     <i className="isax isax-video"></i>
                     {tr('Telemedicine')}
@@ -1378,10 +1378,10 @@ const Index = () => {
                           value={selectedSpecialization}
                           onChange={(e) => setSelectedSpecialization(e.target.value)}
                         >
-                          <option value="">All Specialities</option>
+                          <option value="">{tr('All Specialities')}</option>
                           {specializations.map((spec) => (
                             <option key={spec._id || spec} value={spec._id || spec}>
-                              {spec.name || spec}
+                              {tr(spec.name || spec)}
                             </option>
                           ))}
                         </select>
@@ -1490,9 +1490,9 @@ const Index = () => {
                     </svg>
                   </div>
                   <div className="flex-grow-1">
-                    <h5 className="mb-2 fw-semibold">Don't know the specialization?</h5>
+                    <h5 className="mb-2 fw-semibold">{tr("Don't know the specialization?")}</h5>
                     <p className="mb-0 text-muted">
-                      Select this option and we will send your question to the most suitable specialization.
+                      {tr('Select this option and we will send your question to the most suitable specialization.')}
                     </p>
                   </div>
                 </div>
@@ -1545,9 +1545,9 @@ const Index = () => {
                     </svg>
                   </div>
                   <div className="flex-grow-1">
-                    <h5 className="mb-2 fw-semibold">Analysis Interpretation</h5>
+                    <h5 className="mb-2 fw-semibold">{tr('Analysis Interpretation')}</h5>
                     <p className="mb-0 text-muted">
-                      Select this option and we will send your analyses to the most suitable doctor.
+                      {tr('Select this option and we will send your analyses to the most suitable doctor.')}
                     </p>
                   </div>
                 </div>
@@ -1667,7 +1667,7 @@ const Index = () => {
                     >
                       <img 
                         src={backgroundImageUrl} 
-                        alt={specialization.name}
+                        alt={tr(specialization.name)}
                         style={{
                           width: '100%',
                           height: '100%',
@@ -1683,7 +1683,7 @@ const Index = () => {
                         {centerIconUrl ? (
                           <img 
                             src={centerIconUrl} 
-                            alt={specialization.name}
+                            alt={tr(specialization.name)}
                             style={{
                               width: '40px',
                               height: '40px',
@@ -1701,7 +1701,7 @@ const Index = () => {
                         ) : (
                           <img 
                             src={getSpecializationIcon(index)} 
-                            alt={specialization.name}
+                            alt={tr(specialization.name)}
                             style={{
                               width: '40px',
                               height: '40px',
@@ -1715,10 +1715,10 @@ const Index = () => {
                     <div style={{ textAlign: 'center', marginTop: '16px' }}>
                       <h6 style={{ marginBottom: '4px', textAlign: 'center' }}>
                         <Link to={`/search?specialization=${specialization._id || specialization.id}`} style={{ textAlign: 'center' }}>
-                          {specialization.name}
+                          {tr(specialization.name)}
                         </Link>
                       </h6>
-                      <p className="mb-0" style={{ textAlign: 'center' }}>{specialization.doctorCount || '0'} Doctors</p>
+                      <p className="mb-0" style={{ textAlign: 'center' }}>{specialization.doctorCount || '0'} {tr('Doctors')}</p>
                     </div>
                   </div>
                 )
@@ -1778,7 +1778,7 @@ const Index = () => {
                 </div>
                 <div className="card-body p-0">
                   <div className={`d-flex active-bar align-items-center justify-content-between p-3`}>
-                    <a href="#" className="text-indigo fw-medium fs-14">{doctor.specialty}</a>
+                    <a href="#" className="text-indigo fw-medium fs-14">{tr(doctor.specialty)}</a>
                     <span className="badge bg-success-light d-inline-flex align-items-center">
                       <i className="fa-solid fa-circle fs-5 me-1"></i>
                       Available
@@ -1858,31 +1858,31 @@ const Index = () => {
         <div className="container">
           <div className="section-header sec-header-one text-center aos" data-aos="fade-up">
             <span className="badge badge-primary">Why Book With Us</span>
-            <h2>Compelling Reasons to Choose</h2>
+            <h2>{tr('Compelling Reasons to Choose')}</h2>
           </div>
           <div className="row row-gap-4 justify-content-center">
             <div className="col-lg-4 col-md-6">
               <div className="reason-item aos" data-aos="fade-up">
                 <h6 className="mb-2">
-                  <i className="isax isax-tag-user5 text-orange me-2"></i>Follow-Up Care
+                  <i className="isax isax-tag-user5 text-orange me-2"></i>{tr('Follow-Up Care')}
                 </h6>
-                <p className="fs-14 mb-0">We ensure continuity of care through regular follow-ups and communication, helping you stay on track with health goals.</p>
+                <p className="fs-14 mb-0">{tr('We ensure continuity of care through regular follow-ups and communication, helping you stay on track with health goals.')}</p>
               </div>
             </div>
             <div className="col-lg-4 col-md-6">
               <div className="reason-item aos" data-aos="fade-up">
                 <h6 className="mb-2">
-                  <i className="isax isax-voice-cricle text-purple me-2"></i>Patient-Centered Approach
+                  <i className="isax isax-voice-cricle text-purple me-2"></i>{tr('Patient-Centered Approach')}
                 </h6>
-                <p className="fs-14 mb-0">We prioritize your comfort and preferences, tailoring our services to meet your individual needs and Care from Our Experts</p>
+                <p className="fs-14 mb-0">{tr('We prioritize your comfort and preferences, tailoring our services to meet your individual needs and Care from Our Experts')}</p>
               </div>
             </div>
             <div className="col-lg-4 col-md-6">
               <div className="reason-item aos" data-aos="fade-up">
                 <h6 className="mb-2">
-                  <i className="isax isax-wallet-add-15 text-cyan me-2"></i>Convenient Access
+                  <i className="isax isax-wallet-add-15 text-cyan me-2"></i>{tr('Convenient Access')}
                 </h6>
-                <p className="fs-14 mb-0">Easily book appointments online or through our dedicated customer service team, with flexible hours to fit your schedule.</p>
+                <p className="fs-14 mb-0">{tr('Easily book appointments online or through our dedicated customer service team, with flexible hours to fit your schedule.')}</p>
               </div>
             </div>
           </div>
@@ -1922,7 +1922,7 @@ const Index = () => {
                   <div className="accordion-item">
                     <h2 className="accordion-header" id="headingOne">
                       <a href="javascript:void(0);" className="accordion-button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
-                        01 . Our Vision
+                        01 . {tr('Our Vision')}
                       </a>
                     </h2>
                     <div id="collapseOne" className="accordion-collapse collapse show">
@@ -1936,7 +1936,7 @@ const Index = () => {
                   <div className="accordion-item">
                     <h2 className="accordion-header" id="headingTwo">
                       <a href="javascript:void(0);" className="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
-                        02 . Our Mission
+                        02 . {tr('Our Mission')}
                       </a>
                     </h2>
                     <div id="collapseTwo" className="accordion-collapse collapse">
@@ -1959,8 +1959,8 @@ const Index = () => {
                     <i className="isax isax-search-normal5"></i>
                   </div>
                   <div className="book-info">
-                    <h6 className="text-white mb-2">Search For Doctors</h6>
-                    <p className="fs-14 text-light">Search for a doctor based on specialization, location, or availability for your Treatements</p>
+                    <h6 className="text-white mb-2">{tr('Search For Doctors')}</h6>
+                    <p className="fs-14 text-light">{tr('Search for a doctor based on specialization, location, or availability for your Treatements')}</p>
                   </div>
                   <div className="way-icon">
                     <img src="/assets/img/icons/way-icon.svg" alt="img" />
@@ -1973,8 +1973,8 @@ const Index = () => {
                     <i className="isax isax-security-user5"></i>
                   </div>
                   <div className="book-info">
-                    <h6 className="text-white mb-2">Check Doctor Profile</h6>
-                    <p className="fs-14 text-light">Explore detailed doctor profiles on our platform to make informed healthcare decisions.</p>
+                    <h6 className="text-white mb-2">{tr('Check Doctor Profile')}</h6>
+                    <p className="fs-14 text-light">{tr('Explore detailed doctor profiles on our platform to make informed healthcare decisions.')}</p>
                   </div>
                   <div className="way-icon">
                     <img src="/assets/img/icons/way-icon.svg" alt="img" />
@@ -1987,8 +1987,8 @@ const Index = () => {
                     <i className="isax isax-calendar5"></i>
                   </div>
                   <div className="book-info">
-                    <h6 className="text-white mb-2">Schedule Appointment</h6>
-                    <p className="fs-14 text-light">After choose your preferred doctor, select a convenient time slot, & confirm your appointment.</p>
+                    <h6 className="text-white mb-2">{tr('Schedule Appointment')}</h6>
+                    <p className="fs-14 text-light">{tr('After choose your preferred doctor, select a convenient time slot, & confirm your appointment.')}</p>
                   </div>
                   <div className="way-icon">
                     <img src="/assets/img/icons/way-icon.svg" alt="img" />
@@ -2001,8 +2001,8 @@ const Index = () => {
                     <i className="isax isax-blend5"></i>
                   </div>
                   <div className="book-info">
-                    <h6 className="text-white mb-2">Get Your Solution</h6>
-                    <p className="fs-14 text-light">Discuss your health concerns with the doctor and receive the personalized advice & with solution.</p>
+                    <h6 className="text-white mb-2">{tr('Get Your Solution')}</h6>
+                    <p className="fs-14 text-light">{tr('Discuss your health concerns with the doctor and receive the personalized advice & with solution.')}</p>
                   </div>
                 </div>
               </div>
@@ -2016,8 +2016,8 @@ const Index = () => {
       <section className="testimonial-section-one">
         <div className="container">
           <div className="section-header sec-header-one text-center aos" data-aos="fade-up">
-            <span className="badge badge-primary">Testimonials</span>
-            <h2>15k Users Trust Mydoctor+ Worldwide</h2>
+            <span className="badge badge-primary">{tr('Testimonials')}</span>
+            <h2>{tr('15k Users Trust Mydoctor+ Worldwide')}</h2>
           </div>
           <div className="owl-carousel testimonials-slider aos" data-aos="fade-up">
             {testimonials.map((testimonial) => (
@@ -2035,15 +2035,15 @@ const Index = () => {
                       <img src="/assets/img/icons/quote-icon.svg" alt="img" />
                     </span>
                   </div>
-                  <h6 className="fs-16 fw-medium mb-2">{testimonial.title}</h6>
-                  <p>{testimonial.text}</p>
+                  <h6 className="fs-16 fw-medium mb-2">{tr(testimonial.title)}</h6>
+                  <p>{tr(testimonial.text)}</p>
                   <div className="d-flex align-items-center">
                     <a href="javascript:void(0);" className="avatar avatar-lg">
                       <img src={testimonial.image} className="rounded-circle" alt="img" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&auto=format' }} />
                     </a>
                     <div className="ms-2">
                       <h6 className="mb-1"><a href="javascript:void(0);">{testimonial.name}</a></h6>
-                      <p className="fs-14 mb-0">{testimonial.location}</p>
+                      <p className="fs-14 mb-0">{tr(testimonial.location)}</p>
                     </div>
                   </div>
                 </div>
@@ -2154,7 +2154,7 @@ const Index = () => {
                 }}>
                   <img 
                     src="/assets/img/same.jpeg" 
-                    alt="Telemedicine Video Consultation"
+                    alt={tr('Telemedicine Video Consultation')}
                     style={{
                       maxWidth: '100%',
                       height: 'auto',
@@ -2351,7 +2351,7 @@ const Index = () => {
                       transition: 'background-color 0.3s ease',
                       padding: 0
                     }}
-                    aria-label="Go to slide 1"
+                    aria-label={tr('Go to slide 1')}
                   />
                   <button
                     onClick={() => setTelemedicineSlide(1)}
@@ -2365,7 +2365,7 @@ const Index = () => {
                       transition: 'background-color 0.3s ease',
                       padding: 0
                     }}
-                    aria-label="Go to slide 2"
+                    aria-label={tr('Go to slide 2')}
                   />
                 </div>
               </div>

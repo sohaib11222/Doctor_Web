@@ -2,8 +2,10 @@ import { useMemo } from 'react'
 import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import * as blogApi from '../api/blog'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const BlogDetails = () => {
+  const { formatDateTime, translateText: tr } = useLanguage()
   const [searchParams] = useSearchParams()
   const blogId = searchParams.get('id')
   const navigate = useNavigate()
@@ -48,8 +50,7 @@ const BlogDetails = () => {
   // Format date
   const formatDate = (date) => {
     if (!date) return 'N/A'
-    const d = new Date(date)
-    return d.toLocaleDateString('en-US', { 
+    return formatDateTime(date, {
       day: 'numeric', 
       month: 'long', 
       year: 'numeric',
@@ -67,15 +68,15 @@ const BlogDetails = () => {
 
   if (isLoading) {
     return (
-      <div className="content">
+        <div className="content blog-details-page">
         <div className="container">
           <div className="row">
             <div className="col-12">
               <div className="text-center py-5">
                 <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Loading...</span>
+                  <span className="visually-hidden">{tr('Loading...')}</span>
                 </div>
-                <p className="mt-3 text-muted">Loading blog post...</p>
+                <p className="mt-3 text-muted">{tr('Loading blog post...')}</p>
               </div>
             </div>
           </div>
@@ -86,15 +87,15 @@ const BlogDetails = () => {
 
   if (error || !blog) {
     return (
-      <div className="content">
+        <div className="content blog-details-page">
         <div className="container">
           <div className="row">
             <div className="col-12">
               <div className="alert alert-danger">
-                <h5>Blog Post Not Found</h5>
-                <p>{error?.response?.data?.message || error?.message || 'The blog post you are looking for does not exist or has been removed.'}</p>
+                <h5>{tr('Blog Post Not Found')}</h5>
+                <p>{tr(error?.response?.data?.message || error?.message || 'The blog post you are looking for does not exist or has been removed.')}</p>
                 <Link to="/blog-list" className="btn btn-primary mt-3">
-                  <i className="fa-solid fa-arrow-left me-2"></i>Back to Blog
+                  <i className="fa-solid fa-arrow-left me-2"></i>{tr('Back to Blog')}
                 </Link>
               </div>
             </div>
@@ -107,15 +108,15 @@ const BlogDetails = () => {
   // Only show published posts to public
   if (!blog.isPublished) {
     return (
-      <div className="content">
+        <div className="content blog-details-page">
         <div className="container">
           <div className="row">
             <div className="col-12">
               <div className="alert alert-warning">
-                <h5>Blog Post Not Available</h5>
-                <p>This blog post is not published yet.</p>
+                <h5>{tr('Blog Post Not Available')}</h5>
+                <p>{tr('This blog post is not published yet.')}</p>
                 <Link to="/blog-list" className="btn btn-primary mt-3">
-                  <i className="fa-solid fa-arrow-left me-2"></i>Back to Blog
+                  <i className="fa-solid fa-arrow-left me-2"></i>{tr('Back to Blog')}
                 </Link>
               </div>
             </div>
@@ -126,14 +127,14 @@ const BlogDetails = () => {
   }
 
   return (
-    <div className="content">
+    <div className="content blog-details-page">
       <div className="container">
         <div className="row">
           <div className="col-lg-8">
             {/* Back Button */}
             <div className="mb-3">
               <Link to="/blog-list" className="btn btn-outline-primary">
-                <i className="fa-solid fa-arrow-left me-2"></i>Back to Blog
+                <i className="fa-solid fa-arrow-left me-2"></i>{tr('Back to Blog')}
               </Link>
             </div>
 
@@ -165,7 +166,7 @@ const BlogDetails = () => {
                   {blog.authorId && (
                     <span>
                       <i className="fa-solid fa-user me-2"></i>
-                      By {blog.authorId.fullName || 'Unknown Author'}
+                      {tr('By')} {blog.authorId.fullName || tr('Unknown Author')}
                     </span>
                   )}
                   {blog.authorId?.profileImage && (
@@ -205,10 +206,10 @@ const BlogDetails = () => {
               <div className="blog-footer mt-5 pt-4 border-top">
                 <div className="d-flex justify-content-between align-items-center">
                   <Link to="/blog-list" className="btn btn-outline-primary">
-                    <i className="fa-solid fa-arrow-left me-2"></i>Back to Blog
+                    <i className="fa-solid fa-arrow-left me-2"></i>{tr('Back to Blog')}
                   </Link>
                   <div className="text-muted">
-                    <small>Published on {formatDate(blog.publishedAt || blog.createdAt)}</small>
+                    <small>{tr('Published on')} {formatDate(blog.publishedAt || blog.createdAt)}</small>
                   </div>
                 </div>
               </div>
@@ -230,7 +231,7 @@ const BlogDetails = () => {
                         style={{ width: '100px', height: '100px', objectFit: 'cover' }}
                       />
                     )}
-                    <h5>{blog.authorId.fullName || 'Unknown Author'}</h5>
+                    <h5>{blog.authorId.fullName || tr('Unknown Author')}</h5>
                     {blog.authorId.email && (
                       <p className="text-muted small mb-0">{blog.authorId.email}</p>
                     )}
@@ -242,7 +243,7 @@ const BlogDetails = () => {
               {relatedBlogs.length > 0 && (
                 <div className="card">
                   <div className="card-header">
-                    <h5 className="mb-0">Related Posts</h5>
+                    <h5 className="mb-0">{tr('Related Posts')}</h5>
                   </div>
                   <div className="card-body">
                     {relatedBlogs.map((relatedBlog) => (

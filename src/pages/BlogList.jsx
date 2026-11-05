@@ -2,8 +2,10 @@ import { useState, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import * as blogApi from '../api/blog'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const BlogList = () => {
+  const { formatDate: formatLocalizedDate, translateText: tr } = useLanguage()
   const [searchParams, setSearchParams] = useSearchParams()
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
   const [selectedTag, setSelectedTag] = useState(searchParams.get('tag') || '')
@@ -21,10 +23,7 @@ const BlogList = () => {
         ...(searchQuery ? { search: searchQuery } : {}),
         ...(selectedTag ? { tags: selectedTag } : {}) // Backend expects comma-separated string
       }
-      console.log('Fetching blogs with params:', params)
-      const result = await blogApi.listBlogPosts(params)
-      console.log('Blog API response:', result)
-      return result
+      return blogApi.listBlogPosts(params)
     },
     retry: 1
   })
@@ -37,7 +36,6 @@ const BlogList = () => {
     // So blogsData.data contains the actual data
     const responseData = blogsData.data || blogsData
     const blogPosts = responseData.blogPosts || []
-    console.log('Extracted blogs:', blogPosts.length, 'blogs')
     return blogPosts
   }, [blogsData])
 
@@ -45,7 +43,6 @@ const BlogList = () => {
     if (!blogsData) return null
     const responseData = blogsData.data || blogsData
     const paginationData = responseData.pagination || null
-    console.log('Extracted pagination:', paginationData)
     return paginationData
   }, [blogsData])
 
@@ -63,8 +60,7 @@ const BlogList = () => {
   // Format date
   const formatDate = (date) => {
     if (!date) return 'N/A'
-    const d = new Date(date)
-    return d.toLocaleDateString('en-US', { 
+    return formatLocalizedDate(date, {
       day: 'numeric', 
       month: 'long', 
       year: 'numeric' 
@@ -111,15 +107,15 @@ const BlogList = () => {
 
   if (isLoading) {
     return (
-      <div className="content">
+        <div className="content blog-list-page">
         <div className="container">
           <div className="row">
             <div className="col-12">
               <div className="text-center py-5">
                 <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Loading...</span>
+                  <span className="visually-hidden">{tr('Loading...')}</span>
                 </div>
-                <p className="mt-3 text-muted">Loading blog posts...</p>
+                <p className="mt-3 text-muted">{tr('Loading blog posts...')}</p>
               </div>
             </div>
           </div>
@@ -130,13 +126,13 @@ const BlogList = () => {
 
   if (error) {
     return (
-      <div className="content">
+        <div className="content blog-list-page">
         <div className="container">
           <div className="row">
             <div className="col-12">
               <div className="alert alert-danger">
-                <h5>Error Loading Blog Posts</h5>
-                <p>{error.response?.data?.message || error.message || 'Failed to load blog posts'}</p>
+                <h5>{tr('Error Loading Blog Posts')}</h5>
+                <p>{tr(error.response?.data?.message || error.message || 'Failed to load blog posts')}</p>
               </div>
             </div>
           </div>
@@ -146,14 +142,14 @@ const BlogList = () => {
   }
 
   return (
-    <div className="content">
+        <div className="content blog-list-page">
       <div className="container">
         {/* Page Header */}
         <div className="row mb-4">
           <div className="col-12">
             <div className="page-header">
-              <h1 className="page-title">Blog</h1>
-              <p className="text-muted">Read our latest articles and health tips</p>
+              <h1 className="page-title">{tr('Blog')}</h1>
+              <p className="text-muted">{tr('Read our latest articles and health tips')}</p>
             </div>
           </div>
         </div>
@@ -165,12 +161,12 @@ const BlogList = () => {
               <input
                 type="text"
                 className="form-control"
-                placeholder="Search blog posts..."
+                placeholder={tr('Search blog posts...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <button type="submit" className="btn btn-primary">
-                <i className="fa-solid fa-search me-2"></i>Search
+                <i className="fa-solid fa-search me-2"></i>{tr('Search')}
               </button>
             </form>
           </div>
@@ -181,13 +177,13 @@ const BlogList = () => {
           <div className="row mb-4">
             <div className="col-12">
               <div className="d-flex flex-wrap gap-2 align-items-center">
-                <span className="fw-medium me-2">Filter by tags:</span>
+                <span className="fw-medium me-2">{tr('Filter by tags:')}</span>
                 <button
                   type="button"
                   className={`btn btn-sm ${!selectedTag ? 'btn-primary' : 'btn-outline-primary'}`}
                   onClick={() => handleTagClick('')}
                 >
-                  All
+                  {tr('All')}
                 </button>
                 {allTags.map((tag) => (
                   <button
@@ -211,11 +207,11 @@ const BlogList = () => {
               <div className="card">
                 <div className="card-body text-center py-5">
                   <i className="fa-solid fa-blog" style={{ fontSize: '64px', color: '#dee2e6' }}></i>
-                  <h5 className="mt-3">No blog posts found</h5>
+                  <h5 className="mt-3">{tr('No blog posts found')}</h5>
                   <p className="text-muted">
                     {searchQuery || selectedTag 
-                      ? 'Try adjusting your search or filters' 
-                      : 'No blog posts available at the moment'}
+                      ? tr('Try adjusting your search or filters')
+                      : tr('No blog posts available at the moment')}
                   </p>
                 </div>
               </div>
@@ -246,7 +242,7 @@ const BlogList = () => {
                       {blog.authorId && (
                         <span className="text-muted small">
                           <i className="fa-solid fa-user me-1"></i>
-                          {blog.authorId.fullName || 'Unknown Author'}
+                          {blog.authorId.fullName || tr('Unknown Author')}
                         </span>
                       )}
                     </div>
@@ -266,7 +262,7 @@ const BlogList = () => {
                           </span>
                         ))}
                         {blog.tags.length > 3 && (
-                          <span className="text-muted small">+{blog.tags.length - 3} more</span>
+                          <span className="text-muted small">+{blog.tags.length - 3} {tr('more')}</span>
                         )}
                       </div>
                     )}
@@ -274,7 +270,7 @@ const BlogList = () => {
                       to={`/blog-details?id=${blog._id}`}
                       className="btn btn-primary mt-auto"
                     >
-                      Read More <i className="fa-solid fa-arrow-right ms-2"></i>
+                      {tr('Read More')} <i className="fa-solid fa-arrow-right ms-2"></i>
                     </Link>
                   </div>
                 </div>
@@ -287,7 +283,7 @@ const BlogList = () => {
         {pagination && pagination.pages > 1 && (
           <div className="row mt-4">
             <div className="col-12">
-              <nav aria-label="Blog pagination">
+              <nav aria-label={tr('Blog pagination')}>
                 <ul className="pagination justify-content-center">
                   <li className={`page-item ${pagination.page === 1 ? 'disabled' : ''}`}>
                     <button
@@ -295,7 +291,7 @@ const BlogList = () => {
                       onClick={() => handlePageChange(pagination.page - 1)}
                       disabled={pagination.page === 1}
                     >
-                      Previous
+                      {tr('Previous')}
                     </button>
                   </li>
                   {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((pageNum) => (
@@ -314,14 +310,14 @@ const BlogList = () => {
                       onClick={() => handlePageChange(pagination.page + 1)}
                       disabled={pagination.page === pagination.pages}
                     >
-                      Next
+                      {tr('Next')}
                     </button>
                   </li>
                 </ul>
               </nav>
               <div className="text-center mt-2">
                 <small className="text-muted">
-                  Showing page {pagination.page} of {pagination.pages} ({pagination.total} total posts)
+                  {`${tr('Showing page')} ${pagination.page} ${tr('of')} ${pagination.pages} (${pagination.total} ${tr('total posts')})`}
                 </small>
               </div>
             </div>

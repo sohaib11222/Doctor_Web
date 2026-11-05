@@ -96,17 +96,17 @@ const ProductAll = () => {
             <div className="col-md-5 col-lg-3 col-xl-3 theiaStickySidebar">
               <div className="card search-filter">
                 <div className="card-header">
-                  <h4 className="card-title mb-0">Filter</h4>
+                  <h4 className="card-title mb-0">{tr('Filter')}</h4>
                 </div>
                 <div className="card-body">
                   <div className="filter-widget mb-4">
-                    <h4>Search</h4>
+                    <h4>{tr('Search')}</h4>
                     <form onSubmit={handleSearch}>
                       <div className="input-group mb-3">
                         <input
                           type="text"
                           className="form-control"
-                          placeholder="Search products..."
+                          placeholder={tr('Search products...')}
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -117,7 +117,7 @@ const ProductAll = () => {
                     </form>
                   </div>
                   <div className="filter-widget">
-                    <h4>Categories</h4>
+                    <h4>{tr('Categories')}</h4>
                     <div>
                       <label className="custom_check">
                         <input
@@ -125,7 +125,7 @@ const ProductAll = () => {
                           checked={!selectedCategory}
                           onChange={() => handleCategoryChange('')}
                         />
-                        <span className="checkmark"></span> All Categories
+                        <span className="checkmark"></span> {tr('All Categories')}
                       </label>
                     </div>
                     {categories.map((cat, idx) => (
@@ -155,7 +155,7 @@ const ProductAll = () => {
                         setSearchParams(params)
                       }}
                     >
-                      Clear Filters
+                      {tr('Clear Filters')}
                     </button>
                   </div>
                 </div>
@@ -166,22 +166,22 @@ const ProductAll = () => {
               <div className="row align-items-center pb-3">
                 <div className="col-md-4 col-12 d-md-block d-none custom-short-by">
                   <h3 className="title pharmacy-title">
-                    {sellerId && sellerType === 'PHARMACY' ? 'Pharmacy Products' : 'All Products'}
+                    {tr(sellerId && sellerType === 'PHARMACY' ? 'Pharmacy Products' : 'All Products')}
                   </h3>
                   <span className="sort-title">
-                    Showing {products.length} of {pagination.total} products
-                    {sellerId && sellerType && ' from this seller'}
+                    {tr('Showing')} {products.length} {tr('of')} {pagination.total} {tr('products')}
+                    {sellerId && sellerType && ` ${tr('from this seller')}`}
                   </span>
                 </div>
                 <div className="col-md-8 col-12 d-md-block d-none custom-short-by">
                   <div className="sort-by pb-3">
-                    <span className="sort-title">Sort by</span>
+                    <span className="sort-title">{tr('Sort by')}</span>
                     <span className="sortby-fliter">
                       <select className="form-select">
-                        <option>Latest</option>
-                        <option>Price: Low to High</option>
-                        <option>Price: High to Low</option>
-                        <option>Name: A to Z</option>
+                        <option>{tr('Latest')}</option>
+                        <option>{tr('Price: Low to High')}</option>
+                        <option>{tr('Price: High to Low')}</option>
+                        <option>{tr('Name: A to Z')}</option>
                       </select>
                     </span>
                   </div>
@@ -191,12 +191,12 @@ const ProductAll = () => {
               {productsLoading ? (
                 <div className="text-center py-5">
                   <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                    <span className="visually-hidden">{tr('Loading...')}</span>
                   </div>
                 </div>
               ) : products.length === 0 ? (
                 <div className="text-center py-5">
-                  <p className="text-muted">No products found. Try adjusting your filters.</p>
+                  <p className="text-muted">{tr('No products found. Try adjusting your filters.')}</p>
                 </div>
               ) : (
                 <>
@@ -245,7 +245,7 @@ const ProductAll = () => {
                                     href="#"
                                     className="cart-icon"
                                     onClick={(e) => handleAddToCart(e, product)}
-                                    title="Add to Cart"
+                                    title={tr('Add to Cart')}
                                   >
                                     <i className="fas fa-shopping-cart"></i>
                                   </a>
@@ -270,7 +270,7 @@ const ProductAll = () => {
                                 onClick={() => handlePageChange(page - 1)}
                                 disabled={page === 1}
                               >
-                                Previous
+                                {tr('Previous')}
                               </button>
                             </li>
                             {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((pageNum) => (
@@ -289,7 +289,7 @@ const ProductAll = () => {
                                 onClick={() => handlePageChange(page + 1)}
                                 disabled={page === pagination.pages}
                               >
-                                Next
+                                {tr('Next')}
                               </button>
                             </li>
                           </ul>

@@ -3,8 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import Breadcrumb from '../../components/common/Breadcrumb'
 import * as pharmacyApi from '../../api/pharmacy'
 import * as productApi from '../../api/product'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PharmacyDetails = () => {
+  const { translateText: tr } = useLanguage()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const pharmacyId = searchParams.get('id')
@@ -35,7 +37,7 @@ const PharmacyDetails = () => {
   const products = productsData?.data?.products || []
 
   const formatAddress = (address) => {
-    if (!address) return 'Address not available'
+    if (!address) return tr('Address not available')
     const parts = [
       address.line1,
       address.line2,
@@ -44,7 +46,7 @@ const PharmacyDetails = () => {
       address.country,
       address.zip
     ].filter(Boolean)
-    return parts.join(', ') || 'Address not available'
+    return parts.join(', ') || tr('Address not available')
   }
 
   if (pharmacyLoading) {
@@ -55,7 +57,7 @@ const PharmacyDetails = () => {
           <div className="container">
             <div className="text-center py-5">
               <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
+                <span className="visually-hidden">{tr('Loading...')}</span>
               </div>
             </div>
           </div>
@@ -71,9 +73,9 @@ const PharmacyDetails = () => {
         <div className="content">
           <div className="container">
             <div className="alert alert-danger">
-              <h5>Pharmacy Not Found</h5>
-              <p>The pharmacy you're looking for doesn't exist.</p>
-              <Link to="/pharmacy-search" className="btn btn-primary">Browse Pharmacies</Link>
+              <h5>{tr('Pharmacy Not Found')}</h5>
+              <p>{tr("The pharmacy you're looking for doesn't exist.")}</p>
+              <Link to="/pharmacy-search" className="btn btn-primary">{tr('Browse Pharmacies')}</Link>
             </div>
           </div>
         </div>
@@ -100,10 +102,10 @@ const PharmacyDetails = () => {
     : null
   const pharmacyLogo = normalizeImageUrl(pharmacy.logo) || normalizeImageUrl(ownerProfileImage) || '/assets/img/medical-img1.jpg'
   const pharmacyAddress = formatAddress(pharmacy.address)
-  const pharmacyPhone = pharmacy.phone || 'Phone not available'
+  const pharmacyPhone = pharmacy.phone || tr('Phone not available')
   const ownerName = pharmacy.ownerId && typeof pharmacy.ownerId === 'object'
     ? pharmacy.ownerId.fullName
-    : 'Unknown Owner'
+    : tr('Unknown Owner')
   const ownerEmail = pharmacy.ownerId && typeof pharmacy.ownerId === 'object'
     ? pharmacy.ownerId.email
     : null
@@ -136,12 +138,12 @@ const PharmacyDetails = () => {
                   <div className="doc-info-cont">
                     <h4 className="doc-name mb-2">{pharmacy.name}</h4>
                     {pharmacy.isActive && (
-                      <span className="badge badge-success mb-2">Active</span>
+                      <span className="badge badge-success mb-2">{tr('Active')}</span>
                     )}
                     <div className="clinic-details">
                       <div className="clini-infos pt-3">
                         <p className="doc-location mb-2">
-                          <i className="fas fa-user me-1"></i> Owner: {ownerName}
+                          <i className="fas fa-user me-1"></i> {tr('Owner:')} {ownerName}
                         </p>
                         {ownerEmail && (
                           <p className="doc-location mb-2">
@@ -156,18 +158,18 @@ const PharmacyDetails = () => {
                         </p>
                         {pharmacy.address?.city && (
                           <p className="doc-location mb-2">
-                            <i className="fas fa-city me-1"></i> City: {pharmacy.address.city}
+                            <i className="fas fa-city me-1"></i> {tr('City:')} {pharmacy.address.city}
                           </p>
                         )}
                         {pharmacy.address?.state && (
                           <p className="doc-location mb-2">
-                            <i className="fas fa-map me-1"></i> State: {pharmacy.address.state}
+                            <i className="fas fa-map me-1"></i> {tr('State:')} {pharmacy.address.state}
                           </p>
                         )}
                         {pharmacy.location?.lat && pharmacy.location?.lng && (
                           <p className="doc-location mb-2">
                             <i className="fas fa-location-dot me-1"></i> 
-                            Coordinates: {pharmacy.location.lat.toFixed(4)}, {pharmacy.location.lng.toFixed(4)}
+                            {tr('Coordinates:')} {pharmacy.location.lat.toFixed(4)}, {pharmacy.location.lng.toFixed(4)}
                           </p>
                         )}
                       </div>
@@ -180,11 +182,11 @@ const PharmacyDetails = () => {
                       to={`/product-all?sellerId=${ownerId}&sellerType=${sellerType}`}
                       className="view-pro-btn"
                     >
-                      Browse Products
+                      {tr('Browse Products')}
                     </Link>
                     {pharmacy.phone && (
                       <a className="apt-btn" href={`tel:${pharmacy.phone}`}>
-                        Call Now
+                        {tr('Call Now')}
                       </a>
                     )}
                   </div>
@@ -198,13 +200,13 @@ const PharmacyDetails = () => {
               <nav className="user-tabs mb-4">
                 <ul className="nav nav-tabs nav-tabs-bottom nav-justified">
                   <li className="nav-item">
-                    <a className="nav-link active" href="#pharmacy_overview" data-bs-toggle="tab">Overview</a>
+                    <a className="nav-link active" href="#pharmacy_overview" data-bs-toggle="tab">{tr('Overview')}</a>
                   </li>
                   <li className="nav-item">
-                    <a className="nav-link" href="#pharmacy_locations" data-bs-toggle="tab">Locations</a>
+                    <a className="nav-link" href="#pharmacy_locations" data-bs-toggle="tab">{tr('Locations')}</a>
                   </li>
                   <li className="nav-item">
-                    <a className="nav-link" href="#pharmacy_products" data-bs-toggle="tab">Products</a>
+                    <a className="nav-link" href="#pharmacy_products" data-bs-toggle="tab">{tr('Products')}</a>
                   </li>
                 </ul>
               </nav>
@@ -214,25 +216,25 @@ const PharmacyDetails = () => {
                   <div className="row">
                     <div className="col-md-9">
                       <div className="widget about-widget">
-                        <h4 className="widget-title">About Pharmacy</h4>
+                        <h4 className="widget-title">{tr('About Pharmacy')}</h4>
                         <p>
-                          {pharmacy.name} is a registered pharmacy providing quality healthcare products and services.
-                          {pharmacy.address?.city && ` Located in ${pharmacy.address.city}, `}
-                          we offer a wide range of medicines, medical equipment, and health supplements.
+                          {pharmacy.name} {tr('is a registered pharmacy providing quality healthcare products and services.')}
+                          {pharmacy.address?.city && ` ${tr('Located in')} ${pharmacy.address.city}, `}
+                          {tr('we offer a wide range of medicines, medical equipment, and health supplements.')}
                         </p>
                         <div className="mt-3">
-                          <h5>Contact Information</h5>
+                          <h5>{tr('Contact Information')}</h5>
                           <ul className="list-unstyled">
-                            <li><strong>Name:</strong> {pharmacy.name}</li>
-                            <li><strong>Owner:</strong> {ownerName}</li>
-                            {ownerEmail && <li><strong>Email:</strong> {ownerEmail}</li>}
-                            <li><strong>Phone:</strong> {pharmacyPhone}</li>
-                            <li><strong>Address:</strong> {pharmacyAddress}</li>
+                            <li><strong>{tr('Name:')}</strong> {pharmacy.name}</li>
+                            <li><strong>{tr('Owner:')}</strong> {ownerName}</li>
+                            {ownerEmail && <li><strong>{tr('Email:')}</strong> {ownerEmail}</li>}
+                            <li><strong>{tr('Phone:')}</strong> {pharmacyPhone}</li>
+                            <li><strong>{tr('Address:')}</strong> {pharmacyAddress}</li>
                             {pharmacy.isActive !== undefined && (
                               <li>
-                                <strong>Status:</strong>{' '}
+                                <strong>{tr('Status:')}</strong>{' '}
                                 <span className={pharmacy.isActive ? 'text-success' : 'text-danger'}>
-                                  {pharmacy.isActive ? 'Active' : 'Inactive'}
+                                  {tr(pharmacy.isActive ? 'Active' : 'Inactive')}
                                 </span>
                               </li>
                             )}
@@ -246,30 +248,30 @@ const PharmacyDetails = () => {
                   <div className="row">
                     <div className="col-md-12">
                       <div className="widget locations-widget">
-                        <h4 className="widget-title">Location Details</h4>
+                        <h4 className="widget-title">{tr('Location Details')}</h4>
                         <div className="mt-3">
-                          <p><strong>Full Address:</strong></p>
+                          <p><strong>{tr('Full Address:')}</strong></p>
                           <p>{pharmacyAddress}</p>
                           {pharmacy.address && (
                             <div className="mt-3">
                               <ul className="list-unstyled">
                                 {pharmacy.address.line1 && (
-                                  <li><strong>Line 1:</strong> {pharmacy.address.line1}</li>
+                                  <li><strong>{tr('Line 1:')}</strong> {pharmacy.address.line1}</li>
                                 )}
                                 {pharmacy.address.line2 && (
-                                  <li><strong>Line 2:</strong> {pharmacy.address.line2}</li>
+                                  <li><strong>{tr('Line 2:')}</strong> {pharmacy.address.line2}</li>
                                 )}
                                 {pharmacy.address.city && (
-                                  <li><strong>City:</strong> {pharmacy.address.city}</li>
+                                  <li><strong>{tr('City:')}</strong> {pharmacy.address.city}</li>
                                 )}
                                 {pharmacy.address.state && (
-                                  <li><strong>State:</strong> {pharmacy.address.state}</li>
+                                  <li><strong>{tr('State:')}</strong> {pharmacy.address.state}</li>
                                 )}
                                 {pharmacy.address.country && (
-                                  <li><strong>Region:</strong> {pharmacy.address.country}</li>
+                                  <li><strong>{tr('Region:')}</strong> {pharmacy.address.country}</li>
                                 )}
                                 {pharmacy.address.zip && (
-                                  <li><strong>ZIP Code:</strong> {pharmacy.address.zip}</li>
+                                  <li><strong>{tr('ZIP Code:')}</strong> {pharmacy.address.zip}</li>
                                 )}
                               </ul>
                             </div>
@@ -284,7 +286,7 @@ const PharmacyDetails = () => {
                                 rel="noopener noreferrer"
                                 className="btn btn-sm btn-primary"
                               >
-                                View on Google Maps
+                                {tr('View on Google Maps')}
                               </a>
                             </div>
                           )}
@@ -297,9 +299,9 @@ const PharmacyDetails = () => {
                   <div className="row">
                     <div className="col-md-12">
                       <div className="widget products-widget">
-                        <h4 className="widget-title">Products from this Pharmacy</h4>
+                        <h4 className="widget-title">{tr('Products from this Pharmacy')}</h4>
                         {products.length === 0 ? (
-                          <p className="text-muted">No products available from this pharmacy.</p>
+                          <p className="text-muted">{tr('No products available from this pharmacy.')}</p>
                         ) : (
                           <>
                             <div className="row mt-3">
@@ -338,7 +340,7 @@ const PharmacyDetails = () => {
                                 to={`/product-all?sellerId=${ownerId}&sellerType=${sellerType}`}
                                 className="btn btn-primary"
                               >
-                                View All Products
+                                {tr('View All Products')}
                               </Link>
                             </div>
                           </>

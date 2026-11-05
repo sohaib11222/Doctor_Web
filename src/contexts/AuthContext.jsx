@@ -50,8 +50,13 @@ export const AuthProvider = ({ children }) => {
   const register = async (data, userType = 'patient') => {
     try {
       const response = await authApi.register(data, userType)
-      localStorage.setItem('token', response.token)
-      setUser(response.user)
+      // A new patient must verify their email before a session is created.
+      // Do not write an undefined token to storage while they are on the code
+      // verification screen.
+      if (response.token) {
+        localStorage.setItem('token', response.token)
+        setUser(response.user)
+      }
       return response
     } catch (error) {
       throw error
@@ -64,8 +69,16 @@ export const AuthProvider = ({ children }) => {
     authApi.logout()
   }
 
+  const setSession = (response) => {
+    const session = response?.data || response || {}
+    const token = session.token
+    const nextUser = session.user
+    if (token) localStorage.setItem('token', token)
+    if (nextUser) setUser(nextUser)
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading, refreshUser }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, refreshUser, setSession }}>
       {children}
     </AuthContext.Provider>
   )

@@ -1,6 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Footer = () => {
+  const { translateText: tr } = useLanguage()
   const location = useLocation()
   const path = location.pathname
 
@@ -14,37 +16,37 @@ const Footer = () => {
               <div className="row">
                 <div className="col-lg-3 col-md-3">
                   <div className="footer-widget footer-menu">
-                    <h6 className="footer-title">Company</h6>
+                    <h6 className="footer-title">{tr('Company')}</h6>
                     <ul>
-                      <li><Link to="/about-us">About</Link></li>
-                      <li><Link to="/search">Features</Link></li>
-                      <li><Link to="/blog-list">Blog</Link></li>
-                      <li><Link to="/contact-us">Contact</Link></li>
-                      <li><Link to="/search">Find Doctors</Link></li>
+                      <li><Link to="/about-us">{tr('About')}</Link></li>
+                      <li><Link to="/search">{tr('Features')}</Link></li>
+                      <li><Link to="/blog-list">{tr('Blog')}</Link></li>
+                      <li><Link to="/contact-us">{tr('Contact')}</Link></li>
+                      <li><Link to="/search">{tr('Find Doctors')}</Link></li>
                     </ul>
                   </div>
                 </div>
                 <div className="col-lg-3 col-md-3">
                   <div className="footer-widget footer-menu">
-                    <h6 className="footer-title">Treatments</h6>
+                    <h6 className="footer-title">{tr('Treatments')}</h6>
                     <ul>
-                      <li><Link to="/search">Dental</Link></li>
-                      <li><Link to="/search">Cardiac</Link></li>
-                      <li><Link to="/search">Spinal Cord</Link></li>
-                      <li><Link to="/search">Hair Growth</Link></li>
-                      <li><Link to="/search">Anemia & Disorder</Link></li>
+                      <li><Link to="/search">{tr('Dental')}</Link></li>
+                      <li><Link to="/search">{tr('Cardiac')}</Link></li>
+                      <li><Link to="/search">{tr('Spinal Cord')}</Link></li>
+                      <li><Link to="/search">{tr('Hair Growth')}</Link></li>
+                      <li><Link to="/search">{tr('Anemia & Disorder')}</Link></li>
                     </ul>
                   </div>
                 </div>
                 <div className="col-lg-3 col-md-3">
                   <div className="footer-widget footer-menu">
-                    <h6 className="footer-title">Specialities</h6>
+                    <h6 className="footer-title">{tr('Specialities')}</h6>
                     <ul>
-                      <li><Link to="/search">Transplant</Link></li>
-                      <li><Link to="/search">Cardiologist</Link></li>
-                      <li><Link to="/search">Oncology</Link></li>
-                      <li><Link to="/search">Pediatrics</Link></li>
-                      <li><Link to="/search">Gynacology</Link></li>
+                      <li><Link to="/search">{tr('Transplant')}</Link></li>
+                      <li><Link to="/search">{tr('Cardiologist')}</Link></li>
+                      <li><Link to="/search">{tr('Oncology')}</Link></li>
+                      <li><Link to="/search">{tr('Pediatrics')}</Link></li>
+                      <li><Link to="/search">{tr('Gynacology')}</Link></li>
                     </ul>
                   </div>
                 </div>
@@ -52,18 +54,18 @@ const Footer = () => {
             </div>
             <div className="col-lg-4 col-md-7">
               <div className="footer-widget">
-                <h6 className="footer-title">Newsletter</h6>
-                <p className="mb-2">Subscribe & Stay Updated from the Mydoctor+</p>
+                <h6 className="footer-title">{tr('Newsletter')}</h6>
+                <p className="mb-2">{tr('Subscribe & Stay Updated from the Mydoctor+')}</p>
                 <div className="subscribe-input">
                   <form action="#">
-                    <input type="email" className="form-control" placeholder="Enter Email Address" />
+                    <input type="email" className="form-control" placeholder={tr('Enter Email Address')} />
                     <button type="submit" className="btn btn-md btn-primary-gradient inline-flex align-items-center">
-                      <i className="isax isax-send-25 me-1"></i>Send
+                      <i className="isax isax-send-25 me-1"></i>{tr('Send')}
                     </button>
                   </form>
                 </div>
                 <div className="social-icon">
-                  <h6 className="mb-3">Connect With Us</h6>
+                  <h6 className="mb-3">{tr('Connect With Us')}</h6>
                   <ul>
                     <li><a href="https://www.facebook.com/profile.php?id=61586814218391" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-facebook"></i></a></li>
                     <li><a href="https://www.tiktok.com/@mydoctorplus?lang=en" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-tiktok"></i></a></li>
@@ -88,7 +90,7 @@ const Footer = () => {
         <div className="container">
           <div className="copyright">
             <div className="copyright-text">
-              <p className="mb-0">Copyright © {new Date().getFullYear()} Mydoctor+. All Rights Reserved</p>
+              <p className="mb-0">{tr('Copyright ©')} {new Date().getFullYear()} Mydoctor+. {tr('All Rights Reserved')}</p>
             </div>
             <div className="copyright-menu">
               <ul className="policy-menu">

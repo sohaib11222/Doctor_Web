@@ -6,8 +6,10 @@ import { useQuery } from '@tanstack/react-query'
 import * as profileApi from '../../api/profile'
 import * as pharmacyApi from '../../api/pharmacy'
 import LanguageToggle from './LanguageToggle'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Header = () => {
+  const { translateText: tr } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -349,7 +351,7 @@ const Header = () => {
                 </li>
                 <li className={`${location.pathname === '/search' && new URLSearchParams(location.search).get('isAvailableOnline') === 'true' ? 'active ' : ''}nav-emergency`}>
                   <Link to="/search?isAvailableOnline=true" onClick={() => setIsMenuOpen(false)}>
-                    <i className="fa-solid fa-kit-medical me-1" aria-hidden="true"></i> Emergency Room H24
+                    <i className="fa-solid fa-kit-medical me-1" aria-hidden="true"></i> {tr('Emergency Room H24')}
                   </Link>
                 </li>
 
@@ -633,6 +635,11 @@ const Header = () => {
                     {shouldShowMenuItem('DOCTOR', true) && (
                       <Link className="dropdown-item" to="/doctor/dashboard">
                         <i className="fe fe-home me-2"></i>Doctor Dashboard
+                      </Link>
+                    )}
+                    {shouldShowMenuItem(['PHARMACY', 'PARAPHARMACY'], true) && (
+                      <Link className="dropdown-item" to="/pharmacy/change-password">
+                        <i className="fe fe-lock me-2"></i>Change Password
                       </Link>
                     )}
                     {shouldShowMenuItem('DOCTOR') && getUserStatus() === 'PENDING' && (

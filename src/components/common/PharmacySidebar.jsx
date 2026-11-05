@@ -97,6 +97,12 @@ const PharmacySidebar = () => {
                 <span>Payouts</span>
               </Link>
             </li>
+            <li className={isActive('/pharmacy/change-password') ? 'active' : ''}>
+              <Link to="/pharmacy/change-password">
+                <i className="fas fa-lock" />
+                <span>Change Password</span>
+              </Link>
+            </li>
           </ul>
         </nav>
       </div>

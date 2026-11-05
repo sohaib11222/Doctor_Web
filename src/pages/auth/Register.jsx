@@ -39,6 +39,11 @@ const Register = () => {
       }
       
       const response = await registerUser(registrationData, 'patient')
+      if (response.requiresEmailVerification) {
+        toast.success('Ti abbiamo inviato un codice di verifica via email.')
+        navigate('/verify-email', { state: { email: response.email || data.email } })
+        return
+      }
       toast.success(tr('Registration successful!'))
       
       // Navigate based on user role

@@ -29,7 +29,7 @@ const ForgotPassword = () => {
   const passwordSchema = yup.object({
     newPassword: yup
       .string()
-      .min(6, tr('Password must be at least 6 characters'))
+      .min(8, tr('Password must be at least 8 characters'))
       .required(tr('New password is required')),
     confirmPassword: yup
       .string()
