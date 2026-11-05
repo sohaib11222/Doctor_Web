@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { ToastContainer } from 'react-toastify'
@@ -20,7 +20,6 @@ import Index from './pages/Index'
 import Telemedicine from './pages/Telemedicine'
 
 // Public Pages - General
-import AboutUs from './pages/AboutUs'
 import ContactUs from './pages/ContactUs'
 import Pricing from './pages/Pricing'
 import FAQ from './pages/FAQ'
@@ -225,7 +224,7 @@ function App() {
             <Route path="/telemedicine" element={<MainLayout><Telemedicine /></MainLayout>} />
 
             {/* Public General Pages */}
-            <Route path="/about-us" element={<MainLayout><AboutUs /></MainLayout>} />
+            <Route path="/about-us" element={<Navigate to="/" replace />} />
             <Route path="/contact-us" element={<MainLayout><ContactUs /></MainLayout>} />
             <Route path="/pricing" element={<MainLayout><Pricing /></MainLayout>} />
             <Route path="/faq" element={<MainLayout><FAQ /></MainLayout>} />

@@ -18,7 +18,6 @@ const Footer = () => {
                   <div className="footer-widget footer-menu">
                     <h6 className="footer-title">{tr('Company')}</h6>
                     <ul>
-                      <li><Link to="/about-us">{tr('About')}</Link></li>
                       <li><Link to="/search">{tr('Features')}</Link></li>
                       <li><Link to="/blog-list">{tr('Blog')}</Link></li>
                       <li><Link to="/contact-us">{tr('Contact')}</Link></li>

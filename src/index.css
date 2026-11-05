@@ -178,7 +178,8 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  padding: 4px 8px !important;
+  min-height: 36px;
+  padding: 7px 10px !important;
   color: #df3b3b;
   font-weight: 600;
   line-height: 1.25;
@@ -187,19 +188,18 @@ body {
   transition: color .2s ease, background-color .2s ease, border-color .2s ease;
 }
 
-@media (min-width: 992px) {
+@media (min-width: 1440px) {
   .header .header-nav .main-nav > li.nav-emergency {
     display: flex;
     align-items: center;
-    align-self: stretch;
+    align-self: center;
     margin: 0;
-    padding-top: 0;
-    padding-bottom: 0;
+    padding: 0;
   }
 
   .header .header-nav .main-nav > li.nav-emergency > a {
     margin: 0;
-    padding: 7px 9px !important;
+    padding: 7px 10px !important;
     transform: none;
   }
 }
@@ -211,6 +211,33 @@ body {
   background: #df3b3b;
   border-color: #df3b3b;
 }
+
+/* Keep the navigation and account actions on one line on wide screens. */
+@media (min-width: 1440px) {
+  .header .header-nav { display: flex; align-items: center; flex-wrap: nowrap; gap: 16px; }
+  .header .header-nav .main-menu-wrapper { flex: 1 1 auto; min-width: 0; }
+  .header .header-nav .main-nav { display: flex; align-items: center; justify-content: center; gap: clamp(14px, 1.25vw, 24px); flex-wrap: nowrap; }
+  .header .header-nav .main-nav > li { display: flex; align-items: center; margin: 0; flex: 0 0 auto; min-height: 36px; }
+  .header .header-nav .main-nav > li > a { white-space: nowrap; }
+  .header .header-navbar-rht { display: flex; align-items: center; flex-wrap: nowrap; flex-shrink: 0; }
+}
+
+/* Switch to the menu before the full set of links can collide. */
+@media (max-width: 1439.98px) {
+  .header .header-nav { display: flex; flex-wrap: nowrap; align-items: center; }
+  .header .header-nav #mobile_btn { display: inline-flex; align-items: center; }
+  .header .header-nav .main-menu-wrapper { position: fixed; z-index: 1050; top: 0; bottom: 0; left: 0; width: min(320px, 88vw); background: #fff; overflow-y: auto; transform: translateX(-105%); transition: transform .2s ease; }
+  .header .header-nav .main-menu-wrapper.menu-opened { transform: translateX(0); }
+  .header .header-nav .main-menu-wrapper .menu-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; }
+  .header .header-nav .main-nav { display: flex; flex-direction: column; align-items: stretch; margin: 0; padding: 0 16px 24px; }
+  .header .header-nav .main-nav > li { display: block; margin: 0; padding: 0; }
+  .header .header-nav .main-nav > li > a, .header .header-nav .main-nav > li > button { display: block; padding: 12px 8px; color: #17354b; line-height: 1.4; }
+  .header .header-nav .main-nav > li.nav-emergency { display: block; padding: 10px 0; }
+  .header .header-nav .main-nav > li.nav-emergency > a { display: inline-flex; width: auto; }
+  .header .header-navbar-rht { display: none; }
+  .header .header-nav .main-nav > .md-mobile-only { display: block !important; }
+}
+@media (min-width: 1440px) { .header .header-nav .main-nav > .md-mobile-only { display: none !important; } }
 
 /* Three-column doctor cards have enough room for the doctor identity, service
    and booking action without relying on a horizontal carousel. */
