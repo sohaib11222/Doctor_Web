@@ -3,8 +3,10 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import * as specializationApi from '../api/specialization'
 import TelemedicineModal from '../components/common/TelemedicineModal'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const Telemedicine = () => {
+  const { translateText: tr } = useLanguage()
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [location, setLocation] = useState('')
@@ -486,8 +488,8 @@ const Telemedicine = () => {
         <div className="container">
           <div className="hero-content-wrap">
           <h1>
-            Using Telemedicine it is possible to carry out medical consultations{' '}
-            <strong>immediately</strong> and <strong>without the need to travel</strong>.
+            {tr('Using Telemedicine it is possible to carry out medical consultations')} {' '}
+            <strong>{tr('immediately')}</strong> {tr('and')} <strong>{tr('without the need to travel')}</strong>.
           </h1>
           <div className="search-box-one">
             <form onSubmit={handleSearch}>
@@ -534,7 +536,7 @@ const Telemedicine = () => {
               </div>
               <div className="form-search-btn">
                 <button className="btn btn-primary" type="submit">
-                  <i className="isax isax-search-normal5 me-2"></i>Search
+                  <i className="isax isax-search-normal5 me-2"></i>{tr('Search')}
                 </button>
               </div>
             </form>
@@ -556,8 +558,8 @@ const Telemedicine = () => {
                   <div className="feature-icon">
                     <i className={feature.icon}></i>
                   </div>
-                  <h3>{feature.title}</h3>
-                  <p>{feature.text}</p>
+                  <h3>{tr(feature.title)}</h3>
+                  <p>{tr(feature.text)}</p>
                 </div>
               </div>
             ))}
@@ -579,17 +581,16 @@ const Telemedicine = () => {
             </div>
             <div className="col-lg-6 order-lg-2 order-1">
               <div className="what-content">
-                <h2>What is Telemedicine?</h2>
+                <h2>{tr('What is Telemedicine?')}</h2>
                 <p>
-                  It is a private messaging and video consultation service that allows you to
-                  contact the best doctors at any time and place.
+                  {tr('It is a private messaging and video consultation service that allows you to contact the best doctors at any time and place.')}
                 </p>
                 <button
                   type="button"
                   className="btn-see-more"
                   onClick={() => setShowTelemedicineModal(true)}
                 >
-                  See more <i className="fa-solid fa-chevron-right" style={{ fontSize: '14px' }}></i>
+                  {tr('See more')} <i className="fa-solid fa-chevron-right" style={{ fontSize: '14px' }}></i>
                 </button>
               </div>
             </div>
@@ -599,11 +600,9 @@ const Telemedicine = () => {
 
       <section className="telemedicine-services-section">
         <div className="container">
-          <h2 className="section-heading">Private messaging and video consultation</h2>
+          <h2 className="section-heading">{tr('Private messaging and video consultation')}</h2>
           <p className="section-desc">
-            These two services allow you to have the medical consultations you need quickly and
-            conveniently. You can also share images, medical evidence, or videos with your
-            specialist doctor.
+            {tr('These two services allow you to have the medical consultations you need quickly and conveniently. You can also share images, medical evidence, or videos with your specialist doctor.')}
           </p>
           <div className="row g-4">
             <div className="col-lg-6 col-12">
@@ -612,10 +611,9 @@ const Telemedicine = () => {
                   <i className="isax isax-messages-25"></i>
                 </div>
                 <div className="service-body">
-                  <h3>Private messaging</h3>
+                  <h3>{tr('Private messaging')}</h3>
                   <p>
-                    Send private messages to your specialist doctor and resolve your doubts
-                    easily and simply.
+                    {tr('Send private messages to your specialist doctor and resolve your doubts easily and simply.')}
                   </p>
                 </div>
               </div>
@@ -626,10 +624,9 @@ const Telemedicine = () => {
                   <i className="isax isax-video5"></i>
                 </div>
                 <div className="service-body">
-                  <h3>Video consultation</h3>
+                  <h3>{tr('Video consultation')}</h3>
                   <p>
-                    Speak privately with your doctor from anywhere without having to physically
-                    reach your doctor&apos;s office.
+                    {tr("Speak privately with your doctor from anywhere without having to physically reach your doctor's office.")}
                   </p>
                 </div>
               </div>
@@ -643,15 +640,15 @@ const Telemedicine = () => {
         <div className="container">
           <div className="row align-items-center g-4">
             <div className="col-lg-6">
-              <h2 className="how-heading">How it works?</h2>
+              <h2 className="how-heading">{tr('How it works?')}</h2>
               <ol className="how-steps">
-                <li>Find the best specialist with the activated Telemedicine service.</li>
-                <li>Select the private messaging or video consultation service.</li>
-                <li>Start your medical consultation with the specialist from any location.</li>
-                <li>Evaluate the service.</li>
+                <li>{tr('Find the best specialist with the activated Telemedicine service.')}</li>
+                <li>{tr('Select the private messaging or video consultation service.')}</li>
+                <li>{tr('Start your medical consultation with the specialist from any location.')}</li>
+                <li>{tr('Evaluate the service.')}</li>
               </ol>
               <Link to="/search" className="btn-find-specialist">
-                Find your specialist <i className="fa-solid fa-chevron-right" style={{ fontSize: '14px' }}></i>
+                {tr('Find your specialist')} <i className="fa-solid fa-chevron-right" style={{ fontSize: '14px' }}></i>
               </Link>
             </div>
             <div className="col-lg-6">
@@ -674,7 +671,7 @@ const Telemedicine = () => {
             </div>
             <div className="col-lg-6">
               <div className="multi-content">
-                <h2>Multiplatform service</h2>
+                <h2>{tr('Multiplatform service')}</h2>
                 <p className="multi-desc">
                   You can use this service in two ways, via the <strong>website</strong> or the{' '}
                   <strong>Top Doctors App</strong>.

@@ -321,7 +321,7 @@ const Favourites = () => {
                                   to={`/doctor-profile?id=${doctorId}`} 
                                   className="btn btn-md btn-light w-100"
                                 >
-                                  View Profile
+                                  {tr('View Profile')}
                                 </Link>
                               </div>
                               <div className="col-6">

@@ -9,12 +9,14 @@ import * as productApi from '../../api/product'
 import * as prescriptionApi from '../../api/productPrescriptionRequest'
 import api from '../../api/axios'
 import { getImageUrl } from '../../utils/imageUtils'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const unwrap = (response) => { const outer = response?.data ?? response; return outer?.data ?? outer }
 const detail = (label, value) => value ? <div className="col-md-6 mb-3" key={label}><div className="small text-muted">{label}</div><div style={{ whiteSpace: 'pre-line' }}>{value}</div></div> : null
 const variantLabel = (variant) => variant?.name || [variant?.strengthValue && `${variant.strengthValue} ${variant.strengthUnit || ''}`.trim(), variant?.dosageForm, variant?.unitsPerPack && `${variant.unitsPerPack} ${variant.unitLabel || 'units'}`].filter(Boolean).join(' · ') || 'Default option'
 
 const ProductDescription = () => {
+  const { translateText: tr } = useLanguage()
   const { user } = useAuth()
   const { addToCart } = useCart()
   const navigate = useNavigate()
@@ -48,37 +50,37 @@ const ProductDescription = () => {
   useEffect(() => { if (quantity > stock) setQuantity(Math.max(1, stock || 1)) }, [stock, quantity])
   const submitPrescription = useMutation({
     mutationFn: prescriptionApi.submitProductPrescriptionRequest,
-    onSuccess: () => { toast.success('Prescription submitted for review. We will notify you once it is approved.'); queryClient.invalidateQueries({ queryKey: ['product-prescription-eligibility', productId] }) },
-    onError: (error) => toast.error(error.response?.data?.message || error.message || 'Unable to submit prescription'),
+    onSuccess: () => { toast.success(tr('Prescription submitted for review. We will notify you once it is approved.')); queryClient.invalidateQueries({ queryKey: ['product-prescription-eligibility', productId] }) },
+    onError: (error) => toast.error(tr(error.response?.data?.message || error.message || 'Unable to submit prescription')),
   })
   const uploadPrescription = async (event) => {
     const file = event.target.files?.[0]; if (!file) return
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
     const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'webp']
     const extension = String(file.name || '').split('.').pop()?.toLowerCase()
-    if (file.size > 15 * 1024 * 1024) { toast.error('Prescription files must be 15 MB or smaller.'); event.target.value = ''; return }
-    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(extension)) { toast.error('Upload a PDF, JPG, PNG, or WebP prescription file.'); event.target.value = ''; return }
+    if (file.size > 15 * 1024 * 1024) { toast.error(tr('Prescription files must be 15 MB or smaller.')); event.target.value = ''; return }
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(extension)) { toast.error(tr('Upload a PDF, JPG, PNG, or WebP prescription file.')); event.target.value = ''; return }
     try {
       setUploading(true)
       const data = new FormData(); data.append('file', file, file.name)
       const response = await api.post('/upload/prescription', data, { headers: { 'Content-Type': 'multipart/form-data' } })
       const upload = unwrap(response)
       await submitPrescription.mutateAsync({ productId, variantId: selectedVariant?._id || null, prescriptionUrl: upload?.url, originalName: file.name, mimeType: file.type })
-    } catch (error) { toast.error(error.response?.data?.message || error.message || 'Prescription upload failed') } finally { setUploading(false); event.target.value = '' }
+    } catch (error) { toast.error(tr(error.response?.data?.message || error.message || 'Prescription upload failed')) } finally { setUploading(false); event.target.value = '' }
   }
   const add = (buyNow) => {
-    if (!user) { toast.info('Please sign in to purchase products.'); navigate('/login'); return }
-    if (!patient) { toast.error('Only patient accounts can purchase products.'); return }
-    if (stock < 1) { toast.error('This option is out of stock.'); return }
-    if (!canPurchase) { toast.info(product.requiresPrescription ? 'Upload an approved prescription before purchasing this product.' : 'This product is not available for purchase.'); return }
+    if (!user) { toast.info(tr('Please sign in to purchase products.')); navigate('/login'); return }
+    if (!patient) { toast.error(tr('Only patient accounts can purchase products.')); return }
+    if (stock < 1) { toast.error(tr('This option is out of stock.')); return }
+    if (!canPurchase) { toast.info(tr(product.requiresPrescription ? 'Upload an approved prescription before purchasing this product.' : 'This product is not available for purchase.')); return }
     addToCart(product, quantity, selectedVariant)
-    toast.success(`${quantity} × ${product.name} added to your cart`)
+    toast.success(`${quantity} × ${product.name} ${tr('added to your cart')}`)
     if (buyNow) navigate('/product-checkout')
   }
   if (productQuery.isLoading) return <><Breadcrumb title="Pharmacy" li1="Product" li2="Loading" /><div className="content"><div className="container text-center py-5"><span className="spinner-border text-primary" /></div></div></>
   if (productQuery.isError || !product) return <><Breadcrumb title="Pharmacy" li1="Product" li2="Not found" /><div className="content"><div className="container"><div className="alert alert-danger">This product is unavailable. <Link to="/product-all">Browse products</Link></div></div></div></>
   const generalDetails = product.productType === 'PHARMACY_MEDICINE' ? product.medicineDetails : product.parapharmacyDetails
-  const statusMessage = { NOT_SUBMITTED: 'A prescription is required before this product can be purchased.', PENDING: 'Your prescription is under review by the seller.', REJECTED: eligibility.request?.reviewNotes || 'Your prescription was not approved. Please upload another copy.', APPROVED: 'Your prescription is approved. This product is ready to purchase.' }[eligibility.status]
+  const statusMessage = { NOT_SUBMITTED: tr('A prescription is required before this product can be purchased.'), PENDING: tr('Your prescription is under review by the seller.'), REJECTED: eligibility.request?.reviewNotes || tr('Your prescription was not approved. Please upload another copy.'), APPROVED: tr('Your prescription is approved. This product is ready to purchase.') }[eligibility.status]
 
   return <>
     <Breadcrumb title="Pharmacy" li1="Product details" li2={product.name} />

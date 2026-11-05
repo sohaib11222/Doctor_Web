@@ -514,8 +514,8 @@ const PatientAppointmentDetails = () => {
                           className="btn btn-primary btn-lg"
                           style={{ fontSize: '16px', padding: '12px 24px', display: 'inline-block', marginTop: '10px' }}
                         >
-                          <i className="fa-solid fa-video me-2"></i>
-                          Start Video Call
+                            <i className="fa-solid fa-video me-2" aria-hidden="true"></i>
+                            {tr('Start Video Call')}
                         </Link>
                       </div>
                     </li>
@@ -547,7 +547,7 @@ const PatientAppointmentDetails = () => {
                                 className="btn btn-warning"
                               >
                                 <i className="fa-solid fa-calendar-days me-2"></i>
-                                Request Reschedule
+                                {tr('Request Reschedule')}
                               </Link>
                             </div>
                           </div>

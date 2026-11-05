@@ -33,6 +33,55 @@ body {
   gap: 8px !important;
 }
 
+/* Public doctor profiles sit below the fixed public header.  The legacy
+ * `.doctor-content.content` selector overrides the normal page offset, which
+ * previously placed profile images and details underneath the navigation. */
+.doctor-profile-page {
+  position: relative;
+  z-index: 0;
+  min-width: 0;
+  overflow: visible;
+  padding: 136px 0 64px !important;
+}
+
+.doctor-profile-page .container,
+.doctor-profile-page .doc-profile-card,
+.doctor-profile-page .doctors-detailed-info {
+  min-width: 0;
+}
+
+.doctor-profile-page .doctor-profile-two,
+.doctor-profile-page .doc-info-left,
+.doctor-profile-page .doc-info-right {
+  min-width: 0;
+}
+
+@media (max-width: 991.98px) {
+  .doctor-profile-page {
+    padding: 106px 0 42px !important;
+  }
+
+  .doctor-profile-page .doctor-profile-two {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .doctor-profile-page {
+    padding: 92px 0 28px !important;
+  }
+
+  .doctor-profile-page .doc-info-left {
+    flex-wrap: wrap;
+  }
+
+  .doctor-profile-page .doctor-img {
+    width: 120px !important;
+    height: 120px !important;
+    min-width: 120px !important;
+  }
+}
+
 .cart-qty-stepper .quantity-left-minus,
 .cart-qty-stepper .quantity-right-plus {
   width: 36px !important;

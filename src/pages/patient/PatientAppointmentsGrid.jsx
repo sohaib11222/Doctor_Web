@@ -466,7 +466,7 @@ const PatientAppointmentsGrid = () => {
                                       to={`/video-call-room?appointmentId=${apt._id}`}
                                       className="start-link"
                                     >
-                                      <i className="isax isax-calendar-tick5 me-1"></i>Attend
+                                      <i className="isax isax-calendar-tick5 me-1"></i>{tr('Attend')}
                                     </Link>
                                   </div>
                                 )}

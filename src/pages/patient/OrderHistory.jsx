@@ -167,7 +167,7 @@ const OrderHistory = () => {
                         setPage(1)
                       }}
                     >
-                      All Orders {statusCounts['ALL'] > 0 && <span className="badge bg-light text-dark ms-1">{statusCounts['ALL']}</span>}
+                      {tr('All Orders')} {statusCounts['ALL'] > 0 && <span className="badge bg-light text-dark ms-1">{statusCounts['ALL']}</span>}
                     </button>
                     {['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'].map((status) => (
                       <button
@@ -184,7 +184,7 @@ const OrderHistory = () => {
                   </div>
                   <Link to="/product-all" className="btn btn-primary btn-sm">
                     <i className="fe fe-shopping-cart me-2"></i>
-                    Continue Shopping
+                    {tr('Continue Shopping')}
                   </Link>
                 </div>
               </div>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
+import { useLanguage } from '../../contexts/LanguageContext'
 import Breadcrumb from '../../components/common/Breadcrumb'
 import { useCart } from '../../contexts/CartContext'
 import { useAuth } from '../../contexts/AuthContext'
@@ -14,6 +15,7 @@ const validAddress = (address) => Boolean(address.line1 && address.city && addre
 const unwrap = (response) => { const outer = response?.data ?? response; return outer?.data ?? outer }
 
 const ProductCheckout = () => {
+  const { translateText: tr } = useLanguage()
   const { cartItems, getCartTotal, clearCart } = useCart()
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -27,27 +29,27 @@ const ProductCheckout = () => {
   const subtotal = getCartTotal()
   const total = subtotal
 
-  useEffect(() => { if (!cartItems.length) { toast.warning('Your cart is empty'); navigate('/product-all') } }, [cartItems.length, navigate])
+  useEffect(() => { if (!cartItems.length) { toast.warning(tr('Your cart is empty')); navigate('/product-all') } }, [cartItems.length, navigate, tr])
   useEffect(() => { if (validAddress(savedAddress) && !useNewAddress) setAddress(savedAddress) }, [savedAddress, useNewAddress])
   const setField = (field, value) => setAddress((current) => ({ ...current, [field]: value }))
   const submit = async (event) => {
     event.preventDefault()
-    if (!user) { toast.error('Please sign in before checkout'); navigate('/login'); return }
-    if (String(user.role || '').toUpperCase() !== 'PATIENT') { toast.error('Only patient accounts can complete product checkout'); return }
-    if (!termsAccepted) { toast.error('Please accept the Terms & Conditions'); return }
+    if (!user) { toast.error(tr('Please sign in before checkout')); navigate('/login'); return }
+    if (String(user.role || '').toUpperCase() !== 'PATIENT') { toast.error(tr('Only patient accounts can complete product checkout')); return }
+    if (!termsAccepted) { toast.error(tr('Please accept the Terms & Conditions')); return }
     const mustUseEnteredAddress = useNewAddress || !validAddress(savedAddress)
     const deliveryAddress = mustUseEnteredAddress ? normalise(address) : savedAddress
-    if (!validAddress(deliveryAddress)) { toast.error('Add a complete delivery address before continuing'); return }
+    if (!validAddress(deliveryAddress)) { toast.error(tr('Add a complete delivery address before continuing')); return }
     try {
       if (mustUseEnteredAddress) await profileApi.updateUserProfile({ address: deliveryAddress })
       const response = await orderApi.createOrder({ items: cartItems.map((item) => ({ productId: item._id, variantId: item.variantId || undefined, quantity: item.quantity })), shippingAddress: deliveryAddress, paymentMethod: 'STRIPE' })
       const result = unwrap(response)
       const orders = Array.isArray(result?.orders) ? result.orders : result ? [result] : []
       clearCart()
-      toast.success(orders.length > 1 ? `${orders.length} order requests were sent. Each seller will set shipping and delivery before payment.` : 'Order request sent. Your seller will set shipping and delivery before payment.')
+      toast.success(orders.length > 1 ? `${orders.length} ${tr('order requests were sent. Each seller will set shipping and delivery before payment.')}` : tr('Order request sent. Your seller will set shipping and delivery before payment.'))
       if (orders.length === 1 && orders[0]?._id) navigate(`/order-details/${orders[0]._id}`)
       else navigate('/order-history')
-    } catch (error) { toast.error(error.response?.data?.message || error.message || 'Checkout failed') }
+    } catch (error) { toast.error(tr(error.response?.data?.message || error.message || 'Checkout failed')) }
   }
   if (!cartItems.length) return null
   return <>

@@ -11,7 +11,7 @@ const hasShippingQuote = (order) => order?.finalShipping !== null
   && [2, 3, 4, 5].includes(Number(order?.promisedDeliveryDays))
 
 const OrderDetails = () => {
-  const { formatDate: formatLocalizedDate } = useLanguage()
+  const { translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
   const { orderId } = useParams()
   const navigate = useNavigate()
   const { data: orderResponse, isLoading, error, refetch } = useOrder(orderId)
@@ -153,7 +153,7 @@ const OrderDetails = () => {
               <h3>Order Details</h3>
               <Link to="/order-history" className="btn btn-outline-primary btn-sm">
                 <i className="fe fe-arrow-left me-2"></i>
-                Back to Orders
+                {tr('Back to Orders')}
               </Link>
             </div>
 

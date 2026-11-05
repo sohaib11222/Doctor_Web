@@ -382,7 +382,7 @@ const DoctorProfile = () => {
   }
 
   return (
-    <div className="content doctor-content" style={{ padding: '20px 0' }}>
+    <div className="content doctor-content doctor-profile-page">
       <div className="container">
       {/* Doctor Widget */}
       <div className="card doc-profile-card" style={{ 
@@ -633,68 +633,6 @@ const DoctorProfile = () => {
                 </span>
               </li>
             </ul>
-            {/* Insurance Companies Display - Show prominently if doctor accepts insurance */}
-            {doctor?.convenzionato === true && doctor?.insuranceCompanies && doctor.insuranceCompanies.length > 0 && (
-              <div style={{ 
-                marginTop: '20px',
-                padding: '20px',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '12px',
-                border: '1px solid #e9ecef'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-                  <i className="fa-solid fa-shield-halved" style={{ color: '#28a745', fontSize: '20px' }}></i>
-                  <h5 style={{ margin: 0, color: '#28a745', fontWeight: '600' }}>Accepts Insurance</h5>
-                </div>
-                <p style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>
-                  This doctor accepts the following insurance companies:
-                </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-                  {doctor.insuranceCompanies.map((insurance, index) => {
-                    const insuranceId = insurance._id || insurance.id || insurance
-                    const insuranceName = insurance.name || 'Insurance Company'
-                    const logoUrl = normalizeImageUrl(insurance.logo)
-                    
-                    return (
-                      <div 
-                        key={insuranceId || index} 
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '8px 12px',
-                          backgroundColor: '#fff',
-                          borderRadius: '8px',
-                          border: '1px solid #dee2e6',
-                          minWidth: '150px'
-                        }}
-                      >
-                        {logoUrl ? (
-                          <img
-                            src={logoUrl}
-                            alt={insuranceName}
-                            style={{
-                              width: '30px',
-                              height: '30px',
-                              objectFit: 'contain'
-                            }}
-                            onError={(e) => {
-                              e.target.style.display = 'none'
-                            }}
-                          />
-                        ) : (
-                          <i className="fa-solid fa-shield-halved" style={{ color: '#6c757d', fontSize: '18px' }}></i>
-                        )}
-                        <span style={{ fontSize: '13px', fontWeight: '500', color: '#333' }}>
-                          {insuranceName}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-            
             <div className="bottom-book-btn" style={{ 
               display: 'flex',
               justifyContent: 'space-between',

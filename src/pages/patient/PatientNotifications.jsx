@@ -8,7 +8,7 @@ import { toast } from 'react-toastify'
 import { useLanguage } from '../../contexts/LanguageContext'
 
 const PatientNotifications = () => {
-  const { translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
+  const { language, translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
   const { user } = useAuth()
   const [filter, setFilter] = useState('all') // 'all', 'unread', 'read'
 
@@ -77,15 +77,16 @@ const PatientNotifications = () => {
 
   // Format time ago
   const formatTimeAgo = (dateString) => {
-    if (!dateString) return 'Just now'
+    if (!dateString) return tr('Just now')
     const date = new Date(dateString)
     const now = new Date()
     const diffInSeconds = Math.floor((now - date) / 1000)
 
-    if (diffInSeconds < 60) return 'Just now'
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`
+    if (diffInSeconds < 60) return tr('Just now')
+    const relative = new Intl.RelativeTimeFormat(language === 'it' ? 'it-IT' : 'en-US', { numeric: 'auto' })
+    if (diffInSeconds < 3600) return relative.format(-Math.floor(diffInSeconds / 60), 'minute')
+    if (diffInSeconds < 86400) return relative.format(-Math.floor(diffInSeconds / 3600), 'hour')
+    if (diffInSeconds < 604800) return relative.format(-Math.floor(diffInSeconds / 86400), 'day')
     
     return formatLocalizedDate(date, { day: 'numeric', month: 'short', year: 'numeric' })
   }
@@ -128,14 +129,14 @@ const PatientNotifications = () => {
   return (
     <>
       <div className="dashboard-header">
-        <h3>Notifications</h3>
+        <h3>{tr('Notifications')}</h3>
         {unreadCount > 0 && (
           <button 
             className="btn btn-sm btn-primary"
             onClick={handleMarkAllAsRead}
             disabled={markAllAsReadMutation.isPending}
           >
-            {markAllAsReadMutation.isPending ? 'Marking...' : 'Mark All as Read'}
+            {markAllAsReadMutation.isPending ? tr('Marking...') : tr('Mark All as Read')}
           </button>
         )}
       </div>
@@ -149,7 +150,7 @@ const PatientNotifications = () => {
                   className={`nav-link ${filter === 'all' ? 'active' : ''}`}
                   onClick={() => setFilter('all')}
                 >
-                  All
+                  {tr('All')}
                 </button>
               </li>
               <li className="nav-item">
@@ -157,7 +158,7 @@ const PatientNotifications = () => {
                   className={`nav-link ${filter === 'unread' ? 'active' : ''}`}
                   onClick={() => setFilter('unread')}
                 >
-                  Unread {unreadCount > 0 && <span className="badge bg-danger">{unreadCount}</span>}
+                  {tr('Unread')} {unreadCount > 0 && <span className="badge bg-danger">{unreadCount}</span>}
                 </button>
               </li>
               <li className="nav-item">
@@ -165,7 +166,7 @@ const PatientNotifications = () => {
                   className={`nav-link ${filter === 'read' ? 'active' : ''}`}
                   onClick={() => setFilter('read')}
                 >
-                  Read
+                  {tr('Read')}
                 </button>
               </li>
             </ul>
@@ -175,12 +176,12 @@ const PatientNotifications = () => {
           {isLoading ? (
             <div className="text-center py-5">
               <div className="spinner-border" role="status">
-                <span className="visually-hidden">Loading...</span>
+                <span className="visually-hidden">{tr('Loading...')}</span>
               </div>
             </div>
           ) : notifications.length === 0 ? (
             <div className="text-center py-5">
-              <p className="text-muted">No notifications found</p>
+              <p className="text-muted">{tr('No notifications found')}</p>
             </div>
           ) : (
             <div className="notification-list">
@@ -193,8 +194,8 @@ const PatientNotifications = () => {
                     <i className={getNotificationIcon(notification.type)}></i>
                   </div>
                   <div className="notification-content">
-                    <h5>{notification.title}</h5>
-                    <p>{notification.body}</p>
+                    <h5>{tr(notification.title)}</h5>
+                    <p>{tr(notification.body)}</p>
                     <span className="notification-time">{formatTimeAgo(notification.createdAt)}</span>
                   </div>
                   <div className="notification-action">
@@ -206,7 +207,7 @@ const PatientNotifications = () => {
                           handleMarkAsRead(notification._id)
                         }}
                         disabled={markAsReadMutation.isPending}
-                        title="Mark as read"
+                        title={tr('Mark as read')}
                       >
                         <i className="isax isax-tick-circle"></i>
                       </button>

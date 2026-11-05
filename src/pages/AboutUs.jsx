@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Breadcrumb from '../components/common/Breadcrumb'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const AboutUs = () => {
+  const { translateText: tr } = useLanguage()
   useEffect(() => {
     // Initialize testimonial slider if jQuery and slick are available
     const initSlider = () => {
@@ -254,8 +256,8 @@ const AboutUs = () => {
                       <span><img src={item.icon} alt="choose-image" /></span>
                     </div>
                     <div className="why-choose-content">
-                      <h4>{item.title}</h4>
-                      <p>{item.description}</p>
+                      <h4>{tr(item.title)}</h4>
+                      <p>{tr(item.description)}</p>
                     </div>
                   </div>
                 </div>
@@ -393,8 +395,8 @@ const AboutUs = () => {
                           <h2>One platform for the people involved in care</h2>
                         </div>
                         <div className="testimonial-details">
-                          <p>{highlight.text}</p>
-                          <h6><span>{highlight.title}</span> {highlight.label}</h6>
+                          <p>{tr(highlight.text)}</p>
+                          <h6><span>{tr(highlight.title)}</span> {tr(highlight.label)}</h6>
                         </div>
                       </div>
                     </div>
@@ -453,7 +455,7 @@ const AboutUs = () => {
                           aria-expanded={openFaq === faq.id}
                           aria-controls={`collapse${faq.id}`}
                         >
-                          {faq.question}
+                          {tr(faq.question)}
                         </button>
                       </h2>
                       <div
@@ -464,7 +466,7 @@ const AboutUs = () => {
                       >
                         <div className="accordion-body">
                           <div className="accordion-content">
-                            <p>{faq.answer}</p>
+                            <p>{tr(faq.answer)}</p>
                           </div>
                         </div>
                       </div>

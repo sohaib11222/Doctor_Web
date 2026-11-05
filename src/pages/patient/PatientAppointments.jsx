@@ -426,7 +426,7 @@ const PatientAppointments = () => {
                                 to={`/video-call-room?appointmentId=${apt._id}`}
                                 className="btn btn-md btn-primary-gradient"
                               >
-                                <i className="isax isax-calendar-tick5 me-1"></i>Attend
+                                <i className="isax isax-calendar-tick5 me-1"></i>{tr('Attend')}
                               </Link>
                             </li>
                           )}

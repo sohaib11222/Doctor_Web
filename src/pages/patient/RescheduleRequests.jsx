@@ -109,7 +109,7 @@ const RescheduleRequests = () => {
               <div className="card-body text-center py-5">
                 <p className="text-muted mb-3">No reschedule requests found</p>
                 <Link to="/patient/request-reschedule" className="btn btn-primary">
-                  Request Reschedule
+                  {tr('Request Reschedule')}
                 </Link>
               </div>
             </div>

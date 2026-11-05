@@ -6,8 +6,10 @@ import * as productApi from '../../api/product'
 import { useCart } from '../../contexts/CartContext'
 import { toast } from 'react-toastify'
 import { getImageUrl } from '../../utils/imageUtils'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const ProductAll = () => {
+  const { translateText: tr } = useLanguage()
   const { addToCart } = useCart()
   const [searchParams, setSearchParams] = useSearchParams()
   
@@ -82,7 +84,7 @@ const ProductAll = () => {
     e.preventDefault()
     e.stopPropagation()
     addToCart(product, 1)
-    toast.success(`${product.name} added to cart!`)
+    toast.success(`${product.name} ${tr('added to cart!')}`)
   }
 
   return (

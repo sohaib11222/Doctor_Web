@@ -3,14 +3,16 @@ import Breadcrumb from '../../components/common/Breadcrumb'
 import { useCart } from '../../contexts/CartContext'
 import { toast } from 'react-toastify'
 import { getImageUrl } from '../../utils/imageUtils'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Cart = () => {
+  const { translateText: tr } = useLanguage()
   const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCart()
 
   const handleQuantityChange = (productId, variantId, newQuantity) => {
     if (newQuantity < 1) {
       removeFromCart(productId, variantId)
-      toast.info('Item removed from cart')
+      toast.info(tr('Item removed from cart'))
     } else {
       updateQuantity(productId, newQuantity, variantId)
     }
@@ -18,7 +20,7 @@ const Cart = () => {
 
   const handleRemoveItem = (productId, variantId, productName) => {
     removeFromCart(productId, variantId)
-    toast.info(`${productName} removed from cart`)
+    toast.info(`${productName} ${tr('removed from cart')}`)
   }
 
   const subtotal = getCartTotal()
@@ -136,7 +138,7 @@ const Cart = () => {
                       onClick={() => {
                         if (window.confirm('Are you sure you want to clear your cart?')) {
                           clearCart()
-                          toast.info('Cart cleared')
+                          toast.info(tr('Cart cleared'))
                         }
                       }}
                     >

@@ -1319,28 +1319,28 @@ const Index = () => {
                   lineHeight: '1.2',
                   marginBottom: '2rem'
                 }}>
-                  Discover Health: Find Your Trusted{' '}
+                  {tr('Discover Health: Find Your Trusted')}{' '}
                   <span className="banner-icon">
                     <img src="/assets/img/icons/video.svg" alt="img" />
                   </span>{' '}
-                  <span className="text-gradient">Doctors</span> Today
+                  <span className="text-gradient">{tr('Doctors')}</span> {tr('Today')}
                 </h1>
                 <div className="home-category-tabs" aria-label="Home quick categories">
                   <Link to="/telemedicine" className="home-category-tab">
                     <i className="isax isax-video"></i>
-                    Telemedicine
+                    {tr('Telemedicine')}
                   </Link>
                   <Link to="/search" className="home-category-tab active">
                     <i className="isax isax-user-search"></i>
-                    Dental Practices
+                    {tr('Dental Practices')}
                   </Link>
                   <Link to="/search" className="home-category-tab">
                     <i className="isax isax-hospital"></i>
-                    Clinic
+                    {tr('Clinic')}
                   </Link>
                   <Link to="/pharmacy-search" className="home-category-tab">
                     <i className="isax isax-bag"></i>
-                    Pharmacy
+                    {tr('Pharmacy')}
                   </Link>
                 </div>
                 <div className="search-box-one aos" data-aos="fade-up">
@@ -2136,7 +2136,7 @@ const Index = () => {
                     e.currentTarget.style.backgroundColor = '#0E82FD'
                   }}
                 >
-                  See More
+                  {tr('See More')}
                   <i className="fa-solid fa-chevron-right" style={{ fontSize: '14px' }}></i>
                 </Link>
               </div>
