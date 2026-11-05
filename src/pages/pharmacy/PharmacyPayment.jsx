@@ -2,9 +2,12 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as balanceApi from '../../api/balance'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PharmacyPayment = () => {
   const queryClient = useQueryClient()
+  const { translateText: tr, formatDate, language } = useLanguage()
+  const formatCurrency = (amount) => new Intl.NumberFormat(language === 'it' ? 'it-IT' : 'en-US', { style: 'currency', currency: 'EUR' }).format(Number(amount || 0))
   const [withdrawModal, setWithdrawModal] = useState({
     show: false,
     amount: '',
@@ -32,20 +35,14 @@ const PharmacyPayment = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['withdrawalRequests'])
       queryClient.invalidateQueries(['userBalance'])
-      toast.success('Withdrawal request submitted successfully!')
+      toast.success(tr('Withdrawal request submitted successfully!'))
       setWithdrawModal({ show: false, amount: '', paymentMethod: 'STRIPE', paymentDetails: '' })
     },
     onError: (error) => {
       const errorMessage = error?.response?.data?.message || error?.message || 'Failed to submit withdrawal request'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '—'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
-  }
 
   const getStatusBadge = (status) => {
     const statusUpper = (status || '').toUpperCase()
@@ -63,7 +60,7 @@ const PharmacyPayment = () => {
             fontWeight: '500'
           }}
         >
-          {statusUpper === 'APPROVED' ? 'Approved' : 'Completed'}
+          {tr(statusUpper === 'APPROVED' ? 'Approved' : 'Completed')}
         </span>
       )
     }
@@ -81,7 +78,7 @@ const PharmacyPayment = () => {
             fontWeight: '500'
           }}
         >
-          Pending
+          {tr('Pending')}
         </span>
       )
     }
@@ -99,7 +96,7 @@ const PharmacyPayment = () => {
             fontWeight: '500'
           }}
         >
-          Rejected
+          {tr('Rejected')}
         </span>
       )
     }
@@ -116,7 +113,7 @@ const PharmacyPayment = () => {
           fontWeight: '500'
         }}
       >
-        {status || '—'}
+        {tr(status || '—')}
       </span>
     )
   }
@@ -124,15 +121,15 @@ const PharmacyPayment = () => {
   const handleWithdrawRequest = () => {
     const amount = parseFloat(withdrawModal.amount)
     if (!amount || amount <= 0) {
-      toast.error('Please enter a valid amount')
+      toast.error(tr('Please enter a valid amount'))
       return
     }
     if (amount > balance) {
-      toast.error('Insufficient balance')
+      toast.error(tr('Insufficient balance'))
       return
     }
     if (!withdrawModal.paymentDetails) {
-      toast.error('Please enter payment details')
+      toast.error(tr('Please enter payment details'))
       return
     }
 
@@ -152,8 +149,8 @@ const PharmacyPayment = () => {
           <div className="col-lg-12 col-xl-12">
             <div className="payout-wrap">
               <div className="payout-title">
-                <h4>Settings</h4>
-                <p>All the earning will be sent to below selected payout method</p>
+                <h4>{tr('Settings')}</h4>
+                <p>{tr('All earnings will be sent to the selected payout method below.')}</p>
               </div>
               <div className="stripe-wrapper">
                 <div className="stripe-box active">
@@ -164,42 +161,42 @@ const PharmacyPayment = () => {
                     className="btn"
                     onClick={() => setWithdrawModal({ ...withdrawModal, show: true, paymentMethod: 'STRIPE' })}
                   >
-                    <i className="fa-solid fa-gear"></i>Configure
+                    <i className="fa-solid fa-gear"></i>{tr('Configure')}
                   </button>
                 </div>
               </div>
               <div className="mt-3">
                 <div className="d-flex justify-content-between align-items-center p-3 bg-light rounded">
                   <div>
-                    <p className="mb-1 text-muted">Available Balance</p>
-                    {balanceLoading ? <h4 className="mb-0">—</h4> : <h4 className="mb-0">€{Number(balance || 0).toFixed(2)}</h4>}
+                    <p className="mb-1 text-muted">{tr('Available Balance')}</p>
+                    {balanceLoading ? <h4 className="mb-0">—</h4> : <h4 className="mb-0">{formatCurrency(balance)}</h4>}
                   </div>
                   <button
                     className="btn btn-primary"
                     onClick={() => setWithdrawModal({ ...withdrawModal, show: true })}
                     disabled={balanceLoading || balance <= 0}
                   >
-                    Request Withdrawal
+                    {tr('Request Withdrawal')}
                   </button>
                 </div>
               </div>
             </div>
 
             <div className="dashboard-header">
-              <h3>Payouts</h3>
+              <h3>{tr('Payouts')}</h3>
             </div>
 
             {withdrawalLoading && (
               <div className="text-center py-5">
                 <div className="spinner-border" role="status">
-                  <span className="visually-hidden">Loading...</span>
+                  <span className="visually-hidden">{tr('Loading...')}</span>
                 </div>
               </div>
             )}
 
             {!withdrawalLoading && withdrawals.length === 0 && (
               <div className="text-center py-5">
-                <p className="text-muted">No withdrawal requests found</p>
+                <p className="text-muted">{tr('No withdrawal requests found')}</p>
               </div>
             )}
 
@@ -209,12 +206,12 @@ const PharmacyPayment = () => {
                   <table className="table table-center mb-0">
                     <thead>
                       <tr>
-                        <th>Date</th>
-                        <th>Payment Method</th>
-                        <th>Amount</th>
-                        <th>Fee</th>
-                        <th>Total Deducted</th>
-                        <th>Status</th>
+                        <th>{tr('Date')}</th>
+                        <th>{tr('Payment Method')}</th>
+                        <th>{tr('Amount')}</th>
+                        <th>{tr('Fee')}</th>
+                        <th>{tr('Total Deducted')}</th>
+                        <th>{tr('Status')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -223,12 +220,12 @@ const PharmacyPayment = () => {
                           <td>{formatDate(withdrawal.requestedAt || withdrawal.createdAt)}</td>
                           <td>{withdrawal.paymentMethod || '—'}</td>
                           <td>
-                            <strong>€{(withdrawal.amount || 0).toFixed(2)}</strong>
+                            <strong>{formatCurrency(withdrawal.amount)}</strong>
                             {withdrawal.netAmount !== null &&
                               withdrawal.netAmount !== undefined &&
                               withdrawal.netAmount !== withdrawal.amount && (
                                 <small className="d-block text-muted">
-                                  You receive: €{withdrawal.netAmount.toFixed(2)}
+                                  {tr('You receive:')} {formatCurrency(withdrawal.netAmount)}
                                 </small>
                               )}
                           </td>
@@ -237,18 +234,18 @@ const PharmacyPayment = () => {
                               <>
                                 <span className="text-muted">{withdrawal.withdrawalFeePercent}%</span>
                                 {withdrawal.withdrawalFeeAmount !== null && withdrawal.withdrawalFeeAmount !== undefined && (
-                                  <small className="d-block text-muted">€{withdrawal.withdrawalFeeAmount.toFixed(2)}</small>
+                                  <small className="d-block text-muted">{formatCurrency(withdrawal.withdrawalFeeAmount)}</small>
                                 )}
                               </>
                             ) : (
-                              <span className="text-muted">No fee</span>
+                              <span className="text-muted">{tr('No fee')}</span>
                             )}
                           </td>
                           <td>
                             {withdrawal.totalDeducted !== null && withdrawal.totalDeducted !== undefined ? (
-                              <strong className="text-danger">€{withdrawal.totalDeducted.toFixed(2)}</strong>
+                              <strong className="text-danger">{formatCurrency(withdrawal.totalDeducted)}</strong>
                             ) : (
-                              <span>€{(withdrawal.amount || 0).toFixed(2)}</span>
+                              <span>{formatCurrency(withdrawal.amount)}</span>
                             )}
                           </td>
                           <td>{getStatusBadge(withdrawal.status)}</td>
@@ -315,28 +312,29 @@ const PharmacyPayment = () => {
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Request Withdrawal</h5>
+                <h5 className="modal-title">{tr('Request Withdrawal')}</h5>
                 <button
                   type="button"
                   className="btn-close"
+                  aria-label={tr('Close')}
                   onClick={() => setWithdrawModal({ show: false, amount: '', paymentMethod: 'STRIPE', paymentDetails: '' })}
                 ></button>
               </div>
               <div className="modal-body">
                 <div className="form-group mb-3">
-                  <label>Available Balance</label>
-                  <input type="text" className="form-control" value={`€${Number(balance || 0).toFixed(2)}`} disabled />
+                  <label>{tr('Available Balance')}</label>
+                  <input type="text" className="form-control" value={formatCurrency(balance)} disabled />
                 </div>
                 <div className="form-group mb-3">
                   <label>
-                    Amount to Withdraw <span className="text-danger">*</span>
+                    {tr('Amount to Withdraw')} <span className="text-danger">*</span>
                   </label>
                   <input
                     type="number"
                     className="form-control"
                     value={withdrawModal.amount}
                     onChange={(e) => setWithdrawModal({ ...withdrawModal, amount: e.target.value })}
-                    placeholder="Enter amount"
+                    placeholder={tr('Enter amount')}
                     min="0"
                     max={balance}
                     step="0.01"
@@ -344,7 +342,7 @@ const PharmacyPayment = () => {
                 </div>
                 <div className="form-group mb-3">
                   <label>
-                    Payment Method <span className="text-danger">*</span>
+                    {tr('Payment Method')} <span className="text-danger">*</span>
                   </label>
                   <select
                     className="form-control"
@@ -352,15 +350,15 @@ const PharmacyPayment = () => {
                     onChange={(e) => setWithdrawModal({ ...withdrawModal, paymentMethod: e.target.value })}
                   >
                     <option value="STRIPE">Stripe</option>
-                    <option value="BANK">Bank Transfer</option>
+                    <option value="BANK">{tr('Bank Transfer')}</option>
                   </select>
                 </div>
                 <div className="form-group mb-3">
                   <label>
-                    Payment Details <span className="text-danger">*</span>
+                    {tr('Payment Details')} <span className="text-danger">*</span>
                     <small className="text-muted d-block">
-                      {withdrawModal.paymentMethod === 'STRIPE' && 'Enter Stripe account details (Account ID or email)'}
-                      {withdrawModal.paymentMethod === 'BANK' && 'Enter bank account details'}
+                      {withdrawModal.paymentMethod === 'STRIPE' && tr('Enter Stripe account details (Account ID or email)')}
+                      {withdrawModal.paymentMethod === 'BANK' && tr('Enter bank account details')}
                     </small>
                   </label>
                   <textarea
@@ -368,7 +366,7 @@ const PharmacyPayment = () => {
                     rows="3"
                     value={withdrawModal.paymentDetails}
                     onChange={(e) => setWithdrawModal({ ...withdrawModal, paymentDetails: e.target.value })}
-                    placeholder="Enter payment details..."
+                    placeholder={tr('Enter payment details...')}
                   ></textarea>
                 </div>
               </div>
@@ -378,7 +376,7 @@ const PharmacyPayment = () => {
                   className="btn btn-secondary"
                   onClick={() => setWithdrawModal({ show: false, amount: '', paymentMethod: 'STRIPE', paymentDetails: '' })}
                 >
-                  Cancel
+                  {tr('Cancel')}
                 </button>
                 <button
                   type="button"
@@ -386,7 +384,7 @@ const PharmacyPayment = () => {
                   onClick={handleWithdrawRequest}
                   disabled={requestWithdrawalMutation.isPending || !withdrawModal.amount || !withdrawModal.paymentDetails}
                 >
-                  {requestWithdrawalMutation.isPending ? 'Submitting...' : 'Submit Request'}
+                  {tr(requestWithdrawalMutation.isPending ? 'Submitting...' : 'Submit Request')}
                 </button>
               </div>
             </div>

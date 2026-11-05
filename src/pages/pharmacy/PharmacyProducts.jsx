@@ -7,9 +7,10 @@ import api from '../../api/axios'
 import * as productApi from '../../api/product'
 import * as pharmacyApi from '../../api/pharmacy'
 import { getImageUrl } from '../../utils/imageUtils'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const makeVariant = (medicine, index = 1) => ({
-  name: `Option ${index}`, sku: '', barcode: '', strengthValue: '', strengthUnit: 'mg', dosageForm: medicine ? 'Tablet' : '', packageType: 'Box', unitsPerPack: '', unitLabel: medicine ? 'tablets' : 'units', packageDescription: '', price: '', discountPrice: '', stock: '', isDefault: index === 1, isActive: true,
+  name: '', sku: '', barcode: '', strengthValue: '', strengthUnit: 'mg', dosageForm: '', packageType: '', unitsPerPack: '', unitLabel: '', packageDescription: '', price: '', discountPrice: '', stock: '', isDefault: index === 1, isActive: true,
 })
 
 const emptyForm = (medicine) => ({
@@ -21,13 +22,28 @@ const emptyForm = (medicine) => ({
 
 const nullableNumber = (value) => value === '' || value === null || value === undefined ? null : Number(value)
 const optional = (value) => String(value || '').trim() || null
+const optionValidationError = (kind, index) => Object.assign(new Error(kind), { kind, optionIndex: index })
+
+const translateProductValidation = (message, tr) => {
+  const text = String(message || '')
+  const numbered = [
+    ['Enter a valid regular price for option', 'Enter a valid regular price for option'],
+    ['Enter a whole stock quantity for option', 'Enter a whole stock quantity for option'],
+    ['The sale price must be lower than the regular price for option', 'The sale price must be lower than the regular price for option'],
+  ]
+  for (const [prefix, key] of numbered) {
+    if (text.startsWith(prefix)) return `${tr(key)}${text.slice(prefix.length)}`
+  }
+  return tr(text)
+}
 
 // These inputs intentionally live outside of PharmacyProducts. Defining them inside
 // the page recreates their component type whenever the form state changes, causing
 // React to unmount the focused input after every character.
-const ProductFormInput = ({ label, value, onChange, type = 'text', error, ...props }) => (
-  <div className="col-md-6 mb-3">
-    <label className="form-label">{label}</label>
+const ProductFormInput = ({ label, value, onChange, type = 'text', error, ...props }) => {
+  const { translateText: tr } = useLanguage()
+  return <div className="col-md-6 mb-3">
+    <label className="form-label">{tr(label)}</label>
     <input
       className={`form-control${error ? ' is-invalid' : ''}`}
       type={type}
@@ -35,9 +51,9 @@ const ProductFormInput = ({ label, value, onChange, type = 'text', error, ...pro
       onChange={(event) => onChange(event.target.value)}
       {...props}
     />
-    {error && <div className="invalid-feedback">{error}</div>}
+    {error && <div className="invalid-feedback">{translateProductValidation(error, tr)}</div>}
   </div>
-)
+}
 
 const medicineFields = [
   ['activeIngredients', 'Active ingredients *'],
@@ -91,6 +107,7 @@ const errorFromResponse = (error) => {
 
 const PharmacyProducts = () => {
   const { user } = useAuth()
+  const { translateText: tr, language } = useLanguage()
   const queryClient = useQueryClient()
   const role = String(user?.role || '').toUpperCase()
   const isParapharmacy = role === 'PARAPHARMACY'
@@ -109,17 +126,17 @@ const PharmacyProducts = () => {
   const canManageProducts = Boolean(setup?.profileCompleted && (!setup?.requiresSubscription || setup?.hasActiveSubscription) && String(user?.status || '').toUpperCase() === 'APPROVED')
 
   const params = useMemo(() => ({ page, limit: 12, sellerType: isParapharmacy ? 'PARAPHARMACY' : 'PHARMACY', sellerId: user?._id, isActive: 'all' }), [page, user?._id, isParapharmacy])
-  const { data: productsResponse, isLoading, refetch } = useQuery({ queryKey: ['pharmacy-products', params], queryFn: () => productApi.listProducts(params), enabled: Boolean(user?._id) })
+  const { data: productsResponse, isLoading, refetch } = useQuery({ queryKey: ['pharmacy-products', params, language], queryFn: () => productApi.listProducts(params), enabled: Boolean(user?._id) })
   const payload = productsResponse?.data ?? productsResponse
   const products = payload?.data?.products || payload?.products || []
   const pagination = payload?.data?.pagination || payload?.pagination
 
   const openCreate = () => {
-    if (!canManageProducts) { toast.info('Complete the required account setup before managing products.'); return }
+    if (!canManageProducts) { toast.info(tr('Complete the required account setup before managing products.')); return }
     setEditingProduct(null); setFieldErrors({}); setForm(emptyForm(isMedicine)); setShowModal(true)
   }
   const openEdit = (product) => {
-    if (!canManageProducts) { toast.info('Complete the required account setup before managing products.'); return }
+    if (!canManageProducts) { toast.info(tr('Complete the required account setup before managing products.')); return }
     const variants = Array.isArray(product.variants) && product.variants.length ? product.variants : [{ ...makeVariant(isMedicine), name: product.name, sku: product.sku || '', barcode: product.barcode || '', price: product.price ?? '', discountPrice: product.discountPrice ?? '', stock: product.stock ?? '', isDefault: true }]
     setEditingProduct(product)
     setForm({
@@ -156,7 +173,7 @@ const PharmacyProducts = () => {
       const urls = responsePayload?.data?.urls || responsePayload?.urls || []
       if (!urls.length) throw new Error('No images were uploaded')
       setForm((current) => ({ ...current, images: [...current.images, ...urls].slice(0, 8) }))
-    } catch (error) { toast.error(error.response?.data?.message || error.message || 'Image upload failed') } finally { setIsUploading(false) }
+    } catch (error) { toast.error(tr(error.response?.data?.message || error.message || 'Image upload failed')) } finally { setIsUploading(false) }
   }
 
   const save = async (event) => {
@@ -166,7 +183,7 @@ const PharmacyProducts = () => {
     if (isMedicine && !form.medicineDetails.activeIngredients.trim()) localErrors['medicineDetails.activeIngredients'] = 'Active ingredients are required for medicines'
     if (Object.keys(localErrors).length) {
       setFieldErrors(localErrors)
-      toast.error('Please correct the highlighted fields.')
+      toast.error(tr('Please correct the highlighted fields.'))
       return
     }
     let variants
@@ -175,23 +192,30 @@ const PharmacyProducts = () => {
         const priceIsBlank = String(variant.price ?? '').trim() === ''; const stockIsBlank = String(variant.stock ?? '').trim() === ''
         const price = Number(variant.price); const stock = Number(variant.stock); const discountPrice = nullableNumber(variant.discountPrice)
         const strengthValue = nullableNumber(variant.strengthValue); const unitsPerPack = nullableNumber(variant.unitsPerPack)
-        if (priceIsBlank || !Number.isFinite(price) || price < 0) throw new Error(`Enter a valid price for option ${index + 1}`)
-        if (stockIsBlank || !Number.isInteger(stock) || stock < 0) throw new Error(`Enter a whole stock quantity for option ${index + 1}`)
-        if (discountPrice !== null && (!Number.isFinite(discountPrice) || discountPrice < 0 || discountPrice >= price)) throw new Error(`Sale price must be lower than regular price for option ${index + 1}`)
-        if (strengthValue !== null && (!Number.isFinite(strengthValue) || strengthValue < 0)) throw new Error(`Strength is invalid for option ${index + 1}`)
-        if (unitsPerPack !== null && (!Number.isInteger(unitsPerPack) || unitsPerPack < 0)) throw new Error(`Pack quantity is invalid for option ${index + 1}`)
+        if (priceIsBlank || !Number.isFinite(price) || price < 0) throw optionValidationError('price', index)
+        if (stockIsBlank || !Number.isInteger(stock) || stock < 0) throw optionValidationError('stock', index)
+        if (discountPrice !== null && (!Number.isFinite(discountPrice) || discountPrice < 0 || discountPrice >= price)) throw optionValidationError('salePrice', index)
+        if (strengthValue !== null && (!Number.isFinite(strengthValue) || strengthValue < 0)) throw optionValidationError('strength', index)
+        if (unitsPerPack !== null && (!Number.isInteger(unitsPerPack) || unitsPerPack < 0)) throw optionValidationError('packQuantity', index)
         return { ...(variant._id ? { _id: variant._id } : {}), name: optional(variant.name) || `Option ${index + 1}`, sku: optional(variant.sku), barcode: optional(variant.barcode), strengthValue, strengthUnit: optional(variant.strengthUnit), dosageForm: optional(variant.dosageForm), packageType: optional(variant.packageType), unitsPerPack, unitLabel: optional(variant.unitLabel), packageDescription: optional(variant.packageDescription), price, discountPrice, stock, isDefault: variant.isDefault || (!form.variants.some((entry) => entry.isDefault) && index === 0), isActive: variant.isActive !== false }
       })
     } catch (error) {
-      const match = String(error.message || '').match(/option\s+(\d+)/i)
-      const optionIndex = match ? Math.max(0, Number(match[1]) - 1) : 0
-      const message = error.message || 'Please correct the option details.'
-      const key = /price/i.test(message) ? `variants.${optionIndex}.${/sale price/i.test(message) ? 'discountPrice' : 'price'}`
-        : /stock/i.test(message) ? `variants.${optionIndex}.stock`
-          : /strength/i.test(message) ? `variants.${optionIndex}.strengthValue`
-            : `variants.${optionIndex}.unitsPerPack`
+      const optionIndex = Number.isInteger(error.optionIndex) ? error.optionIndex : 0
+      const messages = {
+        price: 'Enter a valid price for this option.',
+        stock: 'Enter a whole stock quantity for this option.',
+        salePrice: 'Sale price must be lower than the regular price.',
+        strength: 'Strength must be a non-negative number.',
+        packQuantity: 'Pack quantity must be a non-negative whole number.',
+      }
+      const message = messages[error.kind] || 'Please correct the option details.'
+      const key = error.kind === 'price' ? `variants.${optionIndex}.price`
+        : error.kind === 'salePrice' ? `variants.${optionIndex}.discountPrice`
+          : error.kind === 'stock' ? `variants.${optionIndex}.stock`
+            : error.kind === 'strength' ? `variants.${optionIndex}.strengthValue`
+              : `variants.${optionIndex}.unitsPerPack`
       setFieldErrors({ [key]: message })
-      toast.error(message)
+      toast.error(tr(message))
       return
     }
     const payload = {
@@ -204,35 +228,35 @@ const PharmacyProducts = () => {
       setIsSaving(true)
       if (editingProduct?._id) await productApi.updateProduct(editingProduct._id, payload)
       else await productApi.createProduct(payload)
-      toast.success(editingProduct ? 'Product updated' : 'Product created')
+      toast.success(tr(editingProduct ? 'Product updated' : 'Product created'))
       setShowModal(false); setEditingProduct(null); queryClient.invalidateQueries({ queryKey: ['products'] }); refetch()
     } catch (error) {
       const failure = errorFromResponse(error)
       setFieldErrors(failure.fields)
-      toast.error(Object.keys(failure.fields).length ? 'Please correct the highlighted fields.' : failure.message)
+      toast.error(tr(Object.keys(failure.fields).length ? 'Please correct the highlighted fields.' : failure.message))
     } finally { setIsSaving(false) }
   }
 
   const removeProduct = async (product) => {
-    if (!window.confirm(`Delete ${product.name}?`)) return
-    try { await productApi.deleteProduct(product._id); toast.success('Product deleted'); refetch() } catch (error) { toast.error(error.response?.data?.message || error.message || 'Unable to delete product') }
+    if (!window.confirm(`${tr('Delete')} ${product.name}?`)) return
+    try { await productApi.deleteProduct(product._id); toast.success(tr('Product deleted')); refetch() } catch (error) { toast.error(tr(error.response?.data?.message || error.message || 'Unable to delete product')) }
   }
 
   return (
     <div>
-      <div className="dashboard-header d-flex align-items-center justify-content-between flex-wrap gap-2"><div><h3>Products</h3><p className="text-muted mb-0">Create detailed, patient-ready {isParapharmacy ? 'parapharmacy' : 'pharmacy'} listings.</p></div><button className="btn btn-primary" onClick={openCreate} disabled={!canManageProducts}><i className="fa-solid fa-plus me-2" />Add product</button></div>
-      {!canManageProducts && <div className="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2"><span>Complete your business profile{setup?.requiresSubscription ? ' and activate a subscription' : ''} before managing products.</span><Link className="btn btn-sm btn-outline-dark" to="/pharmacy/profile">Complete setup</Link></div>}
-      <div className="card"><div className="card-body p-0"><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Product</th><th>Type / category</th><th>Options</th><th>Price</th><th>Stock</th><th>Status</th><th /></tr></thead><tbody>
-        {isLoading ? <tr><td colSpan="7" className="text-center py-4"><span className="spinner-border spinner-border-sm" /></td></tr> : products.length === 0 ? <tr><td colSpan="7" className="text-center py-4 text-muted">No products yet.</td></tr> : products.map((product) => <tr key={product._id}><td><div className="d-flex align-items-center gap-2"><img src={getImageUrl(product.images?.[0], '/assets/img/products/product.jpg')} alt="" style={{ width: 46, height: 46, objectFit: 'cover', borderRadius: 8 }} /><div><strong>{product.name}</strong>{product.requiresPrescription && <div><span className="badge bg-warning text-dark">Prescription</span></div>}</div></div></td><td><div>{product.productType === 'PHARMACY_MEDICINE' ? 'Medicine' : 'Parapharmacy'}</div><small className="text-muted">{[product.category, product.subCategory].filter(Boolean).join(' · ') || 'Uncategorized'}</small></td><td>{product.variants?.length || 1}</td><td>€{Number(product.discountPrice ?? product.price ?? 0).toFixed(2)}</td><td>{product.stock ?? 0}</td><td><span className={`badge ${product.isActive === false ? 'bg-secondary' : 'bg-success'}`}>{product.isActive === false ? 'Hidden' : 'Active'}</span></td><td className="text-end"><button className="btn btn-sm btn-outline-secondary me-2" onClick={() => openEdit(product)}>Edit</button><button className="btn btn-sm btn-outline-danger" onClick={() => removeProduct(product)}>Delete</button></td></tr>)}
-      </tbody></table></div>{pagination?.pages > 1 && <div className="p-3 d-flex justify-content-between"><button className="btn btn-sm btn-outline-secondary" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</button><span className="text-muted small">Page {pagination.page} of {pagination.pages}</span><button className="btn btn-sm btn-outline-secondary" disabled={page >= pagination.pages} onClick={() => setPage((value) => value + 1)}>Next</button></div>}</div></div>
-      {showModal && <><div className="modal-backdrop fade show" /><div className="modal fade show d-block" role="dialog" aria-modal="true"><div className="modal-dialog modal-xl modal-dialog-scrollable"><form className="modal-content" onSubmit={save}><div className="modal-header"><div><h5 className="modal-title">{editingProduct ? 'Edit product' : 'Add product'}</h5><small className="text-muted">{isMedicine ? 'Medicine details and patient-safe dispensing options' : 'Product details and selectable options'}</small></div><button type="button" className="btn-close" onClick={() => setShowModal(false)} /></div><div className="modal-body">
-        <h6 className="border-bottom pb-2">Basic information</h6><div className="row"><ProductFormInput label="Product name *" value={form.name} onChange={(value) => change('name', value)} error={fieldErrors.name} required /><ProductFormInput label="Brand" value={form.brand} onChange={(value) => change('brand', value)} error={fieldErrors.brand} /><ProductFormInput label="Manufacturer" value={form.manufacturer} onChange={(value) => change('manufacturer', value)} error={fieldErrors.manufacturer} /><ProductFormInput label="Product SKU" value={form.sku} onChange={(value) => change('sku', value)} error={fieldErrors.sku} /><ProductFormInput label="Barcode" value={form.barcode} onChange={(value) => change('barcode', value)} error={fieldErrors.barcode} /><ProductFormInput label="Category" value={form.category} onChange={(value) => change('category', value)} error={fieldErrors.category} /><ProductFormInput label="Subcategory" value={form.subCategory} onChange={(value) => change('subCategory', value)} error={fieldErrors.subCategory} /><ProductFormInput label="Tags (comma separated)" value={form.tags} onChange={(value) => change('tags', value)} error={fieldErrors.tags} /><div className="col-12 mb-3"><label className="form-label">Description</label><textarea className={`form-control${fieldErrors.description ? ' is-invalid' : ''}`} rows="3" value={form.description} onChange={(event) => change('description', event.target.value)} />{fieldErrors.description && <div className="invalid-feedback">{fieldErrors.description}</div>}</div></div>
-        <div className="d-flex flex-wrap gap-4 mb-4"><label className="form-check"><input className="form-check-input me-2" type="checkbox" checked={form.requiresPrescription} onChange={(event) => change('requiresPrescription', event.target.checked)} />Requires a prescription before purchase</label><label className="form-check"><input className="form-check-input me-2" type="checkbox" checked={form.isActive} onChange={(event) => change('isActive', event.target.checked)} />Visible in storefront</label></div>
-        <h6 className="border-bottom pb-2">Images</h6><div className="mb-4"><input className="form-control" type="file" multiple accept="image/*" disabled={isUploading || form.images.length >= 8} onChange={(event) => uploadImages(event.target.files)} /><small className="text-muted">Up to eight images. The first image is used in product and order lists.</small><div className="d-flex flex-wrap gap-2 mt-2">{form.images.map((url) => <div key={url} className="position-relative"><img src={getImageUrl(url, '/assets/img/products/product.jpg')} alt="" style={{ width: 76, height: 76, objectFit: 'cover', borderRadius: 8 }} /><button type="button" className="btn btn-sm btn-danger position-absolute top-0 end-0" aria-label="Remove image" onClick={() => change('images', form.images.filter((image) => image !== url))}>×</button></div>)}</div></div>
-        <h6 className="border-bottom pb-2">{isMedicine ? 'Medicine information' : 'Product information'}</h6><div className="row mb-3"><ProductDetailsFields fields={isMedicine ? medicineFields : parapharmacyFields} details={isMedicine ? form.medicineDetails : form.parapharmacyDetails} errors={fieldErrors} group={isMedicine ? 'medicineDetails' : 'parapharmacyDetails'} onChange={(field, value) => changeDetails(isMedicine ? 'medicineDetails' : 'parapharmacyDetails', field, value)} /></div>
-        <div className="d-flex justify-content-between align-items-center border-bottom pb-2"><h6 className="mb-0">Options, price & stock</h6><button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setForm((current) => ({ ...current, variants: [...current.variants, makeVariant(isMedicine, current.variants.length + 1)] }))}><i className="fa-solid fa-plus me-1" />Add option</button></div>
-        {form.variants.map((variant, index) => <div className="border rounded-3 p-3 mt-3" key={variant._id || index}><div className="d-flex justify-content-between align-items-center mb-2"><strong>Option {index + 1}</strong><div className="d-flex gap-2"><label className="form-check small m-0"><input className="form-check-input me-1" type="radio" checked={variant.isDefault} onChange={() => setDefaultVariant(index)} />Default</label><button type="button" className="btn btn-sm btn-outline-danger" disabled={form.variants.length === 1} onClick={() => removeVariant(index)}>Remove</button></div></div><div className="row"><ProductFormInput label="Option name" value={variant.name} onChange={(value) => changeVariant(index, 'name', value)} error={fieldErrors[`variants.${index}.name`]} /><ProductFormInput label="Option SKU" value={variant.sku} onChange={(value) => changeVariant(index, 'sku', value)} error={fieldErrors[`variants.${index}.sku`]} /><ProductFormInput label="Regular price (€) *" type="number" min="0" step="0.01" value={variant.price} onChange={(value) => changeVariant(index, 'price', value)} error={fieldErrors[`variants.${index}.price`]} /><ProductFormInput label="Sale price (€)" type="number" min="0" step="0.01" value={variant.discountPrice} onChange={(value) => changeVariant(index, 'discountPrice', value)} error={fieldErrors[`variants.${index}.discountPrice`]} /><ProductFormInput label="Stock quantity *" type="number" min="0" step="1" value={variant.stock} onChange={(value) => changeVariant(index, 'stock', value)} error={fieldErrors[`variants.${index}.stock`]} /><ProductFormInput label="Barcode" value={variant.barcode} onChange={(value) => changeVariant(index, 'barcode', value)} error={fieldErrors[`variants.${index}.barcode`]} /><ProductFormInput label="Strength" type="number" min="0" step="0.01" value={variant.strengthValue} onChange={(value) => changeVariant(index, 'strengthValue', value)} error={fieldErrors[`variants.${index}.strengthValue`]} /><ProductFormInput label="Strength unit" value={variant.strengthUnit} onChange={(value) => changeVariant(index, 'strengthUnit', value)} error={fieldErrors[`variants.${index}.strengthUnit`]} /><ProductFormInput label="Dosage form" value={variant.dosageForm} onChange={(value) => changeVariant(index, 'dosageForm', value)} error={fieldErrors[`variants.${index}.dosageForm`]} /><ProductFormInput label="Package type" value={variant.packageType} onChange={(value) => changeVariant(index, 'packageType', value)} error={fieldErrors[`variants.${index}.packageType`]} /><ProductFormInput label="Units per pack" type="number" min="0" step="1" value={variant.unitsPerPack} onChange={(value) => changeVariant(index, 'unitsPerPack', value)} error={fieldErrors[`variants.${index}.unitsPerPack`]} /><ProductFormInput label="Unit label" value={variant.unitLabel} onChange={(value) => changeVariant(index, 'unitLabel', value)} error={fieldErrors[`variants.${index}.unitLabel`]} /><div className="col-12"><label className="form-label">Package description</label><input className={`form-control${fieldErrors[`variants.${index}.packageDescription`] ? ' is-invalid' : ''}`} value={variant.packageDescription || ''} onChange={(event) => changeVariant(index, 'packageDescription', event.target.value)} />{fieldErrors[`variants.${index}.packageDescription`] && <div className="invalid-feedback">{fieldErrors[`variants.${index}.packageDescription`]}</div>}</div></div></div>)}
-      </div><div className="modal-footer"><button type="button" className="btn btn-light" onClick={() => setShowModal(false)} disabled={isSaving}>Cancel</button><button className="btn btn-primary" type="submit" disabled={isSaving || isUploading}>{isSaving ? 'Saving…' : editingProduct ? 'Save changes' : 'Create product'}</button></div></form></div></div></>}
+      <div className="dashboard-header d-flex align-items-center justify-content-between flex-wrap gap-2"><div><h3>{tr('Products')}</h3><p className="text-muted mb-0">{tr(isParapharmacy ? 'Create detailed, patient-ready parapharmacy listings.' : 'Create detailed, patient-ready pharmacy listings.')}</p></div><button className="btn btn-primary" onClick={openCreate} disabled={!canManageProducts}><i className="fa-solid fa-plus me-2" />{tr('Add product')}</button></div>
+      {!canManageProducts && <div className="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2"><span>{tr(setup?.requiresSubscription ? 'Complete your business profile and activate a subscription before managing products.' : 'Complete your business profile before managing products.')}</span><Link className="btn btn-sm btn-outline-dark" to="/pharmacy/profile">{tr('Complete setup')}</Link></div>}
+      <div className="card"><div className="card-body p-0"><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>{tr('Product')}</th><th>{tr('Type / category')}</th><th>{tr('Options')}</th><th>{tr('Price')}</th><th>{tr('Stock')}</th><th>{tr('Status')}</th><th /></tr></thead><tbody>
+        {isLoading ? <tr><td colSpan="7" className="text-center py-4"><span className="spinner-border spinner-border-sm" /></td></tr> : products.length === 0 ? <tr><td colSpan="7" className="text-center py-4 text-muted">{tr('No products yet.')}</td></tr> : products.map((product) => <tr key={product._id}><td><div className="d-flex align-items-center gap-2"><img src={getImageUrl(product.images?.[0], '/assets/img/products/product.jpg')} alt="" style={{ width: 46, height: 46, objectFit: 'cover', borderRadius: 8 }} /><div><strong>{product.name}</strong>{product.requiresPrescription && <div><span className="badge bg-warning text-dark">{tr('Prescription')}</span></div>}</div></div></td><td><div>{tr(product.productType === 'PHARMACY_MEDICINE' ? 'Medicine' : 'Parapharmacy')}</div><small className="text-muted">{[product.category, product.subCategory].filter(Boolean).join(' · ') || tr('Uncategorized')}</small></td><td>{product.variants?.length || 1}</td><td>{new Intl.NumberFormat(language === 'it' ? 'it-IT' : 'en-US', { style: 'currency', currency: 'EUR' }).format(Number(product.discountPrice ?? product.price ?? 0))}</td><td>{product.stock ?? 0}</td><td><span className={`badge ${product.isActive === false ? 'bg-secondary' : 'bg-success'}`}>{tr(product.isActive === false ? 'Hidden' : 'Active')}</span></td><td className="text-end"><button className="btn btn-sm btn-outline-secondary me-2" onClick={() => openEdit(product)}>{tr('Edit')}</button><button className="btn btn-sm btn-outline-danger" onClick={() => removeProduct(product)}>{tr('Delete')}</button></td></tr>)}
+      </tbody></table></div>{pagination?.pages > 1 && <div className="p-3 d-flex justify-content-between"><button className="btn btn-sm btn-outline-secondary" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>{tr('Previous')}</button><span className="text-muted small">{tr('Page')} {pagination.page} {tr('of')} {pagination.pages}</span><button className="btn btn-sm btn-outline-secondary" disabled={page >= pagination.pages} onClick={() => setPage((value) => value + 1)}>{tr('Next')}</button></div>}</div></div>
+      {showModal && <><div className="modal-backdrop fade show" /><div className="modal fade show d-block" role="dialog" aria-modal="true" aria-label={tr(editingProduct ? 'Edit product' : 'Add product')}><div className="modal-dialog modal-xl modal-dialog-scrollable"><form className="modal-content" onSubmit={save}><div className="modal-header"><div><h5 className="modal-title">{tr(editingProduct ? 'Edit product' : 'Add product')}</h5><small className="text-muted">{tr(isMedicine ? 'Medicine details and patient-safe dispensing options' : 'Product details and selectable options')}</small></div><button type="button" className="btn-close" aria-label={tr('Close')} onClick={() => setShowModal(false)} /></div><div className="modal-body">
+        <h6 className="border-bottom pb-2">{tr('Basic information')}</h6><div className="row"><ProductFormInput label="Product name *" value={form.name} onChange={(value) => change('name', value)} error={fieldErrors.name} required /><ProductFormInput label="Brand" value={form.brand} onChange={(value) => change('brand', value)} error={fieldErrors.brand} /><ProductFormInput label="Manufacturer" value={form.manufacturer} onChange={(value) => change('manufacturer', value)} error={fieldErrors.manufacturer} /><ProductFormInput label="Product SKU" value={form.sku} onChange={(value) => change('sku', value)} error={fieldErrors.sku} /><ProductFormInput label="Barcode" value={form.barcode} onChange={(value) => change('barcode', value)} error={fieldErrors.barcode} /><ProductFormInput label="Category" value={form.category} onChange={(value) => change('category', value)} error={fieldErrors.category} /><ProductFormInput label="Subcategory" value={form.subCategory} onChange={(value) => change('subCategory', value)} error={fieldErrors.subCategory} /><ProductFormInput label="Tags (comma separated)" value={form.tags} onChange={(value) => change('tags', value)} error={fieldErrors.tags} /><div className="col-12 mb-3"><label className="form-label">{tr('Description')}</label><textarea className={`form-control${fieldErrors.description ? ' is-invalid' : ''}`} rows="3" value={form.description} onChange={(event) => change('description', event.target.value)} />{fieldErrors.description && <div className="invalid-feedback">{tr(fieldErrors.description)}</div>}</div></div>
+        <div className="d-flex flex-wrap gap-4 mb-4"><label className="form-check"><input className="form-check-input me-2" type="checkbox" checked={form.requiresPrescription} onChange={(event) => change('requiresPrescription', event.target.checked)} />{tr('Requires a prescription before purchase')}</label><label className="form-check"><input className="form-check-input me-2" type="checkbox" checked={form.isActive} onChange={(event) => change('isActive', event.target.checked)} />{tr('Visible in storefront')}</label></div>
+        <h6 className="border-bottom pb-2">{tr('Images')}</h6><div className="mb-4"><input className="form-control" type="file" multiple accept="image/*" disabled={isUploading || form.images.length >= 8} onChange={(event) => uploadImages(event.target.files)} /><small className="text-muted">{tr('Up to eight images. The first image is used in product and order lists.')}</small><div className="d-flex flex-wrap gap-2 mt-2">{form.images.map((url) => <div key={url} className="position-relative"><img src={getImageUrl(url, '/assets/img/products/product.jpg')} alt="" style={{ width: 76, height: 76, objectFit: 'cover', borderRadius: 8 }} /><button type="button" className="btn btn-sm btn-danger position-absolute top-0 end-0" aria-label={tr('Remove image')} onClick={() => change('images', form.images.filter((image) => image !== url))}>×</button></div>)}</div></div>
+        <h6 className="border-bottom pb-2">{tr(isMedicine ? 'Medicine information' : 'Product information')}</h6><div className="row mb-3"><ProductDetailsFields fields={isMedicine ? medicineFields : parapharmacyFields} details={isMedicine ? form.medicineDetails : form.parapharmacyDetails} errors={fieldErrors} group={isMedicine ? 'medicineDetails' : 'parapharmacyDetails'} onChange={(field, value) => changeDetails(isMedicine ? 'medicineDetails' : 'parapharmacyDetails', field, value)} /></div>
+        <div className="d-flex justify-content-between align-items-center border-bottom pb-2"><h6 className="mb-0">{tr('Options, price & stock')}</h6><button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setForm((current) => ({ ...current, variants: [...current.variants, makeVariant(isMedicine, current.variants.length + 1)] }))}><i className="fa-solid fa-plus me-1" />{tr('Add option')}</button></div>
+        {form.variants.map((variant, index) => <div className="border rounded-3 p-3 mt-3" key={variant._id || index}><div className="d-flex justify-content-between align-items-center mb-2"><strong>{tr('Option')} {index + 1}</strong><div className="d-flex gap-2"><label className="form-check small m-0"><input className="form-check-input me-1" type="radio" checked={variant.isDefault} onChange={() => setDefaultVariant(index)} />{tr('Default')}</label><button type="button" className="btn btn-sm btn-outline-danger" disabled={form.variants.length === 1} onClick={() => removeVariant(index)}>{tr('Remove')}</button></div></div><div className="row"><ProductFormInput label="Option name" value={variant.name} onChange={(value) => changeVariant(index, 'name', value)} error={fieldErrors[`variants.${index}.name`]} /><ProductFormInput label="Option SKU" value={variant.sku} onChange={(value) => changeVariant(index, 'sku', value)} error={fieldErrors[`variants.${index}.sku`]} /><ProductFormInput label="Regular price (€) *" type="number" min="0" step="0.01" value={variant.price} onChange={(value) => changeVariant(index, 'price', value)} error={fieldErrors[`variants.${index}.price`]} /><ProductFormInput label="Sale price (€)" type="number" min="0" step="0.01" value={variant.discountPrice} onChange={(value) => changeVariant(index, 'discountPrice', value)} error={fieldErrors[`variants.${index}.discountPrice`]} /><ProductFormInput label="Stock quantity *" type="number" min="0" step="1" value={variant.stock} onChange={(value) => changeVariant(index, 'stock', value)} error={fieldErrors[`variants.${index}.stock`]} /><ProductFormInput label="Barcode" value={variant.barcode} onChange={(value) => changeVariant(index, 'barcode', value)} error={fieldErrors[`variants.${index}.barcode`]} /><ProductFormInput label="Strength" type="number" min="0" step="0.01" value={variant.strengthValue} onChange={(value) => changeVariant(index, 'strengthValue', value)} error={fieldErrors[`variants.${index}.strengthValue`]} /><ProductFormInput label="Strength unit" value={variant.strengthUnit} onChange={(value) => changeVariant(index, 'strengthUnit', value)} error={fieldErrors[`variants.${index}.strengthUnit`]} /><ProductFormInput label="Dosage form" value={variant.dosageForm} onChange={(value) => changeVariant(index, 'dosageForm', value)} error={fieldErrors[`variants.${index}.dosageForm`]} /><ProductFormInput label="Package type" value={variant.packageType} onChange={(value) => changeVariant(index, 'packageType', value)} error={fieldErrors[`variants.${index}.packageType`]} /><ProductFormInput label="Units per pack" type="number" min="0" step="1" value={variant.unitsPerPack} onChange={(value) => changeVariant(index, 'unitsPerPack', value)} error={fieldErrors[`variants.${index}.unitsPerPack`]} /><ProductFormInput label="Unit label" value={variant.unitLabel} onChange={(value) => changeVariant(index, 'unitLabel', value)} error={fieldErrors[`variants.${index}.unitLabel`]} /><div className="col-12"><label className="form-label">{tr('Package description')}</label><input className={`form-control${fieldErrors[`variants.${index}.packageDescription`] ? ' is-invalid' : ''}`} value={variant.packageDescription || ''} onChange={(event) => changeVariant(index, 'packageDescription', event.target.value)} />{fieldErrors[`variants.${index}.packageDescription`] && <div className="invalid-feedback">{tr(fieldErrors[`variants.${index}.packageDescription`])}</div>}</div></div></div>)}
+      </div><div className="modal-footer"><button type="button" className="btn btn-light" onClick={() => setShowModal(false)} disabled={isSaving}>{tr('Cancel')}</button><button className="btn btn-primary" type="submit" disabled={isSaving || isUploading}>{tr(isSaving ? 'Saving…' : editingProduct ? 'Save changes' : 'Create product')}</button></div></form></div></div></>}
     </div>
   )
 }

@@ -3,9 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import PharmacyOrders from '../doctor/PharmacyOrders'
 import * as pharmacyApi from '../../api/pharmacy'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PharmacyOrdersPage = () => {
   const { user } = useAuth()
+  const { translateText: tr } = useLanguage()
   const userRole = user?.role?.toUpperCase()
   const isParapharmacy = userRole === 'PARAPHARMACY'
 
@@ -22,7 +24,7 @@ const PharmacyOrdersPage = () => {
     return (
       <div className="text-center py-5">
         <div className="spinner-border" role="status">
-          <span className="visually-hidden">Loading...</span>
+          <span className="visually-hidden">{tr('Loading...')}</span>
         </div>
       </div>
     )
@@ -32,9 +34,9 @@ const PharmacyOrdersPage = () => {
     return (
       <div className="card">
         <div className="card-body">
-          <h5 className="mb-2">Subscription required</h5>
-          <p className="text-muted mb-3">You need an active subscription to manage orders.</p>
-          <Link className="btn btn-primary" to="/pharmacy/subscription-plans">View Subscription Plans</Link>
+          <h5 className="mb-2">{tr('Subscription required')}</h5>
+          <p className="text-muted mb-3">{tr('You need an active subscription to manage orders.')}</p>
+          <Link className="btn btn-primary" to="/pharmacy/subscription-plans">{tr('View Subscription Plans')}</Link>
         </div>
       </div>
     )

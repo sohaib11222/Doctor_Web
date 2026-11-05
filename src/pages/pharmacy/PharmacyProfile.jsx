@@ -3,9 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import api from '../../api/axios'
 import * as pharmacyApi from '../../api/pharmacy'
+import { useAuth } from '../../contexts/AuthContext'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PharmacyProfile = () => {
   const queryClient = useQueryClient()
+  const { user } = useAuth()
+  const { translateText: tr } = useLanguage()
+  const isParapharmacy = String(user?.role || '').toUpperCase() === 'PARAPHARMACY'
 
   const { data: myPharmacyResponse, isLoading } = useQuery({
     queryKey: ['my-pharmacy'],
@@ -66,7 +71,7 @@ const PharmacyProfile = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-pharmacy'] })
       queryClient.invalidateQueries({ queryKey: ['pharmacy-setup-status'] })
-      toast.success('Pharmacy profile created successfully!')
+      toast.success(tr('Profile saved successfully.'))
     }
   })
 
@@ -75,7 +80,7 @@ const PharmacyProfile = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-pharmacy'] })
       queryClient.invalidateQueries({ queryKey: ['pharmacy-setup-status'] })
-      toast.success('Pharmacy profile updated successfully!')
+      toast.success(tr('Profile saved successfully.'))
     }
   })
 
@@ -133,9 +138,9 @@ const PharmacyProfile = () => {
     try {
       const url = await uploadLogo(file)
       setPharmacyData((prev) => ({ ...prev, logo: url }))
-      toast.success('Logo uploaded')
+      toast.success(tr('Logo uploaded'))
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Logo upload failed')
+      toast.error(tr(error.response?.data?.message || error.message || 'Logo upload failed'))
     }
   }
 
@@ -143,7 +148,7 @@ const PharmacyProfile = () => {
     e.preventDefault()
 
     if (!pharmacyData.name.trim()) {
-      toast.error('Pharmacy name is required')
+      toast.error(tr('Business name is required.'))
       return
     }
 
@@ -179,7 +184,7 @@ const PharmacyProfile = () => {
         await createMutation.mutateAsync(submitData)
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Failed to save pharmacy profile')
+      toast.error(tr(error.response?.data?.message || error.message || 'Failed to save pharmacy profile'))
     }
   }
 
@@ -187,7 +192,7 @@ const PharmacyProfile = () => {
     return (
       <div className="text-center py-5">
         <div className="spinner-border" role="status">
-          <span className="visually-hidden">Loading...</span>
+          <span className="visually-hidden">{tr('Loading...')}</span>
         </div>
       </div>
     )
@@ -196,15 +201,15 @@ const PharmacyProfile = () => {
   return (
     <div>
       <div className="dashboard-header">
-        <h3>Pharmacy Profile</h3>
-        <p className="text-muted mb-0">Create or update your pharmacy profile</p>
+        <h3>{tr(isParapharmacy ? 'Parapharmacy Profile' : 'Pharmacy Profile')}</h3>
+        <p className="text-muted mb-0">{tr(isParapharmacy ? 'Create or update your parapharmacy profile' : 'Create or update your pharmacy profile')}</p>
       </div>
 
       <div className="card">
         <div className="card-body">
           <form onSubmit={handleSubmit}>
             <div className="form-wrap">
-              <label className="form-label">Pharmacy Name <span className="text-danger">*</span></label>
+              <label className="form-label">{tr(isParapharmacy ? 'Parapharmacy Name' : 'Pharmacy Name')} <span className="text-danger">*</span></label>
               <input
                 type="text"
                 className="form-control"
@@ -216,17 +221,17 @@ const PharmacyProfile = () => {
             </div>
 
             <div className="form-wrap">
-              <label className="form-label">Logo</label>
+              <label className="form-label">{tr('Logo')}</label>
               <input type="file" className="form-control" accept="image/*" onChange={handleLogoFile} />
               {pharmacyData.logo && (
                 <div className="mt-2">
-                  <img src={pharmacyData.logo} alt="logo" style={{ height: 60, objectFit: 'cover' }} />
+                  <img src={pharmacyData.logo} alt={tr('Logo')} style={{ height: 60, objectFit: 'cover' }} />
                 </div>
               )}
             </div>
 
             <div className="form-wrap">
-              <label className="form-label">Phone</label>
+              <label className="form-label">{tr('Phone')}</label>
               <input
                 type="tel"
                 className="form-control"
@@ -239,13 +244,13 @@ const PharmacyProfile = () => {
             <div className="row">
               <div className="col-md-6">
                 <div className="form-wrap">
-                  <label className="form-label">Address Line 1</label>
+                  <label className="form-label">{tr('Address Line 1')}</label>
                   <input className="form-control" name="address.line1" value={pharmacyData.address.line1} onChange={handleChange} />
                 </div>
               </div>
               <div className="col-md-6">
                 <div className="form-wrap">
-                  <label className="form-label">Address Line 2</label>
+                  <label className="form-label">{tr('Address Line 2')}</label>
                   <input className="form-control" name="address.line2" value={pharmacyData.address.line2} onChange={handleChange} />
                 </div>
               </div>
@@ -254,19 +259,19 @@ const PharmacyProfile = () => {
             <div className="row">
               <div className="col-md-4">
                 <div className="form-wrap">
-                  <label className="form-label">City</label>
+                  <label className="form-label">{tr('City')}</label>
                   <input className="form-control" name="address.city" value={pharmacyData.address.city} onChange={handleChange} />
                 </div>
               </div>
               <div className="col-md-4">
                 <div className="form-wrap">
-                  <label className="form-label">State</label>
+                  <label className="form-label">{tr('State')}</label>
                   <input className="form-control" name="address.state" value={pharmacyData.address.state} onChange={handleChange} />
                 </div>
               </div>
               <div className="col-md-4">
                 <div className="form-wrap">
-                  <label className="form-label">Zip</label>
+                  <label className="form-label">{tr('Zip')}</label>
                   <input className="form-control" name="address.zip" value={pharmacyData.address.zip} onChange={handleChange} />
                 </div>
               </div>
@@ -275,13 +280,13 @@ const PharmacyProfile = () => {
             <div className="row">
               <div className="col-md-6">
                 <div className="form-wrap">
-                  <label className="form-label">Latitude</label>
+                  <label className="form-label">{tr('Latitude')}</label>
                   <input className="form-control" name="location.lat" value={pharmacyData.location.lat} onChange={handleChange} />
                 </div>
               </div>
               <div className="col-md-6">
                 <div className="form-wrap">
-                  <label className="form-label">Longitude</label>
+                  <label className="form-label">{tr('Longitude')}</label>
                   <input className="form-control" name="location.lng" value={pharmacyData.location.lng} onChange={handleChange} />
                 </div>
               </div>
@@ -289,11 +294,11 @@ const PharmacyProfile = () => {
 
             <div className="form-check mb-3">
               <input className="form-check-input" type="checkbox" name="isActive" checked={!!pharmacyData.isActive} onChange={handleChange} />
-              <label className="form-check-label">Active</label>
+              <label className="form-check-label">{tr('Active')}</label>
             </div>
 
             <button type="submit" className="btn btn-primary" disabled={createMutation.isPending || updateMutation.isPending}>
-              Save
+              {tr('Save')}
             </button>
           </form>
         </div>

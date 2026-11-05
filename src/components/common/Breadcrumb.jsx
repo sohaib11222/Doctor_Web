@@ -1,8 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { useAuth } from '../../contexts/AuthContext'
 
 const Breadcrumb = ({ title, li1, li2 }) => {
   const { translateText: tr } = useLanguage()
+  const { user } = useAuth()
+  const resolvedTitle = title === 'Pharmacy' && String(user?.role || '').toUpperCase() === 'PARAPHARMACY'
+    ? 'Parapharmacy'
+    : title
 
   return (
     <div className="breadcrumb-bar">
@@ -18,7 +23,7 @@ const Breadcrumb = ({ title, li1, li2 }) => {
                 </li>
                 {title && (
                   <li className="breadcrumb-item" aria-current="page">
-                    {tr(title)}
+                    {tr(resolvedTitle)}
                   </li>
                 )}
                 {li1 && (

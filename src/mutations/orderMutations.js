@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import * as orderApi from '../api/order'
 import { toast } from 'react-toastify'
+import { useLanguage } from '../contexts/LanguageContext'
 
 /**
  * Create order mutation
@@ -8,16 +9,17 @@ import { toast } from 'react-toastify'
  */
 export const useCreateOrder = () => {
   const queryClient = useQueryClient()
+  const { translateText: tr } = useLanguage()
   
   return useMutation({
     mutationFn: (data) => orderApi.createOrder(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patientOrders'] })
-      toast.success('Order created successfully!')
+      toast.success(tr('Order created successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to create order'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     },
   })
 }
@@ -28,6 +30,7 @@ export const useCreateOrder = () => {
  */
 export const useUpdateOrderStatus = () => {
   const queryClient = useQueryClient()
+  const { translateText: tr } = useLanguage()
   
   return useMutation({
     mutationFn: ({ orderId, status }) => orderApi.updateOrderStatus(orderId, status),
@@ -35,11 +38,11 @@ export const useUpdateOrderStatus = () => {
       queryClient.invalidateQueries({ queryKey: ['order', variables.orderId] })
       queryClient.invalidateQueries({ queryKey: ['pharmacyOrders'] })
       queryClient.invalidateQueries({ queryKey: ['allOrders'] })
-      toast.success('Order status updated successfully!')
+      toast.success(tr('Order status updated successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update order status'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     },
   })
 }
@@ -50,6 +53,7 @@ export const useUpdateOrderStatus = () => {
  */
 export const useUpdateShippingFee = () => {
   const queryClient = useQueryClient()
+  const { translateText: tr } = useLanguage()
   
   return useMutation({
     mutationFn: ({ orderId, shippingFee, deliveryDays }) => orderApi.updateShippingFee(orderId, shippingFee, deliveryDays),
@@ -57,11 +61,11 @@ export const useUpdateShippingFee = () => {
       queryClient.invalidateQueries({ queryKey: ['order', variables.orderId] })
       queryClient.invalidateQueries({ queryKey: ['pharmacyOrders'] })
       queryClient.invalidateQueries({ queryKey: ['patientOrders'] })
-      toast.success('Shipping fee updated successfully!')
+      toast.success(tr('Shipping fee updated successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update shipping fee'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     },
   })
 }
@@ -72,17 +76,18 @@ export const useUpdateShippingFee = () => {
  */
 export const useCancelOrder = () => {
   const queryClient = useQueryClient()
+  const { translateText: tr } = useLanguage()
   
   return useMutation({
     mutationFn: (orderId) => orderApi.cancelOrder(orderId),
     onSuccess: (data, orderId) => {
       queryClient.invalidateQueries({ queryKey: ['order', orderId] })
       queryClient.invalidateQueries({ queryKey: ['patientOrders'] })
-      toast.success('Order cancelled successfully!')
+      toast.success(tr('Order cancelled successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to cancel order'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     },
   })
 }
@@ -93,17 +98,18 @@ export const useCancelOrder = () => {
  */
 export const usePayForOrder = () => {
   const queryClient = useQueryClient()
+  const { translateText: tr } = useLanguage()
   
   return useMutation({
     mutationFn: ({ orderId, paymentMethod }) => orderApi.payForOrder(orderId, paymentMethod),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['order', variables.orderId] })
       queryClient.invalidateQueries({ queryKey: ['patientOrders'] })
-      toast.success('Payment processed successfully!')
+      toast.success(tr('Payment processed successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Payment failed'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     },
   })
 }

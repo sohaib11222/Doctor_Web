@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import * as orderApi from '../api/order'
 import { API_ROUTES } from '../utils/apiConfig'
+import { useLanguage } from '../contexts/LanguageContext'
 
 /**
  * Get patient orders
@@ -8,8 +9,9 @@ import { API_ROUTES } from '../utils/apiConfig'
  * @returns {Query} React Query hook
  */
 export const usePatientOrders = (params = {}) => {
+  const { language } = useLanguage()
   return useQuery({
-    queryKey: ['patientOrders', params],
+    queryKey: ['patientOrders', params, language],
     queryFn: () => orderApi.getPatientOrders(params),
   })
 }
@@ -20,8 +22,9 @@ export const usePatientOrders = (params = {}) => {
  * @returns {Query} React Query hook
  */
 export const usePharmacyOrders = (params = {}) => {
+  const { language } = useLanguage()
   return useQuery({
-    queryKey: ['pharmacyOrders', params],
+    queryKey: ['pharmacyOrders', params, language],
     queryFn: () => orderApi.getPharmacyOrders(params),
   })
 }
@@ -44,8 +47,9 @@ export const useAllOrders = (params = {}) => {
  * @returns {Query} React Query hook
  */
 export const useOrder = (orderId) => {
+  const { language } = useLanguage()
   return useQuery({
-    queryKey: ['order', orderId],
+    queryKey: ['order', orderId, language],
     queryFn: () => orderApi.getOrderById(orderId),
     enabled: !!orderId,
   })

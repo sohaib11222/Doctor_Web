@@ -4,6 +4,7 @@ import { useOrder } from '../../queries'
 import { useUpdateOrderStatus, useUpdateShippingFee } from '../../mutations'
 import { toast } from 'react-toastify'
 import BASE_URL from '../../utils/apiConfig'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DELIVERY_DAY_OPTIONS = [2, 3, 4, 5]
 const deliveryPreview = (value) => {
@@ -21,6 +22,7 @@ const hasShippingQuote = (order) => order?.finalShipping !== null
 const PharmacyOrderDetails = () => {
   const { orderId } = useParams()
   const navigate = useNavigate()
+  const { translateText: tr, formatDate, formatDateTime, language } = useLanguage()
   const [showStatusModal, setShowStatusModal] = useState(false)
 
   const { data: orderResponse, isLoading, error, refetch } = useOrder(orderId)
@@ -33,21 +35,17 @@ const PharmacyOrderDetails = () => {
   // Handle both response.data and direct data (axios interceptor already returns response.data)
   const order = orderResponse?.data || orderResponse
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '—'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-GB', {
+  const formatOrderDate = (dateString) => formatDateTime(dateString, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     })
-  }
 
   const formatCurrency = (amount) => {
     if (amount === undefined || amount === null) return '€0.00'
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(language === 'it' ? 'it-IT' : 'en-US', {
       style: 'currency',
       currency: 'EUR',
     }).format(amount)
@@ -63,7 +61,7 @@ const PharmacyOrderDetails = () => {
       'CANCELLED': 'badge-danger',
       'REFUNDED': 'badge-danger'
     }
-    return <span className={`badge ${badges[status] || 'badge-secondary'}`}>{status}</span>
+    return <span className={`badge ${badges[status] || 'badge-secondary'}`}>{tr(status || '—')}</span>
   }
 
   const normalizeImageUrl = (imageUri) => {
@@ -99,12 +97,12 @@ const PharmacyOrderDetails = () => {
     if (!order) return
     const fee = parseFloat(shippingFee)
     if (isNaN(fee) || fee < 0) {
-      toast.error('Please enter a valid shipping fee (non-negative number)')
+      toast.error(tr('Please enter a valid shipping fee (non-negative number)'))
       return
     }
     const days = Number(deliveryDays)
     if (!DELIVERY_DAY_OPTIONS.includes(days)) {
-      toast.error('Select a delivery commitment of 2, 3, 4, or 5 days')
+      toast.error(tr('Select a delivery commitment of 2, 3, 4, or 5 days'))
       return
     }
     updateShippingFeeMutation.mutate(
@@ -135,9 +133,9 @@ const PharmacyOrderDetails = () => {
             <div className="col-lg-12 col-xl-12">
               <div className="text-center py-5">
                 <div className="spinner-border text-primary" role="status">
-                  <span className="sr-only">Loading...</span>
+                  <span className="sr-only">{tr('Loading...')}</span>
                 </div>
-                <p className="mt-3">Loading order details...</p>
+                <p className="mt-3">{tr('Loading order details...')}</p>
               </div>
             </div>
           </div>
@@ -155,10 +153,10 @@ const PharmacyOrderDetails = () => {
             <div className="col-lg-12 col-xl-12">
               <div className="text-center py-5">
                 <i className="fe fe-alert-circle" style={{ fontSize: '64px', color: '#dc3545' }}></i>
-                <h5 className="mt-3">Error Loading Order</h5>
-                <p className="text-muted">{error?.message || 'Failed to load order details'}</p>
+                <h5 className="mt-3">{tr('Error Loading Order')}</h5>
+                <p className="text-muted">{tr(error?.message || 'Failed to load order details')}</p>
                 <button className="btn btn-primary mt-3" onClick={() => refetch()}>
-                  Retry
+                  {tr('Retry')}
                 </button>
               </div>
             </div>
@@ -169,7 +167,7 @@ const PharmacyOrderDetails = () => {
   }
 
   const patient = typeof order.patientId === 'object' ? order.patientId : null
-  const patientName = patient?.fullName || 'Unknown Patient'
+  const patientName = patient?.fullName || tr('Unknown Patient')
   const patientEmail = patient?.email || '—'
   const patientPhone = patient?.phone || '—'
   const shippingAddress = order.shippingAddress
@@ -181,10 +179,10 @@ const PharmacyOrderDetails = () => {
           <div className="col-lg-4 col-xl-3 theiaStickySidebar"></div>
           <div className="col-lg-12 col-xl-12">
             <div className="dashboard-header d-flex justify-content-between align-items-center">
-              <h3>Order Details</h3>
+              <h3>{tr('Order Details')}</h3>
               <Link to="/pharmacy/orders" className="btn btn-outline-primary btn-sm">
                 <i className="fe fe-arrow-left me-2"></i>
-                Back to Orders
+                {tr('Back to Orders')}
               </Link>
             </div>
 
@@ -193,18 +191,18 @@ const PharmacyOrderDetails = () => {
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-center">
                   <div>
-                    <p className="text-muted mb-1">Order Number</p>
+                    <p className="text-muted mb-1">{tr('Order Number')}</p>
                     <h4 className="mb-0">#{order.orderNumber}</h4>
                   </div>
                   <div>
                     {getStatusBadge(order.status)}
                     <p className="text-muted small mb-0 mt-2">
-                      Payment: <span className={`badge ${
+                      {tr('Payment')}: <span className={`badge ${
                         order.paymentStatus === 'PAID' ? 'badge-success' :
                         order.paymentStatus === 'PARTIAL' ? 'badge-warning' :
                         'badge-secondary'
                       }`}>
-                        {order.paymentStatus}
+                        {tr(order.paymentStatus)}
                       </span>
                     </p>
                   </div>
@@ -215,12 +213,12 @@ const PharmacyOrderDetails = () => {
             {/* Customer Information */}
             <div className="card mb-4">
               <div className="card-header">
-                <h4 className="card-title mb-0">Customer Information</h4>
+                <h4 className="card-title mb-0">{tr('Customer Information')}</h4>
               </div>
               <div className="card-body">
                 <div className="row mb-2">
                   <div className="col-sm-4">
-                    <strong>Name:</strong>
+                    <strong>{tr('Name')}:</strong>
                   </div>
                   <div className="col-sm-8">
                     {patientName}
@@ -228,7 +226,7 @@ const PharmacyOrderDetails = () => {
                 </div>
                 <div className="row mb-2">
                   <div className="col-sm-4">
-                    <strong>Email:</strong>
+                    <strong>{tr('Email')}:</strong>
                   </div>
                   <div className="col-sm-8">
                     {patientEmail}
@@ -236,7 +234,7 @@ const PharmacyOrderDetails = () => {
                 </div>
                 <div className="row">
                   <div className="col-sm-4">
-                    <strong>Phone:</strong>
+                    <strong>{tr('Phone')}:</strong>
                   </div>
                   <div className="col-sm-8">
                     {patientPhone}
@@ -249,7 +247,7 @@ const PharmacyOrderDetails = () => {
             {shippingAddress && (
               <div className="card mb-4">
                 <div className="card-header">
-                  <h4 className="card-title mb-0">Shipping Address</h4>
+                  <h4 className="card-title mb-0">{tr('Shipping Address')}</h4>
                 </div>
                 <div className="card-body">
                   <p className="mb-1">{shippingAddress.line1}</p>
@@ -265,12 +263,12 @@ const PharmacyOrderDetails = () => {
             {/* Order Items */}
             <div className="card mb-4">
               <div className="card-header">
-                <h4 className="card-title mb-0">Order Items</h4>
+                <h4 className="card-title mb-0">{tr('Order Items')}</h4>
               </div>
               <div className="card-body">
                 {order.items?.map((item, index) => {
                   const product = typeof item.productId === 'object' ? item.productId : null
-                  const productName = product?.name || 'Product'
+                  const productName = product?.name || tr('Product')
                   const productImage = product?.images?.[0]
                   const normalizedImageUrl = normalizeImageUrl(productImage)
                   const itemPrice = item.discountPrice || item.price
@@ -294,9 +292,9 @@ const PharmacyOrderDetails = () => {
                       )}
                       <div className="flex-grow-1">
                         <h5 className="mb-1">{productName}</h5>
-                        <p className="text-muted mb-1">Quantity: {item.quantity}</p>
-                        <p className="text-muted mb-0">{formatCurrency(itemPrice)} each</p>
-                        {item.variantName && <p className="text-muted small mb-0">Option: {item.variantName}</p>}
+                        <p className="text-muted mb-1">{tr('Quantity')}: {item.quantity}</p>
+                        <p className="text-muted mb-0">{formatCurrency(itemPrice)} {tr('each')}</p>
+                        {item.variantName && <p className="text-muted small mb-0">{tr('Option')}: {item.variantName}</p>}
                       </div>
                       <div>
                         <h5 className="mb-0">{formatCurrency(item.total)}</h5>
@@ -310,7 +308,7 @@ const PharmacyOrderDetails = () => {
             {/* Order Summary */}
             <div className="card mb-4">
               <div className="card-header">
-                <h4 className="card-title mb-0">Order Summary</h4>
+                <h4 className="card-title mb-0">{tr('Order Summary')}</h4>
               </div>
               <div className="card-body">
                 {(() => {
@@ -318,30 +316,30 @@ const PharmacyOrderDetails = () => {
                   return (
                     <>
                 <div className="d-flex justify-content-between mb-2">
-                  <span>Subtotal</span>
+                  <span>{tr('Subtotal')}</span>
                   <span>{formatCurrency(order.subtotal)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
                   <div>
-                    <span>Shipping</span>
+                    <span>{tr('Shipping')}</span>
                     {hasShippingQuote(order) && order.finalShipping !== order.initialShipping && (
                       <small className="text-muted d-block">
-                        Updated from {formatCurrency(order.initialShipping || 0)}
+                        {tr('Updated from')} {formatCurrency(order.initialShipping || 0)}
                       </small>
                     )}
                     {hasShippingQuote(order) && order.shippingUpdatedAt && (
                       <small className="text-muted d-block">
-                        Updated on {formatDate(order.shippingUpdatedAt)}
+                        {tr('Updated on')} {formatOrderDate(order.shippingUpdatedAt)}
                       </small>
                     )}
                   </div>
-                  <span>{hasShippingQuote(order) ? formatCurrency(order.shipping) : 'To be confirmed'}</span>
+                  <span>{hasShippingQuote(order) ? formatCurrency(order.shipping) : tr('To be confirmed')}</span>
                 </div>
-                {hasShippingQuote(order) && order.promisedDeliveryDays && <div className="d-flex justify-content-between mb-2"><span>Delivery commitment</span><span>{order.promisedDeliveryDays} day{order.promisedDeliveryDays === 1 ? '' : 's'}</span></div>}
-                {hasShippingQuote(order) && order.expectedDeliveryDate && <div className="small text-muted mb-2">Expected delivery: {formatDate(order.expectedDeliveryDate)}</div>}
+                {hasShippingQuote(order) && order.promisedDeliveryDays && <div className="d-flex justify-content-between mb-2"><span>{tr('Delivery commitment')}</span><span>{order.promisedDeliveryDays} {tr(order.promisedDeliveryDays === 1 ? 'day' : 'days')}</span></div>}
+                {hasShippingQuote(order) && order.expectedDeliveryDate && <div className="small text-muted mb-2">{tr('Expected delivery')}: {formatOrderDate(order.expectedDeliveryDate)}</div>}
                 <hr />
                 <div className="d-flex justify-content-between">
-                  <strong>Total</strong>
+                  <strong>{tr('Total')}</strong>
                   <strong>{formatCurrency(realTotal)}</strong>
                 </div>
                     </>
@@ -353,30 +351,30 @@ const PharmacyOrderDetails = () => {
             {/* Order Information */}
             <div className="card mb-4">
               <div className="card-header">
-                <h4 className="card-title mb-0">Order Information</h4>
+                <h4 className="card-title mb-0">{tr('Order Information')}</h4>
               </div>
               <div className="card-body">
                 <div className="row mb-2">
                   <div className="col-sm-4">
-                    <strong>Order Date:</strong>
+                    <strong>{tr('Order Date')}:</strong>
                   </div>
                   <div className="col-sm-8">
-                    {formatDate(order.createdAt)}
+                    {formatOrderDate(order.createdAt)}
                   </div>
                 </div>
                 {order.deliveredAt && (
                   <div className="row mb-2">
                     <div className="col-sm-4">
-                      <strong>Delivered Date:</strong>
+                      <strong>{tr('Delivered Date')}:</strong>
                     </div>
                     <div className="col-sm-8">
-                      {formatDate(order.deliveredAt)}
+                      {formatOrderDate(order.deliveredAt)}
                     </div>
                   </div>
                 )}
                 <div className="row">
                   <div className="col-sm-4">
-                    <strong>Payment Status:</strong>
+                    <strong>{tr('Payment Status')}:</strong>
                   </div>
                   <div className="col-sm-8">
                     <span className={`badge ${
@@ -384,7 +382,7 @@ const PharmacyOrderDetails = () => {
                       order.paymentStatus === 'PARTIAL' ? 'badge-warning' :
                       'badge-secondary'
                     }`}>
-                      {order.paymentStatus}
+                      {tr(order.paymentStatus)}
                     </span>
                   </div>
                 </div>
@@ -402,7 +400,7 @@ const PharmacyOrderDetails = () => {
                       disabled={updateShippingFeeMutation.isLoading}
                     >
                       <i className="fe fe-truck me-2"></i>
-                      {hasShippingQuote(order) ? 'Update Shipping & Delivery' : 'Set Shipping & Delivery'}
+                      {tr(hasShippingQuote(order) ? 'Update Shipping & Delivery' : 'Set Shipping & Delivery')}
                     </button>
                   )}
                   {/* Only allow updating status if order is paid */}
@@ -414,7 +412,7 @@ const PharmacyOrderDetails = () => {
                       disabled={updateStatusMutation.isLoading}
                     >
                       <i className="fe fe-edit me-2"></i>
-                      Update Status
+                      {tr('Update Status')}
                     </button>
                   )}
                 </div>
@@ -430,7 +428,7 @@ const PharmacyOrderDetails = () => {
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Update Order Status</h5>
+                <h5 className="modal-title">{tr('Update Order Status')}</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -438,7 +436,7 @@ const PharmacyOrderDetails = () => {
                 ></button>
               </div>
               <div className="modal-body">
-                <p>Select new status for order #{order.orderNumber}:</p>
+                <p>{tr('Select new status for order')} #{order.orderNumber}:</p>
                 <div className="d-grid gap-2">
                   {['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'].map((status) => (
                     <button
@@ -447,7 +445,7 @@ const PharmacyOrderDetails = () => {
                       onClick={() => handleStatusChange(status)}
                       disabled={updateStatusMutation.isLoading || order.status === status}
                     >
-                      {status}
+                      {tr(status)}
                     </button>
                   ))}
                 </div>
@@ -463,7 +461,7 @@ const PharmacyOrderDetails = () => {
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Set shipping & delivery commitment</h5>
+                <h5 className="modal-title">{tr('Set shipping & delivery commitment')}</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -474,20 +472,20 @@ const PharmacyOrderDetails = () => {
                 ></button>
               </div>
               <div className="modal-body">
-                <p>Set the order-specific shipping fee and delivery commitment for order #{order.orderNumber}.</p>
+                <p>{tr('Set the order-specific shipping fee and delivery commitment for order')} #{order.orderNumber}.</p>
                 <div className="mb-3">
-                  <label className="form-label">Current Shipping Fee</label>
+                  <label className="form-label">{tr('Current Shipping Fee')}</label>
                   <div className="form-control-plaintext">
                     {formatCurrency(order.shipping || order.initialShipping || 0)}
                     {order.initialShipping && order.initialShipping !== order.shipping && (
                       <small className="text-muted d-block">
-                        Initial estimate: {formatCurrency(order.initialShipping)}
+                        {tr('Initial estimate')}: {formatCurrency(order.initialShipping)}
                       </small>
                     )}
                   </div>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="shippingFee" className="form-label">New Shipping Fee (€)</label>
+                  <label htmlFor="shippingFee" className="form-label">{tr('New Shipping Fee (€)')}</label>
                   <input
                     type="number"
                     className="form-control"
@@ -496,24 +494,24 @@ const PharmacyOrderDetails = () => {
                     step="0.01"
                     value={shippingFee}
                     onChange={(e) => setShippingFee(e.target.value)}
-                    placeholder="Enter shipping fee"
+                    placeholder={tr('Enter shipping fee')}
                   />
                   <small className="text-muted">
-                    Subtotal: {formatCurrency(order.subtotal)} + Tax: {formatCurrency(order.tax)} + Shipping = New Total
+                    {tr('Subtotal')}: {formatCurrency(order.subtotal)} + {tr('Tax')}: {formatCurrency(order.tax)} + {tr('Shipping')} = {tr('New Total')}
                   </small>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="deliveryDays" className="form-label">Expected delivery time <span className="text-danger">*</span></label>
+                  <label htmlFor="deliveryDays" className="form-label">{tr('Expected delivery time')} <span className="text-danger">*</span></label>
                   <select className="form-select" id="deliveryDays" value={deliveryDays} onChange={(e) => setDeliveryDays(e.target.value)} required>
-                    <option value="">Select a delivery commitment</option>
-                    {DELIVERY_DAY_OPTIONS.map((days) => <option key={days} value={days}>{days} days</option>)}
+                    <option value="">{tr('Select a delivery commitment')}</option>
+                    {DELIVERY_DAY_OPTIONS.map((days) => <option key={days} value={days}>{days} {tr('days')}</option>)}
                   </select>
-                  {deliveryPreview(deliveryDays) && <small className="text-muted d-block mt-2">Expected delivery date: {deliveryPreview(deliveryDays).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</small>}
-                  <small className="text-muted d-block mt-1">Choose the commitment you can keep for this order.</small>
+                  {deliveryPreview(deliveryDays) && <small className="text-muted d-block mt-2">{tr('Expected delivery date')}: {formatDate(deliveryPreview(deliveryDays), { day: '2-digit', month: 'long', year: 'numeric' })}</small>}
+                  <small className="text-muted d-block mt-1">{tr('Choose the commitment you can keep for this order.')}</small>
                 </div>
                 {shippingFee && !isNaN(parseFloat(shippingFee)) && (
                   <div className="alert alert-info">
-                    <strong>New Total:</strong> {formatCurrency(order.subtotal + order.tax + parseFloat(shippingFee))}
+                    <strong>{tr('New Total')}:</strong> {formatCurrency(order.subtotal + order.tax + parseFloat(shippingFee))}
                   </div>
                 )}
               </div>
@@ -527,7 +525,7 @@ const PharmacyOrderDetails = () => {
                     setDeliveryDays('')
                   }}
                 >
-                  Cancel
+                  {tr('Cancel')}
                 </button>
                 <button
                   type="button"
@@ -535,7 +533,7 @@ const PharmacyOrderDetails = () => {
                   onClick={handleUpdateShippingFee}
                   disabled={updateShippingFeeMutation.isLoading || shippingFee === '' || isNaN(parseFloat(shippingFee)) || !DELIVERY_DAY_OPTIONS.includes(Number(deliveryDays))}
                 >
-                  {updateShippingFeeMutation.isLoading ? 'Saving...' : 'Send shipping details'}
+                  {tr(updateShippingFeeMutation.isLoading ? 'Saving...' : 'Send shipping details')}
                 </button>
               </div>
             </div>
