@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 import * as announcementApi from '../../api/announcements'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DoctorAnnouncements = () => {
   const { user } = useAuth()
+  const { language } = useLanguage()
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState('all') // all, unread, pinned
   const [page, setPage] = useState(1)
@@ -104,7 +106,7 @@ const DoctorAnnouncements = () => {
     if (!dateString) return ''
     const date = new Date(dateString)
     const options = { day: 'numeric', month: 'short', year: 'numeric' }
-    return date.toLocaleDateString('en-US', options)
+    return date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', options)
   }
 
   // Format time

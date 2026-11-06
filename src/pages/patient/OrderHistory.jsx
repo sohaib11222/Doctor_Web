@@ -11,7 +11,7 @@ const hasShippingQuote = (order) => order?.finalShipping !== null
   && [2, 3, 4, 5].includes(Number(order?.promisedDeliveryDays))
 
 const OrderHistory = () => {
-  const { translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
+  const { translateText: tr, formatDate: formatLocalizedDate, locale } = useLanguage()
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
@@ -85,7 +85,7 @@ const OrderHistory = () => {
 
   const formatCurrency = (amount) => {
     if (amount === undefined || amount === null) return '€0.00'
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'EUR',
     }).format(amount)

@@ -1,10 +1,12 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import * as blogApi from '../../api/blog'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const BlogDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { language } = useLanguage()
 
   // Fetch blog post
   const { data: blogData, isLoading, error } = useQuery({
@@ -19,7 +21,7 @@ const BlogDetails = () => {
   const formatDate = (date) => {
     if (!date) return 'N/A'
     const d = new Date(date)
-    return d.toLocaleDateString('en-US', { 
+    return d.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { 
       day: 'numeric', 
       month: 'long', 
       year: 'numeric',

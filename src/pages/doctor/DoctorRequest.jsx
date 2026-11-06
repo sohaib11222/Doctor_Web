@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as appointmentApi from '../../api/appointments'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DoctorRequest = () => {
   const navigate = useNavigate()
+  const { language } = useLanguage()
   const queryClient = useQueryClient()
   const [rejectModal, setRejectModal] = useState({ show: false, appointmentId: null, reason: '' })
 
@@ -70,7 +72,7 @@ const DoctorRequest = () => {
   const formatDateTime = (dateString, timeString) => {
     if (!dateString) return 'N/A'
     const date = new Date(dateString)
-    const formattedDate = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    const formattedDate = date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
     const formattedTime = timeString || ''
     return `${formattedDate} ${formattedTime}`
   }

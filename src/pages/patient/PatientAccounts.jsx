@@ -6,7 +6,7 @@ import * as paymentApi from '../../api/payment'
 import { useLanguage } from '../../contexts/LanguageContext'
 
 const PatientAccounts = () => {
-  const { translateText: tr, formatDate: formatLocalizedDate } = useLanguage()
+  const { translateText: tr, formatDate: formatLocalizedDate, locale } = useLanguage()
   const queryClient = useQueryClient()
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [withdrawFormData, setWithdrawFormData] = useState({
@@ -107,7 +107,7 @@ const PatientAccounts = () => {
   // Format currency
   const formatCurrency = (amount, currency = 'EUR') => {
     if (!amount) return '€0.00'
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency || 'EUR'
     }).format(amount)

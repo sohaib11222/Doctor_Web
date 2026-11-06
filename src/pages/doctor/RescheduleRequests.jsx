@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as rescheduleApi from '../../api/rescheduleRequest'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DoctorRescheduleRequests = () => {
   const { user } = useAuth()
+  const { language } = useLanguage()
   const queryClient = useQueryClient()
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [showApproveModal, setShowApproveModal] = useState(false)
@@ -185,7 +187,7 @@ const DoctorRescheduleRequests = () => {
                       <p className="mb-2">
                         {request.appointmentId ? (
                           <>
-                            {new Date(request.appointmentId.appointmentDate).toLocaleDateString()} 
+                            {new Date(request.appointmentId.appointmentDate).toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US')} 
                             at {request.appointmentId.appointmentTime}
                             {request.appointmentId.appointmentNumber && (
                               <span className="text-muted"> (#{request.appointmentId.appointmentNumber})</span>
@@ -201,7 +203,7 @@ const DoctorRescheduleRequests = () => {
                       
                       {request.preferredDate && (
                         <p className="mb-1">
-                          <strong>Preferred Date:</strong> {new Date(request.preferredDate).toLocaleDateString()}
+                          <strong>Preferred Date:</strong> {new Date(request.preferredDate).toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US')}
                         </p>
                       )}
                       {request.preferredTime && (

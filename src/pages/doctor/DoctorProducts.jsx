@@ -6,9 +6,11 @@ import * as productApi from '../../api/product'
 import * as pharmacyApi from '../../api/pharmacy'
 import api from '../../api/axios'
 import { getImageUrl } from '../../utils/imageUtils'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DoctorProducts = () => {
   const { user } = useAuth()
+  const { language } = useLanguage()
   const [showModal, setShowModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
@@ -481,7 +483,7 @@ const DoctorProducts = () => {
 
   // Format price
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(language === 'it' ? 'it-IT' : 'en-US', {
       style: 'currency',
       currency: 'EUR'
     }).format(price || 0)

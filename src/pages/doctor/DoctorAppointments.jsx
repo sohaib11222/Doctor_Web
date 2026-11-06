@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
+import { useLanguage } from '../../contexts/LanguageContext'
 import * as appointmentApi from '../../api/appointments'
 import {
   formatAppointmentDate as formatStoredAppointmentDate,
@@ -11,6 +12,7 @@ import {
 const DoctorAppointments = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { translateText: tr } = useLanguage()
 
   // State for active tab
   const [activeTab, setActiveTab] = useState('upcoming') // 'upcoming', 'cancel', 'complete'
@@ -94,11 +96,11 @@ const DoctorAppointments = () => {
     mutationFn: (appointmentId) => appointmentApi.acceptAppointment(appointmentId),
     onSuccess: () => {
       queryClient.invalidateQueries(['doctorAppointments'])
-      toast.success('Appointment accepted successfully!')
+      toast.success(tr('Appointment accepted successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to accept appointment'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -107,12 +109,12 @@ const DoctorAppointments = () => {
     mutationFn: ({ appointmentId, reason }) => appointmentApi.rejectAppointment(appointmentId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries(['doctorAppointments'])
-      toast.success('Appointment rejected successfully!')
+      toast.success(tr('Appointment rejected successfully!'))
       setRejectModal({ show: false, appointmentId: null, reason: '' })
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to reject appointment'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -121,11 +123,11 @@ const DoctorAppointments = () => {
     mutationFn: ({ appointmentId, status }) => appointmentApi.updateAppointmentStatus(appointmentId, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries(['doctorAppointments'])
-      toast.success('Appointment status updated successfully!')
+      toast.success(tr('Appointment status updated successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update appointment status'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -187,7 +189,7 @@ const DoctorAppointments = () => {
 
   // Handle accept
   const handleAccept = (appointmentId) => {
-    if (window.confirm('Are you sure you want to accept this appointment?')) {
+    if (window.confirm(tr('Are you sure you want to accept this appointment?'))) {
       acceptMutation.mutate(appointmentId)
     }
   }
@@ -209,8 +211,8 @@ const DoctorAppointments = () => {
 
   // Handle status update (complete/no-show)
   const handleStatusUpdate = (appointmentId, newStatus) => {
-    const statusText = newStatus === 'COMPLETED' ? 'completed' : 'marked as no-show'
-    if (window.confirm(`Are you sure you want to mark this appointment as ${statusText}?`)) {
+    const statusText = newStatus === 'COMPLETED' ? tr('completed') : tr('marked as no-show')
+    if (window.confirm(`${tr('Are you sure you want to mark this appointment as')} ${statusText}?`)) {
       updateStatusMutation.mutate({ appointmentId, status: newStatus })
     }
   }
@@ -251,11 +253,6 @@ const DoctorAppointments = () => {
           <li>
             <div className="view-icons">
               <Link to="/doctor-appointments-grid"><i className="fa-solid fa-th"></i></Link>
-            </div>
-          </li>
-          <li>
-            <div className="view-icons">
-              <a href="#"><i className="fa-solid fa-calendar-check"></i></a>
             </div>
           </li>
         </ul>

@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as appointmentApi from '../../api/appointments'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DoctorAppointmentsGrid = () => {
   const navigate = useNavigate()
+  const { language } = useLanguage()
   const queryClient = useQueryClient()
 
   // State for active tab
@@ -148,7 +150,7 @@ const DoctorAppointmentsGrid = () => {
   const formatDate = (dateString) => {
     if (!dateString) return '—'
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    return date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
   }
 
   // Format time for display

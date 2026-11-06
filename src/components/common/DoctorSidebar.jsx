@@ -10,10 +10,12 @@ import * as rescheduleApi from '../../api/rescheduleRequest'
 import { useUnreadNotificationsCount } from '../../queries/notificationQueries'
 import { useUnreadMessageCount } from '../../queries/chatQueries'
 import { toast } from 'react-toastify'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DoctorSidebar = () => {
   const location = useLocation()
   const { user } = useAuth()
+  const { translateText: tr } = useLanguage()
   const queryClient = useQueryClient()
 
   // Fetch doctor profile
@@ -99,11 +101,11 @@ const DoctorSidebar = () => {
     mutationFn: (isAvailable) => profileApi.updateDoctorProfile({ isAvailableOnline: isAvailable }),
     onSuccess: () => {
       queryClient.invalidateQueries(['doctorProfile'])
-      toast.success('Availability updated successfully!')
+      toast.success(tr('Availability updated successfully!'))
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update availability'
-      toast.error(errorMessage)
+      toast.error(tr(errorMessage))
     }
   })
 
@@ -122,7 +124,7 @@ const DoctorSidebar = () => {
   
   // Get doctor info - prioritize doctorData.userId from API response
   const doctorUserId = doctorData.userId || {}
-  const doctorName = doctorUserId.fullName || userData.fullName || user?.fullName || 'Dr. ' + (user?.fullName || 'Doctor')
+  const doctorName = doctorUserId.fullName || userData.fullName || user?.fullName || `Dr. ${user?.fullName || tr('Doctor')}`
   const doctorTitle = doctorData.title || ''
   const specialization = doctorData.specialization
   const specializationName = specialization?.name || ''
@@ -245,7 +247,7 @@ const DoctorSidebar = () => {
           <Link to="/doctor-profile" className="booking-doc-img">
             <img 
               src={profileImage} 
-              alt="Doctor Profile" 
+              alt={tr('Doctor Profile')}
               onError={(e) => {
                 console.error('❌ DoctorSidebar - Image failed to load:', {
                   attemptedUrl: e.target.src,
@@ -280,15 +282,15 @@ const DoctorSidebar = () => {
       </div>
       <div className="doctor-available-head">
         <div className="input-block input-block-new">
-          <label className="form-label">Availability <span className="text-danger">*</span></label>
+          <label className="form-label">{tr('Availability')} <span className="text-danger">*</span></label>
           <select 
             className="select form-control"
             value={availability}
             onChange={(e) => setAvailability(e.target.value)}
             disabled={updateAvailabilityMutation.isPending}
           >
-            <option value="available">I am Available Now</option>
-            <option value="not-available">Not Available</option>
+            <option value="available">{tr('I am Available Now')}</option>
+            <option value="not-available">{tr('Not Available')}</option>
           </select>
           <button
             className="btn btn-primary btn-sm w-100 mt-2"
@@ -299,10 +301,10 @@ const DoctorSidebar = () => {
             {updateAvailabilityMutation.isPending ? (
               <>
                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                Updating...
+                {tr('Updating...')}
               </>
             ) : (
-              'Update'
+              tr('Update')
             )}
           </button>
         </div>
@@ -313,13 +315,13 @@ const DoctorSidebar = () => {
             <li className={isActive('/doctor/dashboard') ? 'active' : ''}>
               <Link to="/doctor/dashboard">
                 <i className="fa-solid fa-shapes"></i>
-                <span>Dashboard</span>
+                <span>{tr('Dashboard')}</span>
               </Link>
             </li>
             <li className={isActive('/doctor-request') ? 'active' : ''}>
               <Link to="/doctor-request">
                 <i className="fa-solid fa-calendar-check"></i>
-                <span>Requests</span>
+                <span>{tr('Requests')}</span>
                 {pendingAppointmentsCount > 0 && (
                   <small className="unread-msg">{pendingAppointmentsCount > 99 ? '99+' : pendingAppointmentsCount}</small>
                 )}
@@ -328,13 +330,13 @@ const DoctorSidebar = () => {
             <li className={isActive(['/appointments', '/doctor-appointments-grid', '/doctor-appointment-details', '/doctor-upcoming-appointment', '/doctor-completed-appointment', '/doctor-cancelled-appointment', '/doctor-appointment-start']) ? 'active' : ''}>
               <Link to="/appointments">
                 <i className="fa-solid fa-calendar-days"></i>
-                <span>Appointments</span>
+                <span>{tr('Appointments')}</span>
               </Link>
             </li>
             <li className={isActive('/doctor/reschedule-requests') ? 'active' : ''}>
               <Link to="/doctor/reschedule-requests">
                 <i className="fa-solid fa-calendar-xmark"></i>
-                <span>Reschedule Requests</span>
+                <span>{tr('Reschedule Requests')}</span>
                 {pendingRescheduleRequestsCount > 0 && (
                   <small className="unread-msg">{pendingRescheduleRequestsCount > 99 ? '99+' : pendingRescheduleRequestsCount}</small>
                 )}
@@ -343,42 +345,42 @@ const DoctorSidebar = () => {
             <li className={isActive('/available-timings') ? 'active' : ''}>
               <Link to="/available-timings">
                 <i className="fa-solid fa-calendar-day"></i>
-                <span>Available Timings</span>
+                <span>{tr('Available Timings')}</span>
                 {!hasTimings && (
                   <i className="fa-solid fa-exclamation-triangle text-danger ms-2" 
                      style={{ fontSize: '14px' }} 
-                     title="No available timings set. Please add timings to allow patients to book appointments."></i>
+                     title={tr('No available timings set. Please add timings to allow patients to book appointments.')}></i>
                 )}
               </Link>
             </li>
             <li className={isActive(['/my-patients', '/patient-profile']) ? 'active' : ''}>
               <Link to="/my-patients">
                 <i className="fa-solid fa-user-injured"></i>
-                <span>My Patients</span>
+                <span>{tr('My Patients')}</span>
               </Link>
             </li>
             <li className={isActive('/reviews') ? 'active' : ''}>
               <Link to="/reviews">
                 <i className="fas fa-star"></i>
-                <span>Reviews</span>
+                <span>{tr('Reviews')}</span>
               </Link>
             </li>
             <li className={isActive('/invoices') ? 'active' : ''}>
               <Link to="/invoices">
                 <i className="fa-solid fa-file-lines"></i>
-                <span>Invoices</span>
+                <span>{tr('Invoices')}</span>
               </Link>
             </li>
             <li className={isActive('/doctor-payment') ? 'active' : ''}>
               <Link to="/doctor-payment">
                 <i className="fa-solid fa-money-bill-1"></i>
-                <span>Payout Settings</span>
+                <span>{tr('Payout Settings')}</span>
               </Link>
             </li>
             <li className={isActive('/chat-doctor') ? 'active' : ''}>
               <Link to="/chat-doctor">
                 <i className="fa-solid fa-comments"></i>
-                <span>Message</span>
+                <span>{tr('Message')}</span>
                 {unreadMessagesCount > 0 && (
                   <small className="unread-msg">{unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}</small>
                 )}
@@ -387,21 +389,21 @@ const DoctorSidebar = () => {
             <li className={isActive('/doctor/admin-chat') ? 'active' : ''}>
               <Link to="/doctor/admin-chat">
                 <i className="fa-solid fa-headset"></i>
-                <span>Admin Messages</span>
+                <span>{tr('Admin Messages')}</span>
                 {/* <small className="unread-msg">2</small> */}
               </Link>
             </li>
             <li className={isActive('/doctor/announcements') ? 'active' : ''}>
               <Link to="/doctor/announcements">
                 <i className="fa-solid fa-bullhorn"></i>
-                <span>Announcements</span>
+                <span>{tr('Announcements')}</span>
                 {/* <small className="unread-msg">3</small> */}   
               </Link>
             </li>
             <li className={isActive('/doctor-notifications') ? 'active' : ''}>
               <Link to="/doctor-notifications">
                 <i className="isax isax-notification"></i>
-                <span>Notifications</span>
+                <span>{tr('Notifications')}</span>
                 {unreadNotificationsCount > 0 && (
                   <small className="unread-msg">{unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}</small>
                 )}
@@ -410,42 +412,42 @@ const DoctorSidebar = () => {
             <li className={isActive(['/blog', '/blog/create', '/blog/edit']) ? 'active' : ''}>
               <Link to="/blog">
                 <i className="fa-solid fa-blog"></i>
-                <span>Blog Posts</span>
+                <span>{tr('Blog Posts')}</span>
               </Link>
             </li>
             <li className={isActive('/doctor/subscription-plans') ? 'active' : ''}>
               <Link to="/doctor/subscription-plans">
                 <i className="fa-solid fa-crown"></i>
-                <span>Subscription</span>
+                <span>{tr('Subscription')}</span>
                 {!hasActiveSubscription && (
                   <i className="fa-solid fa-exclamation-triangle text-danger ms-2" 
                      style={{ fontSize: '14px' }} 
-                     title="No active subscription. Please purchase a subscription plan to allow patients to book appointments."></i>
+                     title={tr('No active subscription. Please purchase a subscription plan to allow patients to book appointments.')}></i>
                 )}
               </Link>
             </li>
             <li className={isActive(['/doctor-profile-settings', '/doctor-experience-settings', '/doctor-education-settings', '/doctor-awards-settings', '/doctor-insurance-settings', '/doctor-clinics-settings', '/doctor-business-settings']) ? 'active' : ''}>
               <Link to="/doctor-profile-settings">
                 <i className="fa-solid fa-user-pen"></i>
-                <span>Profile Settings</span>
+                <span>{tr('Profile Settings')}</span>
               </Link>
             </li>
             <li className={isActive('/social-media') ? 'active' : ''}>
               <Link to="/social-media">
                 <i className="fa-solid fa-shield-halved"></i>
-                <span>Social Media</span>
+                <span>{tr('Social Media')}</span>
               </Link>
             </li>
             <li className={isActive('/doctor-change-password') ? 'active' : ''}>
               <Link to="/doctor-change-password">
                 <i className="fa-solid fa-key"></i>
-                <span>Change Password</span>
+                <span>{tr('Change Password')}</span>
               </Link>
             </li>
             <li>
               <Link to="/login">
                 <i className="fa-solid fa-calendar-check"></i>
-                <span>Logout</span>
+                <span>{tr('Logout')}</span>
               </Link>
             </li>
           </ul>

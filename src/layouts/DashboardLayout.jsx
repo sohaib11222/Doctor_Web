@@ -7,6 +7,7 @@ import Footer from '../components/common/Footer'
 import Breadcrumb from '../components/common/Breadcrumb'
 import IncomingCallNotifier from '../components/video/IncomingCallNotifier'
 import PharmacySetupModal from '../components/common/PharmacySetupModal'
+import ManualTranslationBoundary from '../components/common/ManualTranslationBoundary'
 
 const DashboardLayout = ({ children, breadcrumb }) => {
   const location = useLocation()
@@ -70,7 +71,7 @@ const DashboardLayout = ({ children, breadcrumb }) => {
                 ? "col-lg-8 col-xl-9"
                 : "col-12"
               }>
-                {children}
+                <ManualTranslationBoundary enabled={isDoctorRoute}>{children}</ManualTranslationBoundary>
               </div>
             </div>
           </div>

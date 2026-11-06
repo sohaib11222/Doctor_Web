@@ -9,9 +9,11 @@ import * as weeklyScheduleApi from '../../api/weeklySchedule'
 import * as appointmentApi from '../../api/appointments'
 import { formatCurrency } from '../../utils/currency'
 import { getDeviceAppointmentTimeZone } from '../../utils/deviceTimeZone'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Booking = () => {
   const { user } = useAuth()
+  const { locale } = useLanguage()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const doctorId = searchParams.get('doctorId')
@@ -436,7 +438,7 @@ const Booking = () => {
   const formatDate = (dateString) => {
     if (!dateString) return ''
     const date = new Date(`${dateString}T00:00:00`)
-    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    return date.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
   }
 
   // Format a Date using local calendar parts so the selected day never shifts.
@@ -916,17 +918,17 @@ const Booking = () => {
                           <ul className="booking-fee list-unstyled mb-0">
                             <li className="d-flex justify-content-between py-1">
                               <span>Consultation Fee</span>
-                              <span>{formatCurrency(quote.consultationFee, quote.currency)}</span>
+                              <span>{formatCurrency(quote.consultationFee, quote.currency, locale)}</span>
                             </li>
                             {(quote.selectedServices || []).map((service, index) => (
                               <li key={`${service.name}-${index}`} className="d-flex justify-content-between py-1">
                                 <span>{service.name}</span>
-                                <span>{formatCurrency(service.price, quote.currency)}</span>
+                                <span>{formatCurrency(service.price, quote.currency, locale)}</span>
                               </li>
                             ))}
                             <li className="d-flex justify-content-between py-2 mt-2 border-top fw-bold">
                               <span>Total</span>
-                              <span>{formatCurrency(quote.totalAmount, quote.currency)}</span>
+                              <span>{formatCurrency(quote.totalAmount, quote.currency, locale)}</span>
                             </li>
                           </ul>
                         </div>
@@ -1023,7 +1025,7 @@ const Booking = () => {
                         {quote && (
                           <div className="row mb-3">
                             <div className="col-12">
-                              <strong>Total Amount:</strong> {formatCurrency(quote.totalAmount, quote.currency)}
+                              <strong>Total Amount:</strong> {formatCurrency(quote.totalAmount, quote.currency, locale)}
                             </div>
                           </div>
                         )}

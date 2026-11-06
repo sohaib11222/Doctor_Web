@@ -7,6 +7,7 @@ import * as appointmentApi from '../../api/appointments'
 import * as paymentApi from '../../api/payment'
 import { formatCurrency } from '../../utils/currency'
 import { getDeviceAppointmentTimeZone } from '../../utils/deviceTimeZone'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const PENDING_BOOKING_KEY = 'pendingBooking'
 const PENDING_APPOINTMENT_KEY = 'pendingBookingAppointmentId'
@@ -20,11 +21,11 @@ const readStoredBooking = () => {
   }
 }
 
-const formatAppointmentDate = (dateString) => {
+const formatAppointmentDate = (dateString, locale) => {
   if (!dateString) return 'N/A'
   const date = new Date(`${dateString}T00:00:00`)
   if (Number.isNaN(date.getTime())) return dateString
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(locale, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -32,17 +33,18 @@ const formatAppointmentDate = (dateString) => {
   })
 }
 
-const formatAppointmentTime = (timeString) => {
+const formatAppointmentTime = (timeString, locale) => {
   if (!timeString) return 'N/A'
   const [hours, minutes] = String(timeString).split(':').map(Number)
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return timeString
   const date = new Date()
   date.setHours(hours, minutes, 0, 0)
-  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 }
 
 const Checkout = () => {
   const { user } = useAuth()
+  const { locale } = useLanguage()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -259,10 +261,10 @@ const Checkout = () => {
                         <p className="mb-2"><strong>Type:</strong> {booking.bookingType === 'ONLINE' ? 'Online Consultation' : 'In-Person Visit'}</p>
                       </div>
                       <div className="col-md-6">
-                        <p className="mb-2"><strong>Date:</strong> {formatAppointmentDate(booking.appointmentDate)}</p>
+                        <p className="mb-2"><strong>Date:</strong> {formatAppointmentDate(booking.appointmentDate, locale)}</p>
                       </div>
                       <div className="col-md-6">
-                        <p className="mb-2"><strong>Time:</strong> {formatAppointmentTime(booking.appointmentTime)}</p>
+                        <p className="mb-2"><strong>Time:</strong> {formatAppointmentTime(booking.appointmentTime, locale)}</p>
                       </div>
                       {booking.clinicName && (
                         <div className="col-md-6">
@@ -402,8 +404,8 @@ const Checkout = () => {
                 <div className="booking-summary">
                   <div className="booking-item-wrap">
                     <ul className="booking-date">
-                      <li>Date :<span>{formatAppointmentDate(booking.appointmentDate)}</span></li>
-                      <li>Time :<span>{formatAppointmentTime(booking.appointmentTime)}</span></li>
+                      <li>Date :<span>{formatAppointmentDate(booking.appointmentDate, locale)}</span></li>
+                      <li>Time :<span>{formatAppointmentTime(booking.appointmentTime, locale)}</span></li>
                     </ul>
 
                     {quoteLoading ? (
@@ -417,11 +419,11 @@ const Checkout = () => {
                     ) : quote && (
                       <>
                         <ul className="booking-fee">
-                          <li>Consultation Fee <span>{formatCurrency(quote.consultationFee, quote.currency)}</span></li>
+                          <li>Consultation Fee <span>{formatCurrency(quote.consultationFee, quote.currency, locale)}</span></li>
                           {(quote.selectedServices || []).map((service, index) => (
                             <li key={`${service.name}-${index}`}>
                               {service.name}
-                              <span>{formatCurrency(service.price, quote.currency)}</span>
+                              <span>{formatCurrency(service.price, quote.currency, locale)}</span>
                             </li>
                           ))}
                         </ul>
@@ -429,7 +431,7 @@ const Checkout = () => {
                           <ul className="booking-total-list">
                             <li>
                               <span>Total</span>
-                              <span className="total-cost">{formatCurrency(quote.totalAmount, quote.currency)}</span>
+                              <span className="total-cost">{formatCurrency(quote.totalAmount, quote.currency, locale)}</span>
                             </li>
                           </ul>
                         </div>

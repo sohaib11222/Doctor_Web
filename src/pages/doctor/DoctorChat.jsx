@@ -7,9 +7,11 @@ import { useAuth } from '../../contexts/AuthContext'
 import * as chatApi from '../../api/chat'
 import { useUploadChatFile } from '../../mutations/uploadMutations'
 import { normalizeImageUrl } from '../../utils/imageUtils'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DoctorChat = () => {
   const { user } = useAuth()
+  const { language, translateText: tr } = useLanguage()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
@@ -389,22 +391,22 @@ const DoctorChat = () => {
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
 
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffHours < 24) return `${diffHours}h ago`
-    if (diffDays === 1) return 'Yesterday'
-    if (diffDays < 7) return `${diffDays}d ago`
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    if (diffMins < 1) return tr('Just now')
+    if (diffMins < 60) return `${diffMins}${tr('m ago')}`
+    if (diffHours < 24) return `${diffHours}${tr('h ago')}`
+    if (diffDays === 1) return tr('Yesterday')
+    if (diffDays < 7) return `${diffDays}${tr('d ago')}`
+    return date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { month: 'short', day: 'numeric' })
   }
 
   const formatMessageTime = (dateString) => {
     if (!dateString) return ''
     const date = new Date(dateString)
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleTimeString(language === 'it' ? 'it-IT' : 'en-US', { hour: '2-digit', minute: '2-digit' })
   }
 
   const getLastMessagePreview = (conversation) => {
-    return 'Click to view messages'
+    return tr('Click to view messages')
   }
 
   const groupMessagesByDate = (messages) => {
@@ -427,11 +429,11 @@ const DoctorChat = () => {
     yesterday.setDate(yesterday.getDate() - 1)
 
     if (date.toDateString() === today.toDateString()) {
-      return 'Today'
+      return tr('Today')
     } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday'
+      return tr('Yesterday')
     } else {
-      return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      return date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     }
   }
 

@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as balanceApi from '../../api/balance'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DoctorPayment = () => {
+  const { language } = useLanguage()
   const queryClient = useQueryClient()
   const [withdrawModal, setWithdrawModal] = useState({ show: false, amount: '', paymentMethod: 'STRIPE', paymentDetails: '' })
   const [currentPage, setCurrentPage] = useState(1)
@@ -44,7 +46,7 @@ const DoctorPayment = () => {
   const formatDate = (dateString) => {
     if (!dateString) return '—'
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    return date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   // Get status badge

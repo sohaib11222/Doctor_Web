@@ -6,7 +6,7 @@ import { useLanguage } from '../../contexts/LanguageContext'
 // page has mounted.  New/changed components should prefer useLanguage().t()
 // with a named key; this keeps the migration safe while preventing mixed UI.
 const TRANSLATABLE_ATTRIBUTES = ['placeholder', 'title', 'aria-label', 'alt']
-const SKIPPED_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'TEXTAREA'])
+const SKIPPED_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE'])
 
 const TranslationBoundary = ({ children }) => {
   const { language, translateText } = useLanguage()
@@ -19,9 +19,13 @@ const TranslationBoundary = ({ children }) => {
     if (!root) return undefined
 
     const shouldSkip = (element) => !element || SKIPPED_TAGS.has(element.tagName) || element.closest?.('[data-i18n-ignore]')
+    // Textareas contain user-entered data, so their text nodes must remain
+    // untouched. Their placeholder is still interface copy and must follow
+    // the chosen language.
+    const shouldSkipText = (element) => shouldSkip(element) || element.tagName === 'TEXTAREA'
 
     const translateTextNode = (node) => {
-      if (!node?.nodeValue || shouldSkip(node.parentElement)) return
+      if (!node?.nodeValue || shouldSkipText(node.parentElement)) return
       let source = textSources.current.get(node)
       if (source === undefined) {
         source = translateText(node.nodeValue, 'en')

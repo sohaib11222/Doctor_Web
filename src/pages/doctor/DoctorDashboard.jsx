@@ -9,9 +9,11 @@ import * as subscriptionApi from '../../api/subscription'
 import ProfileIncompleteModal from '../../components/common/ProfileIncompleteModal'
 import AddTimingsModal from '../../components/common/AddTimingsModal'
 import BuySubscriptionModal from '../../components/common/BuySubscriptionModal'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DoctorDashboard = () => {
   const { user } = useAuth()
+  const { language } = useLanguage()
   const navigate = useNavigate()
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showTimingsModal, setShowTimingsModal] = useState(false)
@@ -186,21 +188,21 @@ const DoctorDashboard = () => {
   const formatDate = (date) => {
     if (!date) return '—'
     const d = new Date(date)
-    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    return d.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   // Format date and time
   const formatDateTime = (date, time) => {
     if (!date) return '—'
     const d = new Date(date)
-    const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    const dateStr = d.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
     return time ? `${dateStr} ${time}` : dateStr
   }
 
   // Format currency
   const formatCurrency = (amount, currency = 'EUR') => {
     if (amount === null || amount === undefined) return '€0'
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(language === 'it' ? 'it-IT' : 'en-US', {
       style: 'currency',
       currency: currency || 'EUR'
     }).format(amount)

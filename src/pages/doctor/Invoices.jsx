@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../contexts/AuthContext'
+import { useLanguage } from '../../contexts/LanguageContext'
 import * as paymentApi from '../../api/payment'
-import * as appointmentApi from '../../api/appointments'
 
 const Invoices = () => {
   const { user } = useAuth()
+  const { language, translateText: tr } = useLanguage()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTransaction, setSelectedTransaction] = useState(null)
   const [page, setPage] = useState(1)
@@ -13,24 +14,14 @@ const Invoices = () => {
 
   // Fetch transactions (subscription payments where userId = doctorId)
   const { data: transactionsData, isLoading: transactionsLoading, error: transactionsError } = useQuery({
-    queryKey: ['doctorTransactions', page],
+    queryKey: ['doctorTransactions', page, searchQuery, language],
     queryFn: () => {
       const params = {
         page,
-        limit
+        limit,
+        ...(searchQuery.trim() && { search: searchQuery.trim() })
       }
       return paymentApi.getTransactions(params)
-    },
-    enabled: !!user
-  })
-
-  // Fetch appointments to get appointment-related transactions
-  // Note: This is a workaround since appointment payments have patient as userId
-  // Ideally, backend should provide an endpoint to get all transactions for doctor's appointments
-  const { data: appointmentsData } = useQuery({
-    queryKey: ['doctorAppointmentsForInvoices'],
-    queryFn: () => {
-      return appointmentApi.listAppointments({ page: 1, limit: 1000 })
     },
     enabled: !!user
   })
@@ -42,13 +33,6 @@ const Invoices = () => {
     const responseData = transactionsData.data || transactionsData
     return responseData.transactions || []
   }, [transactionsData])
-
-  // Extract appointments from response
-  const appointments = useMemo(() => {
-    if (!appointmentsData) return []
-    const data = appointmentsData.data || appointmentsData
-    return data.appointments || []
-  }, [appointmentsData])
 
   // Get pagination info
   const pagination = useMemo(() => {
@@ -85,21 +69,21 @@ const Invoices = () => {
   const formatDate = (date) => {
     if (!date) return '—'
     const d = new Date(date)
-    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    return d.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   // Format date and time
   const formatDateTime = (date, time) => {
     if (!date) return '—'
     const d = new Date(date)
-    const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    const dateStr = d.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
     return time ? `${dateStr} ${time}` : dateStr
   }
 
   // Format currency
   const formatCurrency = (amount, currency = 'EUR') => {
     if (amount === null || amount === undefined) return '—'
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(language === 'it' ? 'it-IT' : 'en-US', {
       style: 'currency',
       currency: currency || 'EUR'
     }).format(amount)
@@ -107,10 +91,10 @@ const Invoices = () => {
 
   // Get transaction type
   const getTransactionType = (transaction) => {
-    if (transaction.relatedAppointmentId) return 'Appointment'
-    if (transaction.relatedSubscriptionId) return 'Subscription'
-    if (transaction.relatedProductId) return 'Product'
-    return 'Other'
+    if (transaction.relatedAppointmentId) return tr('Appointment')
+    if (transaction.relatedSubscriptionId) return tr('Subscription')
+    if (transaction.relatedProductId) return tr('Product')
+    return tr('Other')
   }
 
   // Get status badge class
@@ -178,12 +162,15 @@ const Invoices = () => {
         <div className="search-field">
           <input
             type="text"
-            className="form-control"
+            className="form-control pe-5"
             placeholder="Search by ID, Patient, Appointment Number..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setPage(1)
+            }}
           />
-          <span className="search-icon"><i className="fa-solid fa-magnifying-glass"></i></span>
+          <span className="search-icon" aria-hidden="true" style={{ pointerEvents: 'none' }}><i className="fa-solid fa-magnifying-glass"></i></span>
         </div>
       </div>
 
@@ -251,8 +238,8 @@ const Invoices = () => {
                               {patient.fullName || 'Unknown Patient'}
                             </a>
                           </h2>
-                        ) : transactionType === 'Subscription' ? (
-                          <span className="text-muted">Subscription Payment</span>
+                        ) : transaction.relatedSubscriptionId ? (
+                          <span className="text-muted">{tr('Subscription Payment')}</span>
                         ) : (
                           <span className="text-muted">N/A</span>
                         )}
@@ -276,14 +263,14 @@ const Invoices = () => {
                           <a
                             href="javascript:void(0);"
                             onClick={() => handleViewTransaction(transaction._id)}
-                            title="View Invoice"
+                              title={tr('View Invoice')}
                           >
                             <i className="isax isax-link-2"></i>
                           </a>
                           <a
                             href="javascript:void(0);"
                             onClick={() => handlePrint(transaction)}
-                            title="Print Invoice"
+                              title={tr('Print Invoice')}
                           >
                             <i className="isax isax-printer5"></i>
                           </a>

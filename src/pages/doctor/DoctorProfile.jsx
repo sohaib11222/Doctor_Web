@@ -7,9 +7,11 @@ import * as doctorApi from '../../api/doctor'
 import * as favoriteApi from '../../api/favorite'
 import * as reviewsApi from '../../api/reviews'
 import { normalizeImageUrl } from '../../utils/imageUtils'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DoctorProfile = () => {
   const { user } = useAuth()
+  const { language } = useLanguage()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -1121,7 +1123,7 @@ const DoctorProfile = () => {
                         )}
                         {review.createdAt && (
                           <small className="text-muted">
-                            {new Date(review.createdAt).toLocaleDateString()}
+                            {new Date(review.createdAt).toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US')}
                           </small>
                         )}
                       </div>

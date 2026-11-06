@@ -5,7 +5,7 @@ import * as paymentApi from '../../api/payment'
 import { useLanguage } from '../../contexts/LanguageContext'
 
 const PatientInvoices = () => {
-  const { formatDate: formatLocalizedDate } = useLanguage()
+  const { formatDate: formatLocalizedDate, locale } = useLanguage()
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState('')
@@ -59,7 +59,7 @@ const PatientInvoices = () => {
   // Format currency
   const formatCurrency = (amount, currency = 'EUR') => {
     if (!amount) return '€0.00'
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency || 'EUR'
     }).format(amount)

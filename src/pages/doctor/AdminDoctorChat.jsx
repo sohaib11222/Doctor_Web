@@ -6,9 +6,11 @@ import { useAuth } from '../../contexts/AuthContext'
 import * as chatApi from '../../api/chat'
 import { useUploadChatFile } from '../../mutations/uploadMutations'
 import { normalizeImageUrl } from '../../utils/imageUtils'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const AdminDoctorChat = () => {
   const { user } = useAuth()
+  const { language, translateText: tr } = useLanguage()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const messagesEndRef = useRef(null)
@@ -362,26 +364,26 @@ const AdminDoctorChat = () => {
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
 
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffHours < 24) return `${diffHours}h ago`
-    if (diffDays === 1) return 'Yesterday'
-    if (diffDays < 7) return `${diffDays}d ago`
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    if (diffMins < 1) return tr('Just now')
+    if (diffMins < 60) return `${diffMins}${tr('m ago')}`
+    if (diffHours < 24) return `${diffHours}${tr('h ago')}`
+    if (diffDays === 1) return tr('Yesterday')
+    if (diffDays < 7) return `${diffDays}${tr('d ago')}`
+    return date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { month: 'short', day: 'numeric' })
   }
 
   // Format message time
   const formatMessageTime = (dateString) => {
     if (!dateString) return ''
     const date = new Date(dateString)
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleTimeString(language === 'it' ? 'it-IT' : 'en-US', { hour: '2-digit', minute: '2-digit' })
   }
 
   // Get last message preview
   const getLastMessagePreview = (conversation) => {
     // This would ideally come from the conversation's last message
     // For now, we'll show a placeholder
-    return 'Click to view messages'
+    return tr('Click to view messages')
   }
 
   // Show error if any

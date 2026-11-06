@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../contexts/AuthContext'
 import * as appointmentApi from '../../api/appointments'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const MyPatients = () => {
   const { user } = useAuth()
+  const { language } = useLanguage()
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('active') // 'active' or 'inactive'
   const [dateRange, setDateRange] = useState({ fromDate: '', toDate: '' })
@@ -106,14 +108,14 @@ const MyPatients = () => {
   const formatDate = (date) => {
     if (!date) return ''
     const d = new Date(date)
-    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    return d.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   // Format date and time
   const formatDateTime = (date, time) => {
     if (!date) return ''
     const d = new Date(date)
-    const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    const dateStr = d.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
     return time ? `${dateStr} ${time}` : dateStr
   }
 

@@ -3,9 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../contexts/AuthContext'
 import * as reviewsApi from '../../api/reviews'
 import * as profileApi from '../../api/profile'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const Reviews = () => {
   const { user } = useAuth()
+  const { language } = useLanguage()
   const [page, setPage] = useState(1)
   const limit = 10
 
@@ -64,7 +66,7 @@ const Reviews = () => {
   const formatDate = (dateString) => {
     if (!dateString) return ''
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { 
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 

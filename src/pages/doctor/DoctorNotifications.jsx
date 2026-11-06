@@ -5,9 +5,11 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useNotifications } from '../../queries/notificationQueries'
 import { useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '../../mutations/notificationMutations'
 import { toast } from 'react-toastify'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const DoctorNotifications = () => {
   const { user } = useAuth()
+  const { language } = useLanguage()
   const [filter, setFilter] = useState('all') // 'all', 'unread', 'read'
 
   // Build query params based on filter
@@ -85,7 +87,7 @@ const DoctorNotifications = () => {
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`
     
-    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    return date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   // Handle mark as read

@@ -4,9 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 import * as blogApi from '../../api/blog'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const BlogList = () => {
   const { user } = useAuth()
+  const { language } = useLanguage()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
@@ -60,7 +62,7 @@ const BlogList = () => {
   const formatDate = (date) => {
     if (!date) return '—'
     const d = new Date(date)
-    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    return d.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   // Handle delete

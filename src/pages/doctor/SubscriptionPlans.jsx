@@ -3,8 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import * as subscriptionApi from '../../api/subscription'
 import * as paymentApi from '../../api/payment'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 const SubscriptionPlans = () => {
+  const { language } = useLanguage()
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('STRIPE') // STRIPE only
@@ -73,7 +75,7 @@ const SubscriptionPlans = () => {
   const formatDate = (dateString) => {
     if (!dateString) return '—'
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    return date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })
   }
 
   const formatLimit = (value) => {
