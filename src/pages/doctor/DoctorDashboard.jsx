@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../contexts/AuthContext'
 import * as doctorApi from '../../api/doctor'
@@ -10,14 +10,22 @@ import ProfileIncompleteModal from '../../components/common/ProfileIncompleteMod
 import AddTimingsModal from '../../components/common/AddTimingsModal'
 import BuySubscriptionModal from '../../components/common/BuySubscriptionModal'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { toast } from 'react-toastify'
 
 const DoctorDashboard = () => {
   const { user } = useAuth()
   const { language } = useLanguage()
   const navigate = useNavigate()
+  const location = useLocation()
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showTimingsModal, setShowTimingsModal] = useState(false)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
+
+  useEffect(() => {
+    if (!location.state?.prescriptionSent) return
+    toast.success(location.state.prescriptionSentMessage || 'Prescription sent to the patient successfully.')
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate])
 
   // Fetch doctor profile to check completion status
   const { data: doctorProfile, isLoading: profileLoading } = useQuery({

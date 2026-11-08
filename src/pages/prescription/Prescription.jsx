@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
@@ -25,6 +25,7 @@ const Prescription = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const appointmentId = searchParams.get('appointmentId')
 
   const isDoctor = user?.role?.toUpperCase() === 'DOCTOR'
@@ -138,6 +139,13 @@ const Prescription = () => {
     onSuccess: (res) => {
       const payload = res.data || res
       queryClient.setQueryData(['prescriptionByAppointment', appointmentId], payload)
+      if (isDoctor) {
+        navigate('/doctor/dashboard', {
+          replace: true,
+          state: { prescriptionSent: true, prescriptionSentMessage: 'Prescription sent to the patient successfully.' }
+        })
+        return
+      }
       toast.success('Prescription saved successfully')
     },
     onError: (error) => {

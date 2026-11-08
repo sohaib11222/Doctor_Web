@@ -24,6 +24,9 @@ export const listProducts = async (params = {}) => {
   return api.get('/products', { params })
 }
 
+/** Inventory totals and low-stock products for the authenticated seller. */
+export const getInventorySummary = async () => api.get('/products/inventory/summary')
+
 /**
  * Get product by ID (Public)
  * @param {string} id - Product ID
